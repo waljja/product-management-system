@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.productkanbanapi.mapper.KanbanMapper">
+
+    <resultMap id="BaseResultMap" type="com.example.productkanbanapi.entity.ProductStorage">
+        <result property="partNumber" column="PartNumber" jdbcType="VARCHAR"/>
+        <result property="batch" column="Batch" jdbcType="VARCHAR"/>
+        <result property="uid" column="UID" jdbcType="VARCHAR"/>
+        <result property="quantity" column="Quantity" jdbcType="FLOAT"/>
+        <result property="stock" column="Stock" jdbcType="VARCHAR"/>
+        <result property="status" column="Status" jdbcType="TINYINT"/>
+        <result property="wo" column="WO" jdbcType="VARCHAR"/>
+        <result property="recTime" column="RecTime" jdbcType="TIMESTAMP"/>
+        <result property="plant" column="Plant" jdbcType="VARCHAR"/>
+        <result property="createUser" column="CreateUser" jdbcType="VARCHAR"/>
+        <result property="createDate" column="CreateDate" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- ew.customSqlSegment -> 条件构造器拼接语句（一定要加，否则会出现变量设置问题） -->
+    <!-- 字段不能加 []，mybatis plus 不能识别 []，有 bug -->
+    <select id="findInventory" resultMap="BaseResultMap">
+        select
+            row_number() over(order by CreateDate) as item, *
+        from
+            FG_Inventory ${ew.customSqlSegment}
+    </select>
+
+</mapper>

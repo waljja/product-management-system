@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktg.mes.fg.mapper.FgUnpackingMapper">
+
+    <resultMap type="FgUnpacking" id="FgUnpackingResult">
+        <result property="id"    column="id"    />
+        <result property="uid"    column="uid"    />
+        <result property="uid_no"    column="quantity"    />
+        <result property="demandQty"    column="demandqty"    />
+        <result property="CreateTime"    column="create_date"   />
+    </resultMap>
+
+    <sql id="selectFgUnpackingVo">
+        select id, uid, quantity, demandqty, create_date from fg_unpacking
+    </sql>
+
+    <!-- 最好加个 != ''，因可能有些字段不是NULL，但默认是空字符，所以查询不到数据 大写Y为yyyy，小写y为yy年份 -->
+    <select id="selectFgUnpackingList" parameterType="FgUnpacking" resultMap="FgUnpackingResult">
+        <include refid="selectFgUnpackingVo"/>
+        <where>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="uid_no != null and uid_no != '' "> and quantity = #{uid_no}</if>
+            <if test="demandQty != null and demandQty != '' "> and demandqty = #{demandQty}</if>
+            <if test="CreateTime != null "> and create_date like concat(date_format(#{CreateTime},'%Y-%m-%d'),'%')</if>
+        </where>
+    </select>
+
+    <select id="selectFgUnpackingById" parameterType="Long" resultMap="FgUnpackingResult">
+        <include refid="selectFgUnpackingVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertFgUnpacking" parameterType="FgUnpacking" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_unpacking
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="uid != null">uid,</if>
+            <if test="uid_no != null">quantity,</if>
+            <if test="demandQty != null">demandqty,</if>
+            <if test="CreateTime != null">create_date,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="uid != null">#{uid},</if>
+            <if test="uid_no != null">#{uid_no},</if>
+            <if test="demandQty != null">#{demandQty},</if>
+            <if test="CreateTime != null">#{CreateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateFgUnpacking" parameterType="FgUnpacking">
+        update fg_unpacking
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="uid != null">uid = #{uid},</if>
+            <if test="uid_no != null">quantity = #{uid_no},</if>
+            <if test="demandQty != null">demandqty = #{demandQty},</if>
+            <if test="CreateTime != null">create_date = #{CreateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFgUnpackingById" parameterType="Long">
+        delete from fg_unpacking where id = #{id}
+    </delete>
+
+    <delete id="deleteFgUnpackingByIds" parameterType="String">
+        delete from fg_unpacking where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

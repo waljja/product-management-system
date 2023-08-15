@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.honortone.api.mapper.InStockMapper">
+
+    <resultMap type="com.honortone.api.entity.CheckList" id="FgChecklistResult">
+        <result property="id" column="id"/>
+        <result property="plant" column="plant"/>
+        <result property="pn" column="pn"/>
+        <result property="uid" column="uid"/>
+        <result property="line" column="line"/>
+        <result property="wo" column="wo"/>
+        <result property="po" column="po"/>
+        <result property="pallet_no" column="pallet_no"/>
+        <result property="batch_qty" column="batch_qty"/>
+        <result property="uid_no" column="uid_no"/>
+        <result property="sap101" column="sap101"/>
+        <result property="production_date" column="production_date"/>
+        <result property="batch" column="batch"/>
+        <result property="remark" column="remark"/>
+        <result property="qa_sign" column="qa_sign"/>
+        <result property="qa_result" column="qa_result"/>
+        <result property="customer_result" column="customer_result"/>
+    </resultMap>
+
+    <!-- 统一查询结果 -->
+    <sql id="selectFgChecklistVo">
+        select id,
+               plant,
+               pn,
+               uid,
+               line,
+               wo,
+               po,
+               pallet_no,
+               batch_qty,
+               uid_no,
+               sap101,
+               production_date,
+               batch,
+               remark,
+               qa_sign,
+               qa_result,
+               customer_result
+        from fg_checklist
+    </sql>
+
+    <select id="ifSuccess" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where uid = #{uid} and status = 1
+    </select>
+
+    <!-- 更新QA结果 -->
+    <update id="updateQAresult">
+        update fg_checklist
+        set qa_result = #{qaresult}
+        where pn = #{pn}
+    </update>
+
+    <!-- 判断是否已存在 -->
+    <select id="checkInfoByUid" resultType="com.honortone.api.entity.MaterialTransactions">
+        select *
+        from xTend_MaterialTransactions
+        WHERE UID = #{uid}
+          AND TransactionType = '313'
+    </select>
+
+    <insert id="toInsert">
+        if not exists(select * from [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions] WHERE [UID] = #{checkList.uid} AND [TransactionType] = '315')
+        begin
+        INSERT INTO [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        ([TransactionHistoryId], [Batch], [PartNumber], [UID], [Quantity], [FromStock], [ToStock], [TransactionUser], [TransactionTime],
+         [RecordStatus], [TransactionType], [TransactionReason], [RFCTemplateID], [Plant], [PO_NUMBER], [RefDocNo],
+          [DocHeader], [ERPFromStock], [ERPToStock])
+        VALUES
+            (NEWID(), #{checkList.batch}, #{checkList.pn}, #{checkList.uid}, #{checkList.uid_no}, #{FromStock}, #{ToStock}, #{username}, GETDATE(), 999, '315', '99', 'Z_AEGIS_GOODSMVT_TRANSFER', #{checkList.plant}, #{checkList.wo}, #{RefDocNo}, #{DocHeader}, #{FromStock}, #{ToStock})
+        end
+    </insert>
+
+    <select id="selectQuantity" resultType="float">
+        select ISNULL(SUM(quantity), 0) FROM [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        where PartNumber = #{pn} and Plant = #{plant} and batch = #{batch} and TransactionType = #{transactiontype} and RecordStatus = 999
+    </select>
+
+    <!-- 状态为999则表示已收货，0自动过账，1过账失败，2过账成功 -->
+    <update id="updateRecordStatus">
+        update [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        set [RecordStatus] = 0
+        where [PartNumber] = #{pn}
+          and [Plant] = #{plant}
+          and [batch] = #{batch}
+          and [TransactionType] = #{transactiontype}
+          and [RecordStatus] = 999
+    </update>
+
+    <!-- 查询是否已过账，避免影响统计总数 -->
+    <select id="checkInfoAlreadyTransfer" parameterType="com.honortone.api.controller.dto.MaterialTransationsDto" resultType="java.lang.Integer">
+        select count(*) from [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        where [PartNumber] = #{pn}
+          and [Plant] = #{plant}
+          and [batch] = #{batch}
+          and [TransactionType] = #{transactiontype}
+          and [RecordStatus] = 2
+    </select>
+
+</mapper>

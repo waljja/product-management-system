@@ -1,0 +1,10 @@
+#for tests only !
+#Thu Feb 23 13:28:19 CST 2023
+jco.client.lang=en
+jco.destination.peak_limit=500
+jco.client.client=800
+jco.client.passwd=itqaz1234
+jco.client.user=htabap
+jco.client.sysnr=00
+jco.destination.pool_capacity=100
+jco.client.ashost=172.31.2.3

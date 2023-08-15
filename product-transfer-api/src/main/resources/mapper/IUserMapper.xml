@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.honortone.api.mapper.IUserMapper">
+
+    <!-- 注意返回类型需加路径，否则提示找不到 -->
+    <select id="findUser" resultType="com.honortone.api.entity.IUser">
+        select * from [HTMES_FGWhs_DB].[dbo].[sys_user]
+        where username = #{username}
+    </select>
+    <select id="checkRole" resultType="java.lang.String">
+        select role from [HTMES_FGWhs_DB].[dbo].[sys_user] where username = #{username} and password = #{password}
+    </select>
+
+</mapper>

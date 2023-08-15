@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.honortone.api.mapper.BindStockMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap type="com.honortone.api.entity.Inventory" id="BaseResultMap" >
+        <id property="id" column="id"/>
+        <result property="pn" column="partnumber"/>
+        <result property="po" column="po"/>
+        <result property="batch" column="batch"/>
+        <result property="uid" column="uid"/>
+        <result property="uid_no" column="quantity"/>
+        <result property="stock" column="stock"/>
+        <result property="status" column="status"/>
+        <result property="wo" column="wo"/>
+        <result property="production_date" column="rec_time"/>
+        <result property="plant" column="plant"/>
+        <result property="qa_sign" column="create_user"/>
+        <result property="create_date" column="create_time"/>
+        <result property="uid_id" column="uid_id"/>
+        <result property="rollbackReason" column="rollback_reason"/>
+    </resultMap>
+
+    <sql id="selectFgInventoryVo">
+        select id,
+               partnumber,
+               po,
+               batch,
+               uid,
+               quantity,
+               stock,
+               status,
+               wo,
+               rec_time,
+               plant,
+               create_user,
+               create_time,
+               uid_id,
+               rollback_reason
+        from fg_inventory
+    </sql>
+    <sql id="selectFgInventoryVo2">
+        select id,
+               partnumber,
+               po,
+               batch,
+               uid,
+               quantity,
+               stock,
+               status,
+               wo,
+               rec_time,
+               plant,
+               create_user,
+               create_time,
+               uid_id,
+               rollback_reason
+        from fg_inventory_out
+    </sql>
+
+    <!-- 1:绑库 2:出库 -->
+    <!-- 没有贴纸情况 -->
+    <select id="checkInfoByUid_1" parameterType="java.lang.String" resultMap="BaseResultMap">
+        <include refid="selectFgInventoryVo"/>
+        where uid = #{uid} and status = 1 and stock is not null and uid_id is null
+    </select>
+    <update id="updateStock">
+        update fg_inventory
+        set stock = #{stock}
+        where uid = #{uid}
+          and status = 1
+          and stock is not null
+          and uid_id is null
+    </update>
+    <!-- 没有贴纸情况 -->
+
+    <insert id="toinsert" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_inventory (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user,
+                                  create_time, uid_id, rollback_reason)
+        values (#{pn}, #{po}, #{batch}, #{uid}, #{uid_no}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{qa_sign},
+                now(), #{uid_id}, #{rollbackReason})
+    </insert>
+
+    <!-- 有贴纸情况 -->
+    <!-- 贴纸关联成品单ID -->
+    <select id="getUidId" parameterType="java.lang.String" resultType="String">
+        select uid_id
+        from fg_inventory
+        where uid = #{uid}
+          and uid_id is null
+          and stock is null
+    </select>
+
+    <select id="checkInfoByUid_2" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select *
+        from fg_inventory
+        where uid = #{uid}
+          and uid_id is null
+          and stock is null
+    </select>
+
+    <!-- 是否已绑库 -->
+    <select id="checkInventory" parameterType="java.lang.String" resultMap="BaseResultMap">
+    <include refid="selectFgInventoryVo"></include>
+        where uid = #{uid}
+    </select>
+
+    <!-- 保存贴纸信息 -->
+    <select id="insertTagsInventory">
+        insert into (uid, client_pn, quantity, stauts, client_batch, production_date, pn, stock, po, createtime)
+        values(#{uid}, #{khpn}, #{qty}, 0, #{clientBatch}, #{rectime}, #{pn}, #{stock}, #{po}, now())
+    </select>
+
+    <!-- 修改UID库存数量（贴纸数量累加） -->
+    <update id="updateQuantity">
+        update fg_tags_inventory
+        set quantity = #{quantity}
+        where uid = #{uid}
+    </update>
+
+    <!-- 扫描贴纸前插入，stock设为NULL -->
+    <insert id="firstInsert">
+        insert into fg_inventory (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user,
+                                  create_date, uid_id)
+        values (#{pn}, #{po}, #{batch}, #{uid}, #{uid_no}, null, 1, #{wo}, #{productiondate}, #{plant}, #{qasign}, GETDATE(),
+                null)
+    </insert>
+    <!-- 有贴纸情况 -->
+
+    <!--    <insert id="firstInsert">-->
+    <!--        if not exists(select * from [HTMES_FGWhsSystem].[dbo].[FG_Inventory]-->
+    <!--        where [UID] = #{uid})-->
+    <!--        begin-->
+    <!--        insert into [HTMES_FGWhsSystem].[dbo].[FG_Inventory] (ID,PartNumber,Batch,UID,Quantity,Stock,Status,WO,RecTime,Plant,CreateUser,CreateDate,UidId)-->
+    <!--        values(newID(),#{pn},#{batch},#{uid},#{batchqty},null,1,#{wo},#{productiondate},#{plant},#{qasign},GETDATE(),null)-->
+    <!--        end-->
+    <!--        else-->
+    <!--        begin-->
+    <!--        declare @uidid NVARCHAR(100);-->
+    <!--        set @uidid = (select ID FROM [HTMES_FGWhsSystem].[dbo].[FG_Inventory] where [UID] = #{uid} and [UidId] = null);-->
+    <!--        insert into [HTMES_FGWhsSystem].[dbo].[FG_Inventory] (ID,PartNumber,Batch,UID,Quantity,Stock,Status,WO,RecTime,Plant,CreateUser,CreateDate,UidId)-->
+    <!--        values(newID(),#{pn},#{batch},#{uid},#{batchqty},#{stock},1,#{wo},#{productiondate},#{plant},#{qasign},GETDATE(),@uidid)-->
+    <!--        end-->
+    <!--    </insert>-->
+    <!-- 判是否转数成功（是否收货） （暂不用状态，因过不过账都能上架）and [RecordStatus] = 0 -->
+    <select id="checkInstock" parameterType="com.honortone.api.entity.CheckList" resultType="java.lang.Integer">
+        select count(*) from [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        where [PartNumber] = #{pn}
+          and [Plant] = #{plant}
+          and [batch] = #{batch}
+          and [TransactionType] = '315'
+
+    </select>
+
+    <!-- 查找是否是拆分后的UID -->
+    <select id="checkOldUid" parameterType="java.lang.String" resultType="com.honortone.api.entity.CheckList">
+        select * from fg_checklist where uid = #{uid}
+    </select>
+    <!-- 更新拆分后TO明细的备货单数量 -->
+    <update id="updateQuantityAndStatus" >
+        update fg_tolist
+        set quantity = #{quantity}, status = 1
+        where uid = #{uid} and status = 4
+    </update>
+
+    <!-- 根据UID在TO明细表查找回仓数据 -->
+    <select id="getUidInfo" parameterType="java.lang.String" resultType="com.honortone.api.entity.ToList">
+        select to_no toNo, pn, po, batch, quantity, stock, uid from fg_tolist where uid = #{uid}
+    </select>
+
+    <!-- 在库存下架表查询对应数据 -->
+    <select id="getInventoryInfo" parameterType="com.honortone.api.entity.ToList" resultMap="BaseResultMap">
+        <include refid="selectFgInventoryVo2"/>
+        where partnumber = #{pn} and po = #{po} and batch = #{batch} and quantity = #{quantity} and stock = #{stock} and uid = #{uid}
+    </select>
+
+    <!-- 根据UID在TO明细表删除数据 -->
+    <delete id="deleteTolistInfo">
+        delete from fg_tolist where uid = #{uid}
+    </delete>
+
+    <!-- 更新TO管理中需要回仓的备货单为已回仓（已拣货）状态 -->
+    <update id="updateTosStatus">
+       update fg_tos
+        set status = 2, quantity = #{quantity}
+        where to_no = #{toNo} and status = 5
+    </update>
+
+    <!-- 绑定走货区 -->
+    <update id="updateTosStock">
+        update fg_tos
+        set stock = #{stock}
+        where to_no = #{toNo}
+    </update>
+
+    <!-- 根据To单获取走货信息 -->
+    <select id="getShipmentInfoBytoNo" parameterType="java.lang.String" resultType="com.honortone.api.entity.FgShipmentInfo">
+        select t.shipment_no ShipmentNO, s.shipment_date ShipmentDate  from fg_tos t left join fg_shipmentinfo s on t.shipment_no = s.shipment_number where t.to_no = #{toNo} limit 1
+    </select>
+
+    <!-- 绑定走货区 -->
+    <select id="checkStatusByUid" parameterType="java.lang.String" resultType="java.lang.String">
+        select to_no from fg_tos where to_no = (select to_no from fg_tolist where uid = #{uid} and status = 1) and status = 2
+    </select>
+<!--    select to_no from fg_tolist where uid = #{uid} and status = 1-->
+
+</mapper>

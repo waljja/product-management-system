@@ -1,0 +1,72 @@
+server:
+  port: 8083
+  # session 过期时间，单位为秒
+  session:
+    timeout: 1800
+
+spring:
+  profiles:
+    active: dev
+  # 不能再写一个spring前缀
+  datasource:
+    dynamic:
+      strict: false #严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源
+      primary: master #设置默认的数据源或者数据源组,默认值即为master
+      datasource:
+        master:
+          driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver # 3.2.0开始支持SPI可省略此配置
+          type: com.alibaba.druid.pool.DruidDataSource
+          url: jdbc:sqlserver://172.31.2.131;DatabaseName=HTMES_FGWhs_DB
+          username: sa
+          password: dyb8110!
+        slave_1:
+          driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+          type: com.alibaba.druid.pool.DruidDataSource
+          url: jdbc:sqlserver://172.31.2.100;DatabaseName=HT_InterfaceExchange
+          username: aegis-sa
+          password: ABC789_
+        slave_2:
+          type: com.alibaba.druid.pool.DruidDataSource
+          url: jdbc:mysql://172.31.2.131:3306/htmes_fgwhssystem?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          username: root
+          password: root
+        slave_3:
+          driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+          type: com.alibaba.druid.pool.DruidDataSource
+          url: jdbc:sqlserver://172.31.2.182;DatabaseName=HTMES_MES_Main
+          username: mes
+          password: htMesV2!@
+
+  # 邮件 smtp服务器
+  mail:
+    host: smtp.honortone.com
+    # 设置邮件附件名/格式 的编码类型
+    mine:
+      charset: ${spring.mail.default-encoding}
+    trnsport:
+      protocol: smtp
+    smtp:
+      auth: true
+    # smtp用户名
+    username: tingming.jiang@honortone.com
+    # 服务授权码或密码
+    password: cq988986
+
+
+  servlet:
+    multipart:
+      # 上传文件总的最大值
+      max-request-size: 20MB
+      # 单个文件的最大值
+      max-file-size: 10MB
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/*.xml
+  type-aliases-package: com.honortone.api.entity
+
+#Mino配置
+minio:
+  url: http://172.31.2.131:9000
+  accessKey: P3DTXJDGRHXHVRAU762Q
+  secretKey: 4vLRrXS3MDUX3c5gX0n86maS1e7SyTsY+RS7b2jp
+  bucketName: ht-mes

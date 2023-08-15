@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktg.mes.fg.mapper.FgTolistMapper">
+
+    <resultMap type="FgToList" id="FgTolistResult">
+        <result property="id"    column="id"    />
+        <result property="To_No"    column="to_no"    />
+        <result property="uid"    column="uid"    />
+        <result property="replace_uid"    column="replace_uid"    />
+        <result property="pn"    column="pn"    />
+        <result property="Quantity"    column="quantity"    />
+        <result property="sap_qty"    column="batch_qty"    />
+        <result property="status"    column="status"    />
+        <result property="po"    column="po"    />
+        <result property="batch"    column="batch"    />
+        <result property="stock"    column="stock"    />
+    </resultMap>
+
+    <sql id="selectFgTolistVo">
+        select id, to_no, uid, replace_uid, pn, quantity, batch_qty, status, po, batch, stock from fg_tolist
+    </sql>
+
+    <select id="selectFgTolistList" parameterType="FgToList" resultMap="FgTolistResult">
+        <include refid="selectFgTolistVo"/>
+        <where>
+            <if test="To_No != null  and To_No != ''"> and to_no like concat(#{To_No}, '%')</if>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="replace_uid != null  and replace_uid != ''"> and replace_uid = #{replace_uid}</if>
+            <if test="pn != null  and pn != ''"> and pn like concat(#{pn}, '%')</if>
+            <if test="Quantity != null "> and quantity = #{Quantity}</if>
+            <if test="sap_qty != null "> and batch_qty = #{sap_qty}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
+            <if test="stock != null  and stock != ''"> and stock like concat('%', #{stock}, '%')</if>
+        </where>
+    </select>
+    <select id="selectFgTolistList2" parameterType="FgToList" resultType="com.ktg.mes.fg.domain.FgToList">
+        select l.id, l.to_no To_No, l.uid, l.replace_uid, l.pn, l.quantity Quantity, l.batch_qty sap_qty, l.status, l.po, l.batch, l.stock, t.stock areaStock from fg_tolist l left join fg_tos t on  l.to_no = t.to_no
+    </select>
+
+    <select id="selectFgTolistById" parameterType="Long" resultMap="FgTolistResult">
+        <include refid="selectFgTolistVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertFgTolist" parameterType="FgToList" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_tolist
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="To_No != null">to_no,</if>
+            <if test="uid != null">uid,</if>
+            <if test="replace_uid != null">replace_uid,</if>
+            <if test="pn != null">pn,</if>
+            <if test="Quantity != null">quantity,</if>
+            <if test="sap_qty != null">batch_qty,</if>
+            <if test="status != null">status,</if>
+            <if test="po != null">po,</if>
+            <if test="batch != null">batch,</if>
+            <if test="stock != null">stock,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="To_No != null">#{To_No},</if>
+            <if test="uid != null">#{uid},</if>
+            <if test="replace_uid != null">#{replace_uid},</if>
+            <if test="pn != null">#{pn},</if>
+            <if test="Quantity != null">#{Quantity},</if>
+            <if test="sap_qty != null">#{sap_qty},</if>
+            <if test="status != null">#{status},</if>
+            <if test="po != null">#{po},</if>
+            <if test="batch != null">#{batch},</if>
+            <if test="stock != null">#{stock},</if>
+        </trim>
+    </insert>
+
+    <update id="updateFgTolist" parameterType="FgToList">
+        update fg_tolist
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="To_No != null">to_no = #{To_No},</if>
+            <if test="uid != null">uid = #{uid},</if>
+            <if test="replace_uid != null">replace_uid = #{replace_uid},</if>
+            <if test="pn != null">pn = #{pn},</if>
+            <if test="Quantity != null">quantity = #{Quantity},</if>
+            <if test="sap_qty != null">batch_qty = #{sap_qty},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="po != null">po = #{po},</if>
+            <if test="batch != null">batch = #{batch},</if>
+            <if test="stock != null">stock = #{stock},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFgTolistById" parameterType="Long">
+        delete from fg_tolist where id = #{id}
+    </delete>
+
+    <delete id="deleteFgTolistByIds" parameterType="String">
+        delete from fg_tolist where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

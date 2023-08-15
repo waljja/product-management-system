@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktg.mes.fg.mapper.FgTosMapper">
+
+    <resultMap type="com.ktg.mes.fg.domain.FgShipmentInfo" id="FgShipmentInfoResult">
+        <result property="id" column="id"/>
+        <result property="ShipmentNO" column="shipment_number"/>
+        <result property="SapPn" column="pn"/>
+        <result property="po" column="po"/>
+        <result property="ShipmentDate" column="shipment_date"/>
+        <result property="Car" column="shipment_car"/>
+        <result property="status" column="status"/>
+        <result property="plant" column="plant"/>
+        <result property="Quantity" column="quantity"/>
+        <result property="ShipmentType" column="shipment_type"/>
+        <result property="Remark" column="remark"/>
+        <result property="BoxQty" column="boxcount"/>
+        <result property="CarNo" column="carno"/>
+        <result property="arriveDate" column="careta"/>
+        <result property="LastComfirm" column="last_comfirm"/>
+    </resultMap>
+
+    <!-- 统一查询结果 -->
+    <sql id="selectFgShipmentInfoVo">
+        select id,
+               shipment_number,
+               pn,
+               po,
+               shipment_date,
+               shipment_car,
+               status,
+               plant,
+               quantity,
+               shipment_type,
+               remark,
+               boxcount,
+               carno,
+               careta,
+               last_comfirm
+        from fg_shipmentinfo
+    </sql>
+
+    <select id="selectFgShipmentInfoList" parameterType="FgShipmentInfo" resultMap="FgShipmentInfoResult">
+        <include refid="selectFgShipmentInfoVo"/>
+        <where>
+            <if test="ShipmentNO != null  and ShipmentNO != ''">and shipment_number = #{ShipmentNO}</if>
+            <if test="SapPn != null  and SapPn != ''">and pn = #{SapPn}</if>
+            <if test="po != null  and po != ''">and po = #{po}</if>
+            <if test="ShipmentDate != null  and ShipmentDate != ''">and shipment_date = #{ShipmentDate}</if>
+            <if test="Car != null  and Car != ''">and shipment_car = #{Car}</if>
+            <if test="status != null  and status != ''">and status = #{status}</if>
+            <if test="plant != null  and plant != ''">and plant = #{plant}</if>
+            <if test="Quantity != null ">and quantity = #{Quantity}</if>
+            <if test="ShipmentType != null ">and shipment_type = #{ShipmentType}</if>
+            <if test="Remark != null  and Remark != ''">and remark = #{Remark}</if>
+            <if test="BoxQty != null ">and boxcount = #{BoxQty}</if>
+            <if test="CarNo != null  and CarNo != ''">and carno = #{CarNo}</if>
+            <if test="arriveDate != null  and arriveDate != ''">and careta = #{arriveDate}</if>
+            <if test="LastComfirm != null  and LastComfirm != ''">and last_comfirm = #{LastComfirm}</if>
+        </where>
+    </select>
+
+    <!-- 插入操作 注意字段允不允许空值传入 -->
+    <insert id="insertFgShipmentInfo" parameterType="FgShipmentInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_shipmentinfo
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ShipmentNO != null and ShipmentNO != ''">shipment_number,</if>
+            <if test="SapPn != null">pn,</if>
+            <if test="po != null">po,</if>
+            <if test="ShipmentDate != null">shipment_date,</if>
+            <if test="Car != null">shipment_car,</if>
+            <if test="status != null">status,</if>
+            <if test="plant != null">plant,</if>
+            <if test="Quantity != null">quantity,</if>
+            <if test="pelletQty != null">pellet_qty,</if>
+            <if test="ShipmentType != null">shipment_type,</if>
+            <if test="Remark != null and Remark != ''">remark,</if>
+            <if test="BoxQty != null">boxcount,</if>
+            <if test="CarNo != null">carno,</if>
+            <if test="arriveDate != null">careta,</if>
+            <if test="LastComfirm != null">last_comfirm,</if>
+            <if test="clientCode != null">client_code,</if>
+            <if test="clientPN != null">client_pn,</if>
+            <if test="shipmentPlace != null">shipment_place,</if>
+            <if test="updateDatetime != null">update_datetime,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="ShipmentNO != null and ShipmentNO != ''">#{ShipmentNO},</if>
+            <if test="SapPn != null">#{SapPn},</if>
+            <if test="po != null">#{po},</if>
+            <if test="ShipmentDate != null">#{ShipmentDate},</if>
+            <if test="Car != null">#{Car},</if>
+            <if test="status != null">#{status},</if>
+            <if test="plant != null">#{plant},</if>
+            <if test="Quantity != null">#{Quantity},</if>
+            <if test="pelletQty != null">#{pelletQty},</if>
+            <if test="ShipmentType != null">#{ShipmentType},</if>
+            <if test="Remark != null and Remark != ''">#{Remark},</if>
+            <if test="BoxQty != null">#{BoxQty},</if>
+            <if test="CarNo != null">#{CarNo},</if>
+            <if test="arriveDate != null">#{arriveDate},</if>
+            <if test="LastComfirm != null">#{LastComfirm},</if>
+            <if test="clientCode != null">#{clientCode},</if>
+            <if test="clientPN != null">#{clientPN},</if>
+            <if test="shipmentPlace != null">#{shipmentPlace},</if>
+            <if test="updateDatetime != null">#{updateDatetime},</if>
+        </trim>
+    </insert>
+    <!-- 判断是否重复导入(已经产生过TO单的走货单将不再导入，在变更走货信息那里执行更新)   and status = 1 pn = #{SapPn} and po = #{po} and quantity = #{Quantity} and       #{LastComfirm}-->
+    <select id="checkInfoFs" resultType="java.lang.Integer">
+        select count(id) from fg_shipmentinfo
+        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and po = #{po} and pn = #{SapPn}
+    </select>
+    <!-- PMC -->
+    <select id="checkInfoFs2" resultType="java.lang.Integer">
+        select count(id) from fg_shipmentinfo
+        where shipment_number = #{ShipmentNO} and last_comfirm = #{LastComfirm} and pn = #{SapPn} and po = #{po} and quantity = #{Quantity}
+    </select>
+    <!-- 相同PN、PO、数量不同 状态为0且数量不等表示有两条数量，需累加，状态为1则表示已经产生备货单，不管数量相不相等都不能累加 -->
+    <select id="checkInfoFs3" resultType="java.lang.Integer">
+        select count(id) from fg_shipmentinfo
+        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and pn = #{SapPn} and po = #{po} and quantity <![CDATA[ <> ]]> #{Quantity} and status = 0
+    </select>
+    <update id="updateShipmentQuantity">
+        update fg_shipmentinfo
+        set quantity = (quantity + #{Quantity})
+        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and pn = #{SapPn} and po = #{po} and quantity <![CDATA[ <> ]]> #{Quantity} and status = 0
+    </update>
+
+    <!--  To管理  -->
+    <resultMap type="FgTos" id="FgTosInfoResult">
+        <result property="id" column="id"/>
+        <result property="To_No" column="to_no"/>
+        <result property="status" column="status"/>
+        <result property="sap_qty" column="quantity"/>
+        <result property="ShipmentNO" column="shipment_no"/>
+        <result property="plant" column="plant"/>
+        <result property="CarNo" column="car_no"/>
+        <result property="CreateTime" column="createdate"/>
+    </resultMap>
+    <!-- 统一查询结果 -->
+    <sql id="selectFgTosInfoVo2">
+        select id,
+               to_no,
+               status,
+               quantity,
+               shipment_no,
+               plant,
+               car_no,
+               createdate
+        from fg_tos
+    </sql>
+    <insert id="insertFgTos" parameterType="FgShipmentInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_tos
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="To_No != null and To_No != ''">to_no,</if>
+            <if test="status != null">status,</if>
+            <if test="sap_qty != null">quantity,</if>
+            <if test="ShipmentNO != null">shipment_no,</if>
+            <if test="plant != null">plant,</if>
+            <if test="CarNo != null">car_no,</if>
+            <if test="CreateTime != null">createdate,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="To_No != null and To_No != ''">#{To_No},</if>
+            <if test="status != null">#{status},</if>
+            <if test="sap_qty != null">#{sap_qty},</if>
+            <if test="ShipmentNO != null">#{ShipmentNO},</if>
+            <if test="plant != null">#{plant},</if>
+            <if test="CarNo != null">#{CarNo},</if>
+            <if test="CreateTime != null">#{CreateTime},</if>
+        </trim>
+    </insert>
+    <select id="checkInfoTos" resultType="java.lang.Integer">
+        select count(*) from fg_tos
+        where shipment_no = #{ShipmentNo} and to_no = #{BH}
+    </select>
+    <!--  To管理  -->
+
+    <!--  TO明细  -->
+    <resultMap type="FgTolist" id="FgTolistResult">
+        <result property="id"    column="id"    />
+        <result property="To_No"    column="to_no"    />
+        <result property="uid"    column="uid"    />
+        <result property="replace_uid"    column="replace_uid"    />
+        <result property="pn"    column="pn"    />
+        <result property="Quantity"    column="quantity"    />
+        <result property="sap_qty"    column="batch_qty"    />
+        <result property="status"    column="status"    />
+        <result property="po"    column="po"    />
+        <result property="batch"    column="batch"    />
+        <result property="stock"    column="stock"    />
+    </resultMap>
+
+    <sql id="selectFgTolistVo">
+        select id, to_no, uid, replace_uid, pn, quantity, batch_qty, status, po, batch, stock from fg_tolist
+    </sql>
+
+    <select id="selectFgTolistList" parameterType="FgTolist" resultMap="FgTolistResult">
+        <include refid="selectFgTolistVo"/>
+        <where>
+            <if test="To_No != null  and ToNo != ''"> and to_no = #{To_No}</if>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="replace_uid != null  and replace_uid != ''"> and replace_uid = #{replace_uid}</if>
+            <if test="pn != null  and pn != ''"> and pn = #{pn}</if>
+            <if test="Quantity != null "> and quantity = #{Quantity}</if>
+            <if test="sap_qty != null "> and batch_qty = #{sap_qty}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="batch != null  and batch != ''"> and batch = #{batch}</if>
+            <if test="stock != null  and stock != ''"> and stock = #{stock}</if>
+        </where>
+    </select>
+
+    <insert id="insertFgTolist" parameterType="FgTolist" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_tolist
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="To_No != null">to_no,</if>
+            <if test="uid != null">uid,</if>
+            <if test="replace_uid != null">replace_uid,</if>
+            <if test="pn != null">pn,</if>
+            <if test="Quantity != null">quantity,</if>
+            <if test="sap_qty != null">batch_qty,</if>
+            <if test="status != null">status,</if>
+            <if test="po != null">po,</if>
+            <if test="batch != null">batch,</if>
+            <if test="stock != null">stock,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="To_No != null">#{To_No},</if>
+            <if test="uid != null">#{uid},</if>
+            <if test="replace_uid != null">#{replace_uid},</if>
+            <if test="pn != null">#{pn},</if>
+            <if test="Quantity != null">#{Quantity},</if>
+            <if test="sap_qty != null">#{sap_qty},</if>
+            <if test="status != null">#{status},</if>
+            <if test="po != null">#{po},</if>
+            <if test="batch != null">#{batch},</if>
+            <if test="stock != null">#{stock},</if>
+        </trim>
+    </insert>
+    <!--  TO明细  -->
+
+    <!-- 判断成品是否存已产生备货单 -->
+    <select id="getTolistInfo" parameterType="java.lang.String" resultMap="FgTolistResult">
+        <include refid="selectFgTolistVo"></include>
+        where uid = #{uid} and status = 0
+    </select>
+
+<!--  公共处理  -->
+    <!-- 用于拆箱\产生备货/欠货单 #{lastcomfirm} -->
+    <select id="selectShipmentPart" parameterType="java.lang.String" resultType="com.ktg.mes.fg.domain.Dto.ShipmentPart">
+        select sum(quantity) batchsum, shipment_number ShipmentNO, pn, po,carno, plant
+        from fg_shipmentinfo
+        where last_comfirm in ('船务','货仓') and status = 0
+        group by shipment_number, pn, po,carno, plant
+    </select>
+
+    <!-- 根据走货编号获取走货数量 -->
+    <select id="getQuantityByshipmentno" parameterType="java.lang.String" resultType="java.lang.Long">
+        select sum(quantity) from fg_shipmentinfo where last_comfirm in ('船务','货仓') and status = 0 and shipment_number = #{ShipmentNO}
+    </select>
+
+    <!-- 根据走货编号查询是否已产生备货单 -->
+    <select id="checkTosByshipmentno_BH" parameterType="java.lang.String" resultType="java.lang.String">
+        select to_no from fg_tos where shipment_no = #{ShipmentNO} and status = 0
+    </select>
+    <!-- 根据走货编号查询是否已产生欠货单 -->
+    <select id="checkTosByshipmentno_QH" parameterType="java.lang.String" resultType="java.lang.String">
+        select to_no from fg_tos where shipment_no = #{ShipmentNO} and status = 3
+    </select>
+    <!-- 根据走货单和明细状态查询欠货总数 -->
+    <select id="getSumqty" parameterType="java.lang.String" resultType="java.lang.Long">
+        select ifnull(sum(tl.quantity), 0) sum_qty from fg_tos ts, fg_tolist tl
+        where ts.to_no = tl.to_no and ts.shipment_no = #{shipmentNO} and tl.status = 2
+    </select>
+    <!-- 根据走货单、状态 更新TO管理的欠货单数量 -->
+    <update id="updateQuantity">
+        update fg_tos
+        set quantity = #{sumqty}
+        where shipment_no = #{shipmentNO} and status = 3
+    </update>
+
+    <!-- 关联查询【用于拆箱提醒】 同一个PN、PO会有不同走货单的情况 条件暂时加上根据走货单关联（PN、PO、shipment_number）-->
+    <select id="getTosAndTOListInfo" resultType="com.ktg.mes.fg.domain.Dto.FgTosAndTosListDto">
+        select fi.uid             uid,
+               (select sum(quantity) from fg_inventory where partnumber = #{pn}
+                                                         and po = #{po}
+                                                         and status = 1) sum_uidno,
+               fi.quantity        Quantity,
+               fs.batch_sum        sap_qty,
+               fs.ShipmentNO ShipmentNO,
+               fi.plant           plant,
+               fs.carno           CarNo,
+               fi.partnumber      pn,
+               fi.po              po,
+               fi.batch           batch,
+               fi.stock           stock,
+               fi.create_time     CreateTime
+        from fg_inventory fi
+                 inner join (select sum(quantity) batch_sum, shipment_number ShipmentNO, pn, po,carno
+                             from fg_shipmentinfo
+                             where last_comfirm in ('船务','货仓') and status = 0
+                             group by shipment_number, pn, po,carno) fs on fi.partnumber = fs.pn and fi.po = fs.po
+        where fs.pn = #{pn}
+          and fs.po = #{po}
+          and fs.ShipmentNO = #{ShipmentNO}
+          and fi.status = 1
+        group by uid,Quantity,sap_qty,ShipmentNO, plant,CarNo,pn,po,batch,stock,CreateTime
+        order by batch asc;
+    </select>
+
+    <!-- 插入拆箱明细 -->
+    <insert id="insertFgUnpacking" parameterType="FgUnpacking" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_unpacking
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="uid != null">uid,</if>
+            <if test="uid_no != null">quantity,</if>
+            <if test="demandQty != null">demandqty,</if>
+            <if test="CreateTime != null">create_date,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="uid != null">#{uid},</if>
+            <if test="uid_no != null">#{uid_no},</if>
+            <if test="demandQty != null">#{demandQty},</if>
+            <if test="CreateTime != null">#{CreateTime},</if>
+        </trim>
+    </insert>
+
+    <!-- 拆箱/产生备货单后更新状态，避免重复获取  = #{lastcomfirm}-->
+    <update id="updatePMCstatus">
+        update fg_shipmentinfo
+        set status = 1
+        where pn = #{pn}
+          and po = #{po}
+          and status = 0
+          and last_comfirm in ('船务','货仓')
+          and shipment_number = #{ShipmentNO}
+    </update>
+
+    <!-- 获取备货总数 -->
+    <select id="gettoNoSum" parameterType="java.lang.String" resultType="java.lang.Long">
+        SELECT sum(quantity) from fg_tolist where to_no = #{toNo} and status = 0
+    </select>
+    <!-- 更新TO管理对应备货单备货数量 -->
+    <update id="updateTosQuantity">
+        update  fg_tos
+        set quantity = #{quantity}
+        where to_no = #{toNo} and status = 0
+    </update>
+    <!-- 更新TO明细对应备货单备货总数量 -->
+    <update id="updateTolistQuantity">
+        update  fg_tolist
+        set batch_qty = #{quantity}
+        where to_no = #{toNo} and status = 0
+    </update>
+
+
+
+
+    <!-- 定时更新欠货单状态（是否已补货/拆箱） -->
+    <!-- 查询欠货单 -->
+    <select id="getQHList" resultMap="FgTosInfoResult">
+        <include refid="selectFgTosInfoVo2"/>
+        where status = 3
+    </select>
+
+    <!-- 根据欠货单找欠货明细 -->
+    <select id="getToListByQH" parameterType="java.lang.String" resultMap="FgTolistResult">
+        <include refid="selectFgTolistVo"/>
+        where to_no = #{toNo} and status = 2
+    </select>
+
+    <!-- 若找不到欠货明细，说明已补完或，更新TO管理的欠货单状态 -->
+    <update id="updateTosQH">
+        update fg_tos
+        set status = 4
+        where to_no = #{toNo} and shipment_no = #{shipmentNo} and status = 3
+    </update>
+
+    <!-- 查询库存是否已补货(相同数量) -->
+    <select id="checkInventory" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgInventory">
+        select uid, stock, batch from fg_inventory where partnumber = #{pn} and quantity = #{Quantity} and status = 1 and po = #{po}
+    </select>
+    <!-- 查询库存是否已补货（不同数量） -->
+    <select id="checkInventory2" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgInventory">
+        select uid, stock, batch, sum(quantity) sumQuantity from fg_inventory where partnumber = #{pn} and status = 1 and po = #{po}
+    </select>
+
+
+    <!-- 根据走货单查看备货单是否未拣货 -->
+    <select id="checkBHstatus" parameterType="java.lang.String" resultMap="FgTosInfoResult">
+        <include refid="selectFgTosInfoVo2"/>
+        where to_no like 'BH%' and status = 0 and shipment_no = #{shipmentNo}
+    </select>
+
+    <!-- 修改累加备货单数量 -->
+    <update id="sumBH" >
+        update fg_tos
+        set quantity = quantity + #{quantity}
+        where to_no like 'BH%' and status = 0 and shipment_no = #{shipmentNo}
+    </update>
+
+    <!-- 修改明细表中原有备货单的批次总数 -->
+    <update id="updatebatchSum">
+        update fg_tolist
+        set batch_qty = batch_qty + #{quantity}
+        where to_no = #{toNo} and status = 0
+    </update>
+
+    <!-- 修改欠货明细状态为已补货 -->
+    <update id="updateQHStatus">
+        update fg_tolist
+        set status = 3
+        where to_no = #{to_No} and status = 2 and pn = #{pn} and quantity = #{Quantity} and po = #{po}
+    </update>
+
+    <!-- 将补货明细存到明细表 -->
+
+    <!-- 修改库存表补货的UID状态为已备货 -->
+    <update id="updateInventoryStatus">
+        update fg_inventory
+        set status = 0
+        where uid = #{uid} and status = 1
+    </update>
+
+
+</mapper>

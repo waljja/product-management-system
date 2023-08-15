@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktg.mes.fg.mapper.FgInventoryMapper">
+
+    <resultMap type="FgInventory" id="FgInventoryResult">
+        <result property="id"    column="id"    />
+        <result property="partnumber"    column="partnumber"    />
+        <result property="po"    column="po"    />
+        <result property="batch"    column="batch"    />
+        <result property="uid"    column="uid"    />
+        <result property="quantity"    column="quantity"    />
+        <result property="stock"    column="stock"    />
+        <result property="status"    column="status"    />
+        <result property="wo"    column="wo"    />
+        <result property="recTime"    column="rec_time"    />
+        <result property="plant"    column="plant"    />
+        <result property="createUser"    column="create_user"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="uidId"    column="uid_id"    />
+        <result property="rollbackReason"    column="rollback_reason"    />
+    </resultMap>
+
+    <sql id="selectFgInventoryVo">
+        select id, partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason from fg_inventory
+    </sql>
+
+    <select id="selectFgInventoryList" parameterType="FgInventory" resultMap="FgInventoryResult">
+        <include refid="selectFgInventoryVo"/>
+        <where>
+            <if test="partnumber != null  and partnumber != ''"> and partnumber like concat(#{partnumber}, '%')</if>
+            <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="quantity != null "> and quantity = #{quantity}</if>
+            <if test="stock != null  and stock != ''"> and stock = #{stock}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="wo != null "> and wo like concat('%', #{wo}, '%')</if>
+            <if test="recTime != null and recTime != ''"> and rec_time = #{recTime}</if>
+            <if test="plant != null "> and plant = #{plant}</if>
+            <if test="createUser != null "> and create_user = #{createUser}</if>
+            <if test="uidId != null "> and uid_id = #{uidId}</if>
+            <if test="createTime != null and createTime != '' "> and create_time = #{createTime}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectFgInventoryById" parameterType="Long" resultMap="FgInventoryResult">
+        <include refid="selectFgInventoryVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertFgInventory" parameterType="FgInventory" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_inventory
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="partnumber != null">partnumber,</if>
+            <if test="po != null">po,</if>
+            <if test="batch != null">batch,</if>
+            <if test="uid != null">uid,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="stock != null">stock,</if>
+            <if test="status != null">status,</if>
+            <if test="wo != null">wo,</if>
+            <if test="recTime != null">rec_time,</if>
+            <if test="plant != null">plant,</if>
+            <if test="createUser != null">create_user,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="uidId != null">uid_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="partnumber != null">#{partnumber},</if>
+            <if test="po != null">#{po},</if>
+            <if test="batch != null">#{batch},</if>
+            <if test="uid != null">#{uid},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="stock != null">#{stock},</if>
+            <if test="status != null">#{status},</if>
+            <if test="wo != null">#{wo},</if>
+            <if test="recTime != null">#{recTime},</if>
+            <if test="plant != null">#{plant},</if>
+            <if test="createUser != null">#{createUser},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="uidId != null">#{uidId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateFgInventory" parameterType="FgInventory">
+        update fg_inventory
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="partnumber != null">partnumber = #{partnumber},</if>
+            <if test="po != null">partnumber = #{po},</if>
+            <if test="batch != null">batch = #{batch},</if>
+            <if test="uid != null">uid = #{uid},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="wo != null">wo = #{wo},</if>
+            <if test="recTime != null">rec_time = #{recTime},</if>
+            <if test="plant != null">plant = #{plant},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="uidId != null">uid_id = #{uidId},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFgInventoryById" parameterType="Long">
+        delete from fg_inventory where id = #{id}
+    </delete>
+
+    <delete id="deleteFgInventoryByIds" parameterType="String">
+        delete from fg_inventory where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 根据UID判断是否已经绑库 -->
+    <select id="checkInventoty" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_inventory where uid = #{uid}
+    </select>
+
+    <!-- 拆分后更新原库存数量 -->
+    <update id="updateQuantity">
+        update fg_inventory
+        set quantity = quantity - #{qty}
+        where uid = #{uid}
+    </update>
+
+    <!-- 产生备货单后更新状态（已产生备货单状态） -->
+    <update id="updateStatusByUid">
+        update fg_inventory
+        set status = 0
+        where uid = #{uid} and status = 1
+    </update>
+
+    <!-- 用于判断备货数量是否等于库存数量 -->
+    <select id="getInventoryInfo" parameterType="java.lang.String" resultMap="FgInventoryResult">
+        <include refid="selectFgInventoryVo"></include>
+        where uid = #{uid} and status = 0
+    </select>
+
+</mapper>

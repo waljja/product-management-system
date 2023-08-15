@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ktg.mes.fg.mapper.FgChecklistMapper">
+    
+    <resultMap type="FgChecklist" id="FgChecklistResult">
+        <result property="id"    column="id"    />
+        <result property="plant"    column="plant"    />
+        <result property="pn"    column="pn"    />
+        <result property="uid"    column="uid"    />
+        <result property="line"    column="line"    />
+        <result property="wo"    column="wo"    />
+        <result property="po"    column="po"    />
+        <result property="fromStock"    column="fromstock"    />
+        <result property="palletNo"    column="pallet_no"    />
+        <result property="batchQty"    column="batch_qty"    />
+        <result property="uidNo"    column="uid_no"    />
+        <result property="sap101"    column="sap101"    />
+        <result property="productionDate"    column="production_date"    />
+        <result property="batch"    column="batch"    />
+        <result property="remark"    column="remark"    />
+        <result property="qaSign"    column="qa_sign"    />
+        <result property="qaResult"    column="qa_result"    />
+        <result property="customerResult"    column="customer_result"    />
+        <result property="createdate"    column="createdate"    />
+        <result property="oldUid"    column="old_uid"    />
+        <result property="pn660"    column="pn660"    />
+        <result property="status"    column="status"    />
+        <result property="createUser"    column="create_user"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="updateDate"    column="update_date"    />
+        <result property="barcodeUrl"    column="barcode_url"    />
+        <result property="barcodeFormart"    column="barcode_formart"    />
+        <result property="palletItems"    column="pallet_Items"    />
+    </resultMap>
+
+    <!-- 统一查询结果 -->
+    <sql id="selectFgChecklistVo">
+        select id, plant, pn, uid, line, wo, po, fromstock, pallet_no, batch_qty, uid_no, sap101, production_date, batch, remark, qa_sign, qa_result, customer_result, createdate, old_uid, pn660, status, create_user, update_user, update_date, barcode_url, barcode_formart, pallet_Items from fg_checklist
+    </sql>
+
+    <select id="selectFgChecklistList" parameterType="FgChecklist" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        <where>  
+            <if test="plant != null  and plant != ''"> and plant = #{plant}</if>
+            <if test="pn != null  and pn != ''"> and pn like concat(#{pn}, '%')</if>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="line != null  and line != ''"> and line = #{line}</if>
+            <if test="wo != null  and wo != ''"> and wo like concat('%', #{wo}, '%')</if>
+            <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="fromStock != null  and fromStock != ''"> and fromstock = #{fromstock}</if>
+            <if test="palletNo != null  and palletNo != ''"> and pallet_no = #{palletNo}</if>
+            <if test="batchQty != null "> and batch_qty = #{batchQty}</if>
+            <if test="uidNo != null "> and uid_no = #{uidNo}</if>
+            <if test="sap101 != null  and sap101 != ''"> and sap101 = #{sap101}</if>
+            <if test="productionDate != null "> and production_date = #{productionDate}</if>
+            <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
+            <if test="qaSign != null  and qaSign != ''"> and qa_sign = #{qaSign}</if>
+            <if test="qaResult != null "> and qa_result = #{qaResult}</if>
+            <if test="customerResult != null  and customerResult != ''"> and customer_result = #{customerResult}</if>
+            <if test="createdate != null "> and createdate = #{createdate}</if>
+            <if test="oldUid != null  and oldUid != ''"> and old_uid = #{oldUid}</if>
+            <if test="pn660 != null  and pn660 != ''"> and pn660 = #{pn660}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="createUser != null  and createUser != ''"> and create_user = #{createUser}</if>
+            <if test="updateUser != null  and updateUser != ''"> and update_user = #{updateUser}</if>
+            <if test="updateDate != null "> and update_date = #{updateDate}</if>
+            <if test="barcodeUrl != null "> and barcode_url = #{barcodeUrl}</if>
+            <if test="barcodeFormart != null "> and barcode_formart = #{barcodeFormart}</if>
+            <if test="palletItems != null "> and pallet_Items = #{palletItems}</if>
+        </where>
+        order by production_date desc
+    </select>
+
+    <!-- 根据id查询数据 -->
+    <select id="selectFgChecklistById" parameterType="Long" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where id = #{id}
+    </select>
+
+    <!-- 根据uid查询打印数据 -->
+    <select id="getPrintInfo" parameterType="String" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where uid = #{uid} and status = 1
+    </select>
+
+    <!-- 根据uid状态码1查询数据（打印） -->
+    <select id="selectFgChecklistByUid" parameterType="String" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where status = 1 and uid in
+        <foreach item="uid" collection="array" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+    </select>
+
+    <!-- 根据pn660/650开头,状态为0模糊查询数据 -->
+    <select id="selectPn" parameterType="String" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where pn like concat(#{pnn},'%') and status = 0
+    </select>
+
+    <!-- 根据具体pn,状态为0查询数据  -->
+    <select id="selectOnePn" parameterType="String" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where pn = #{pn} and status = 0
+    </select>
+
+    <!-- 根据pn batch 状态为0查询 判断批次是否重复，重复的话取过账编号50开头的 -->
+    <select id="selectOnePn1" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where batch = #{batch} and pn = #{pn} and status = 0 and (select count(sap101) from fg_checklist where batch =
+        #{batch} and pn = #{pn} and status = 0) = 1
+        or((select count(sap101) from fg_checklist where batch = #{batch} and pn = #{pn} and status = 0) >1 and batch =
+        #{batch} and pn = #{pn} and status = 0 and sap101 like '50%');
+    </select>
+
+    <!-- 插入前检查是否保存了但没打印 < <= &等字符在mybatis需使用转义符或<![CDATA[ 符号 ]] -->
+    <select id="checkInfonChcklist" parameterType="FgChecklist" resultType="java.lang.Integer">
+        select count(id) from fg_checklist
+        where pn = #{pn} and po = #{po} and sap101 = #{sap101} and uid_no = #{uidNo} and status <![CDATA[ <> ]]> 2
+    </select>
+    <!-- 插入操作 注意字段允不允许空值传入 -->
+    <insert id="insertFgChecklist" parameterType="FgChecklist" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_checklist
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="plant != null and plant != ''">plant,</if>
+            <if test="pn != null">pn,</if>
+            <if test="uid != null">uid,</if>
+            <if test="line != null">line,</if>
+            <if test="wo != null">wo,</if>
+            <if test="po != null">po,</if>
+            <if test="fromStock != null">fromstock,</if>
+            <if test="palletNo != null">pallet_no,</if>
+            <if test="batchQty != null">batch_qty,</if>
+            <if test="uidNo != null">uid_no,</if>
+            <if test="sap101 != null and sap101 != ''">sap101,</if>
+            <if test="productionDate != null">production_date,</if>
+            <if test="batch != null">batch,</if>
+            <if test="remark != null">remark,</if>
+            <if test="qaSign != null">qa_sign,</if>
+            <if test="qaResult != null">qa_result,</if>
+            <if test="customerResult != null">customer_result,</if>
+            <if test="createdate != null">createdate,</if>
+            <if test="oldUid != null">old_uid,</if>
+            <if test="pn660 != null">pn660,</if>
+            <if test="status != null">status,</if>
+            <if test="createUser != null">create_user,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="updateDate != null">update_date,</if>
+            <if test="barcodeUrl != null  and barcodeUrl != ''">barcode_url,</if>
+            <if test="barcodeFormart != null and barcodeFormart != ''">barcode_formart,</if>
+            <if test="palletItems != null and palletItems != ''">pallet_Items,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="plant != null and plant != ''">#{plant},</if>
+            <if test="pn != null">#{pn},</if>
+            <if test="uid != null">#{uid},</if>
+            <if test="line != null">#{line},</if>
+            <if test="wo != null">#{wo},</if>
+            <if test="po != null">#{po},</if>
+            <if test="fromStock != null">#{fromStock},</if>
+            <if test="palletNo != null">#{palletNo},</if>
+            <if test="batchQty != null">#{batchQty},</if>
+            <if test="uidNo != null">#{uidNo},</if>
+            <if test="sap101 != null and sap101 != ''">#{sap101},</if>
+            <if test="productionDate != null">#{productionDate},</if>
+            <if test="batch != null">#{batch},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="qaSign != null">#{qaSign},</if>
+            <if test="qaResult != null">#{qaResult},</if>
+            <if test="customerResult != null">#{customerResult},</if>
+            <if test="createdate != null">#{createdate},</if>
+            <if test="oldUid != null">#{oldUid},</if>
+            <if test="pn660 != null">#{pn660},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createUser != null">#{createUser},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="updateDate != null">#{updateDate},</if>
+            <if test="barcodeUrl != null  and barcodeUrl != ''">#{barcodeUrl},</if>
+            <if test="barcodeFormart != null and barcodeFormart != ''">#{barcodeFormart},</if>
+            <if test="palletItems != null and palletItems != ''">#{palletItems},</if>
+         </trim>
+    </insert>
+
+    <!-- 更新操作 -->
+    <update id="updateFgChecklist" parameterType="FgChecklist">
+        update fg_checklist
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="plant != null and plant != ''">plant = #{plant},</if>
+            <if test="pn != null">pn = #{pn},</if>
+            <if test="uid != null">uid = #{uid},</if>
+            <if test="line != null">line = #{line},</if>
+            <if test="wo != null">wo = #{wo},</if>
+            <if test="po != null">po = #{po},</if>
+            <if test="fromStock != null">fromstock = #{fromstock},</if>
+            <if test="palletNo != null">pallet_no = #{palletNo},</if>
+            <if test="batchQty != null">batch_qty = #{batchQty},</if>
+            <if test="uidNo != null">uid_no = #{uidNo},</if>
+            <if test="sap101 != null and sap101 != ''">sap101 = #{sap101},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="batch != null">batch = #{batch},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="qaSign != null">qa_sign = #{qaSign},</if>
+            <if test="qaResult != null">qa_result = #{qaResult},</if>
+            <if test="customerResult != null">customer_result = #{customerResult},</if>
+            <if test="createdate != null">createdate = #{createdate},</if>
+            <if test="oldUid != null">old_uid = #{oldUid},</if>
+            <if test="pn660 != null">pn660 = #{pn660},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="updateDate != null">update_date = #{updateDate},</if>
+            <if test="barcodeUrl != null  and barcodeUrl != ''">barcode_url = #{barcodeUrl},</if>
+            <if test="barcodeFormart != null and barcodeFormart != ''">barcode_formart = #{barcodeFormart},</if>
+            <if test="palletItems != null and palletItems != ''">pallet_Items = #{palletItems},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <!-- 删除操作 -->
+    <delete id="deleteFgChecklistById" parameterType="Long">
+        delete
+        from fg_checklist
+        where id = #{id}
+    </delete>
+
+    <!-- foreach实现批量删除 -->
+    <delete id="deleteFgChecklistByIds" parameterType="String">
+        delete from fg_checklist where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 检查二维码唯一性 -->
+    <select id="checkBarcodeUnique" parameterType="FgChecklist" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where uid = #{uid} and pn = #{pn}
+    </select>
+
+    <!--  切换数据源（sqlserver）获取拉别【B2  51数据库】  -->
+    <select id="checkLine" parameterType="String" resultType="java.lang.String">
+        select D.WorkcenterName as Pull
+        from OrBitX.dbo.MO A
+        inner Join OrBitX.dbo.ProductRoot B
+        on A.ProductId=B.DefaultProductId
+        left Join OrBitX.dbo.PreProductionVerifyCheck C on C.MOId=A.MOId
+        left join OrBitX.dbo.Workcenter D on C.WorkcenterId=D.WorkcenterId
+        where A.MOName = #{wo}
+    </select>
+
+    <!--  切换数据源（sqlserver）获取拉别【B1  72数据库】  -->
+    <select id="checkLine2" parameterType="String" resultType="java.lang.String">
+        select D.WorkcenterName as Pull
+        from OrBitX.dbo.MO A
+                 inner Join OrBitX.dbo.ProductRoot B
+                            on A.ProductId=B.DefaultProductId
+                 left Join OrBitX.dbo.PreProductionVerifyCheck C on C.MOId=A.MOId
+                 left join OrBitX.dbo.Workcenter D on C.WorkcenterId=D.WorkcenterId
+        where A.MOName = #{wo}
+    </select>
+
+    <!-- B2 51数据库 QA签署人（可能有多个【拼接】） -->
+    <select id="checkQasign" parameterType="String" resultType="java.lang.String">
+        select distinct WorkerNO = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
+        from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
+        <!--select top 1 WorkerNo from OrBitX.dbo.DataChainBonding090 WHERE WorkflowstepName LIKE '%OQA%' and MOName = #{wo}-->
+    </select>
+    <!-- B1 72数据库 QA签署人（可能有多个【拼接】） -->
+    <select id="checkQasign2" parameterType="String" resultType="java.lang.String">
+        select distinct WorkerNO = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
+        from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
+        <!--select top 1 WorkerNo from OrBitX.dbo.DataChainBonding090 WHERE WorkflowstepName LIKE '%OQA%' and MOName = #{wo}-->
+    </select>
+
+    <!-- 更新QA检查结果 -->
+    <update id="updateQAresult">
+        update fg_checklist
+        set qa_result = #{qaresult}
+        where pn = #{pn} and plant = #{plant}
+    </update>
+
+    <!-- 查询QA检查结果 -->
+    <select id="getQAresult" parameterType="String" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"/>
+        where uid = #{uid} and status = 1
+    </select>
+
+    <!-- 查询数据是否存在 -->
+    <select id="checkinfo" resultType="java.lang.Integer">
+        select count(*) from fg_checklist
+        where sap101 = #{sap101} and pn = #{pn} and status = 0
+    </select>
+
+    <!-- 销毁前送检单（即状态设为2  废弃） -->
+    <update id="destroyUid" parameterType="String">
+        update fg_checklist
+        set status = 2
+        where uid = #{uid} and status = 1
+    </update>
+
+    <!-- 根据PN和启用状态获取所有已打印的数量 -->
+    <select id="getUidNo_Sum" resultType="java.lang.Long">
+       select sum(uid_no) from fg_checklist where pn = #{pn} and sap101 = #{sap101} and status = 1
+    </select>
+
+    <!-- 更新被拆分的成品单数量 -->
+    <update id="updateBeforeUidNo">
+        update fg_checklist
+        set uid_no = uid_no - #{uidNo}
+        where uid = #{uid} and status = 1
+    </update>
+
+
+</mapper>

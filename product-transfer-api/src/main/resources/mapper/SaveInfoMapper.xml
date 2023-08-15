@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.honortone.api.mapper.SaveInfoMapper">
+
+    <!-- 下载走货单 -->
+<!--    <select id="downloadShipmentNo" resultType="java.lang.String">-->
+<!--        select shipment_number from fg_shipmentinfo where status = 1 and last_comfirm in ('船务','货仓')-->
+<!--    </select>-->
+
+    <!-- 根据日期下载走货单 -->
+    <select id="downloadShipmentNo2" parameterType="java.lang.String" resultType="java.lang.String">
+        select shipment_no from fg_tos where shipment_no in
+        (select shipment_number from fg_shipmentinfo where status = 1 and last_comfirm in ('船务','货仓') and shipment_date = #{date})
+         and stock is not null
+    </select>
+
+    <!-- 检查是欠货单是否已补货 -->
+    <select id="checkStatusTosQH" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tos
+        where shipment_no = #{shipmentNo} and status = 3
+    </select>
+
+    <!-- 检车备货单是否已拣货完成 -->
+    <select id="checkStatusTosBH" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tos
+        where shipment_no = #{shipmentNo} and status in (0,1,5)
+    </select>
+
+    <!-- 获取完成拣货的走货单信息 -->
+    <select id="getinfoByshipmentNo" parameterType="java.lang.String" resultType="com.honortone.api.controller.dto.ShipmentAndTos">
+        select s.shipment_number as shipmentNo, s.pn as pn, t.to_no as toNo, t.car_no as carNo, s.shipment_date shipmentDate
+        from fg_shipmentinfo as s left join fg_tos as t on s.shipment_number = t.shipment_no
+        where s.shipment_number = #{shipmentNo} and t.status = 2 and s.last_comfirm in ('船务','货仓')
+        limit 1
+    </select>
+
+    <!-- 获取完成拣货的走货单信息用于过账311 -->
+    <select id="autoTransfer" parameterType="java.lang.String" resultType="com.honortone.api.entity.ToList">
+        select s.shipment_number as shipmentNo, s.pn as pn, t.to_no as toNo, ts.uid uid, ts.quantity quantity, ts.batch batch, ts.po po, ts.stock stock, t.plant plant, i.wo wo
+        from fg_shipmentinfo as s left join fg_tos as t on s.shipment_number = t.shipment_no
+                                  left join fg_tolist ts on ts.to_no = t.to_no left join fg_inventory i on i.uid = ts.uid
+        where s.shipment_number = #{shipmentNo} and t.status = 2 and ts.status = 1 and i.status = 0 and s.last_comfirm in ('船务','货仓')
+    </select>
+
+    <insert id="toInsert">
+        if not exists(select * from [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions] WHERE [UID] = #{uid} AND [TransactionType] = '311')
+        begin
+        INSERT INTO [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        ([TransactionHistoryId], [Batch], [PartNumber], [UID], [Quantity], [FromStock], [ToStock], [TransactionUser], [TransactionTime],
+            [RecordStatus], [TransactionType], [RFCTemplateID], [Plant], [PO_NUMBER], [RefDocNo],
+            [DocHeader], [ERPFromStock], [ERPToStock])
+        VALUES
+            (NEWID(), #{batch}, #{pn}, #{uid}, #{quantity}, 'FG80', #{stock}, 'jtm', GETDATE(), 2, '311', 'Z_AEGIS_GOODSMVT_TRANSFER', #{plant}, #{wo}, '1', '1', '1', '1')
+        end
+    </insert>
+
+    <!-- 保存走货信息前检查鸿通封条是否存在 and status = 0(暂时不用此条件，因有多张图片需插入) -->
+    <select id="checkSealNo" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from  fg_sealnoinfo where seal_no = #{sealNo}
+    </select>
+    <!-- 封条号是否被其它车辆使用 -->
+    <select id="checkSealNoAndCar" resultType="java.lang.Integer">
+        select count(*) from  fg_sealnoinfo where seal_no = #{sealNo} and car_no <![CDATA[ <> ]]> #{carNo} and car_no is not null
+    </select>
+
+    <!-- 保存走货信息 -->
+    <update id="updateInfo">
+        update fg_sealnoinfo
+        set shipment_no = #{shipmentNo}, pn = #{pn}, vanseal_no = #{vansealNo}, container_no = #{containerNo},
+            status = 1, car_no = #{carNo}, filepath = #{filepath}, filename = #{filename}, create_user = 'jtm', create_time = now()
+        where seal_no = #{sealNo} and status = 0
+    </update>
+
+    <select id="checkSealNo2" resultType="java.lang.Integer">
+        select count(*) from fg_sealnoinfo where shipment_no = #{shipmentNo} and pn = #{pn} and seal_no = #{sealNo} and vanseal_no = #{vansealNo} and status = 1 and filename <![CDATA[ <> ]]> #{filename}
+    </select>
+
+    <!-- 多张图片需插入操作 -->
+    <insert id="insertSealnoInfo">
+        insert into fg_sealnoinfo (shipment_no, pn, seal_no, vanseal_no, container_no, status, car_no, filepath, filename, create_user, create_time)
+                    values(#{shipmentNo}, #{pn}, #{sealNo}, #{vansealNo}, #{containerNo}, 1, #{carNo}, #{filepath}, #{filename}, 'jtm', now())
+    </insert>
+
+<!--   <insert id="saveInfo">-->
+<!--       insert into [HTMES_FGWhs_DB].[dbo].[FG_SealNoInfo]-->
+<!--       (ID, ShipmentNo, SealNo, VanSealNo, Status, CarNo, CreateUser, Createdate, path, filename)-->
+<!--       values-->
+<!--           (NEWID(), #{shipmentNo}, #{ht_seal}, #{hg_seal}, 0, #{carno}, 'jtm', GETDATE(), #{path}, #{filename})-->
+<!--   </insert>-->
+
+    <!-- 查找走货信息 -->
+    <select id="findInfo" resultType="com.honortone.api.entity.SealNoInfo">
+        select * FROM fg_sealnoinfo
+        where seal_no = #{sealNo} and shipment_no = #{shipmentNo} order by create_time asc
+
+    </select>
+<!--    <select id="findInfo" resultType="com.honortone.api.entity.SealNoInfo">-->
+<!--        select * FROM [HTMES_FGWhs_DB].[dbo].[FG_SealNoInfo]-->
+<!--        where SealNo = #{ht_seal} and VanSealNo = #{hg_seal}-->
+
+<!--    </select>-->
+
+    <!-- 是否需要做回仓操作 -->
+    <select id="checkTosStatus" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tos where shipment_no = #{shipmentNo} and status = 5
+    </select>
+
+</mapper>
