@@ -1,7 +1,9 @@
 package com.example.productkanbanapi.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 
@@ -12,7 +14,12 @@ import java.util.Date;
  * @date 2023-08-15-10:18
  */
 @Data
-public class ProductStorage {
+public class ProductNotInStorage {
+
+    /**
+     * 序号
+     */
+    private Integer item;
 
     /**
      * 型号
@@ -37,12 +44,12 @@ public class ProductStorage {
     /**
      * 库存位置
      */
-    private String stock;
+    private String storageLoc;
 
     /**
      * 状态
      */
-    private Integer status;
+    private String state;
 
     /**
      * 工单
@@ -52,22 +59,14 @@ public class ProductStorage {
     /**
      * 接收时间
      */
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date recTime;
 
     /**
      * 厂区
      */
     private String plant;
-
-    /**
-     * 创建人
-     */
-    private String createUser;
-
-    /**
-     * 创建日期
-     */
-    private Date createDate;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

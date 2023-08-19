@@ -1,8 +1,7 @@
 package com.example.productkanbanapi.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.productkanbanapi.entity.Inventory;
-import com.example.productkanbanapi.entity.ProductStorage;
+import com.example.productkanbanapi.entity.ProductNotInStorage;
 
 /**
  * KanbanService
@@ -20,6 +19,6 @@ public interface KanbanService {
      * @param endDate 结束时间
      * @return 成品入库数据
      */
-    Page<ProductStorage> getStorageList(int current, String startDate, String endDate);
+    Page<ProductNotInStorage> getStorageList(int current, String startDate, String endDate);
 
 }

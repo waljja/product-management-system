@@ -2,9 +2,9 @@ package com.example.productkanbanapi.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.productkanbanapi.entity.Inventory;
-import com.example.productkanbanapi.entity.ProductStorage;
+import com.example.productkanbanapi.entity.ProductNotInStorage;
+import com.example.productkanbanapi.result.CommonResult;
 import com.example.productkanbanapi.service.KanbanService;
-import com.ktg.common.result.CommonResult;
 import io.swagger.annotations.Api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class KanbanController {
     public CommonResult<Page<Inventory>> getProductData(@RequestParam(value = "current") int current,
                                                         @RequestParam(value = "startDate", required = false) String startDate,
                                                         @RequestParam(value = "endDate", required = false) String endDate) {
-        Page<ProductStorage> storageList = kanbanService.getStorageList(current, startDate, endDate);
+        Page<ProductNotInStorage> storageList = kanbanService.getStorageList(current, startDate, endDate);
         return new CommonResult(200, "查询成功", storageList);
     }
 

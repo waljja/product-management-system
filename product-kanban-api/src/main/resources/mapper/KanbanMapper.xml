@@ -4,27 +4,46 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.productkanbanapi.mapper.KanbanMapper">
 
-    <resultMap id="BaseResultMap" type="com.example.productkanbanapi.entity.ProductStorage">
+    <resultMap id="BaseResultMap" type="com.example.productkanbanapi.entity.ProductNotInStorage">
         <result property="partNumber" column="PartNumber" jdbcType="VARCHAR"/>
         <result property="batch" column="Batch" jdbcType="VARCHAR"/>
         <result property="uid" column="UID" jdbcType="VARCHAR"/>
         <result property="quantity" column="Quantity" jdbcType="FLOAT"/>
-        <result property="stock" column="Stock" jdbcType="VARCHAR"/>
-        <result property="status" column="Status" jdbcType="TINYINT"/>
-        <result property="wo" column="WO" jdbcType="VARCHAR"/>
-        <result property="recTime" column="RecTime" jdbcType="TIMESTAMP"/>
+        <result property="storageLoc" column="ToStock" jdbcType="VARCHAR"/>
+        <result property="state" column="Status" jdbcType="VARCHAR"/>
+        <result property="wo" column="PO_NUMBER" jdbcType="VARCHAR"/>
+        <result property="recTime" column="TransactionTime" jdbcType="TIMESTAMP"/>
         <result property="plant" column="Plant" jdbcType="VARCHAR"/>
-        <result property="createUser" column="CreateUser" jdbcType="VARCHAR"/>
-        <result property="createDate" column="CreateDate" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <!-- ew.customSqlSegment -> 条件构造器拼接语句（一定要加，否则会出现变量设置问题） -->
     <!-- 字段不能加 []，mybatis plus 不能识别 []，有 bug -->
-    <select id="findInventory" resultMap="BaseResultMap">
-        select
-            row_number() over(order by CreateDate) as item, *
-        from
-            FG_Inventory ${ew.customSqlSegment}
+    <select id="findNotInStock" resultMap="BaseResultMap">
+        select row_number() over (order by TransactionTime) as item,
+               PartNumber,
+               PO_NUMBER,
+               Batch,
+               UID,
+               Quantity,
+               ToStock,
+               TransactionTime,
+               Plant,
+               '待上架'                                     as Status
+        from xTend_MaterialTransactions ${ew.customSqlSegment}
+    </select>
+
+    <select id="findWarehousedUid" resultType="java.lang.String">
+        select distinct uid
+        from (select uid
+              from fg_inventory fi
+              union
+              select uid
+              from fg_inventory_out fio) warehoused ${ew.customSqlSegment}
+    </select>
+
+    <select id="findNotPutIn" resultType="com.example.productkanbanapi.entity.ProductNotInStorage">
+        select *
+        from xTend_MaterialTransactions ${ew.customSqlSegment}
     </select>
 
 </mapper>

@@ -17,10 +17,10 @@
     </properties>
     <dependencies>
         <!-- 公用类模块 -->
-        <dependency>
-            <groupId>com.ktg</groupId>
-            <artifactId>ktg-common</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.ktg</groupId>-->
+<!--            <artifactId>ktg-common</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -53,6 +53,11 @@
             <artifactId>mssql-jdbc</artifactId>
             <version>7.4.1.jre8</version>
         </dependency>
+        <!-- mysql -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
         <!-- druid 数据库连接池（兼容 SQL Server 驱动版本） -->
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -64,6 +69,12 @@
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
             <version>3.5.3.1</version>
+        </dependency>
+        <!-- mybatis plus dynamic-datasource-->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
+            <version>4.1.3</version>
         </dependency>
     </dependencies>
 

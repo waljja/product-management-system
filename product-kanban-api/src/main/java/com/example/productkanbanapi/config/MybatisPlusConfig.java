@@ -23,7 +23,8 @@ public class MybatisPlusConfig {
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor(DbType.SQL_SERVER);
+        // DbType.SQL_SERVER
+        PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor();
         // 合理化
         paginationInnerInterceptor.setOverflow(true);
         interceptor.addInnerInterceptor(paginationInnerInterceptor);

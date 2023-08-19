@@ -2,12 +2,15 @@ package com.example.productkanbanapi.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.productkanbanapi.entity.Inventory;
-import com.example.productkanbanapi.entity.ProductStorage;
+import com.example.productkanbanapi.entity.ProductNotInStorage;
+import com.example.productkanbanapi.entity.XtendMaterialtransactions;
 import com.example.productkanbanapi.mapper.KanbanMapper;
 import com.example.productkanbanapi.service.KanbanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * KanbanServiceImpl
@@ -22,15 +25,18 @@ public class KanbanServiceImpl implements KanbanService {
     KanbanMapper kanbanMapper;
 
     @Override
-    public Page<ProductStorage> getStorageList(int current, String startDate, String endDate) {
-        Page<ProductStorage> productStoragePage;
+    public Page<ProductNotInStorage> getStorageList(int current, String startDate, String endDate) {
+        Page<ProductNotInStorage> productNotInStoragePage;
+        List<String> WarehousedUid = new ArrayList<>();
         // current -> 当前页码，每页 20 条数据
         Page inventoryPage = new Page(current, 20);
-        QueryWrapper<Inventory> queryWrapper = new QueryWrapper<>();
+        QueryWrapper<XtendMaterialtransactions> transQueryWrapper1 = new QueryWrapper<>();
+        QueryWrapper<XtendMaterialtransactions> transQueryWrapper2 = new QueryWrapper<>();
         // 开始日期非空
         boolean sNotNull = startDate != null;
         // 结束日期非空
         boolean eNoTNull = endDate != null;
+        WarehousedUid = kanbanMapper.findWarehousedUid(transQueryWrapper1);
         /*
          * 日期都不为空 -> 按时间范围查询
          * 有一个为空 -> 不按时间条件查询
@@ -39,15 +45,22 @@ public class KanbanServiceImpl implements KanbanService {
             startDate += " 00:00:00.000";
             endDate += " 23:59:59.999";
             // 根据日期范围查询，SQL Server 分页必须有 order 排序
-            queryWrapper
-                    .apply("CONVERT(VARCHAR(20), CreateDate,21) >= '" + startDate + "'")
-                    .apply("CONVERT(VARCHAR(20), CreateDate,21) <= '" + endDate + "'")
-                    .orderByAsc("CreateDate");
+            transQueryWrapper2
+                    .likeRight("UID", "FG")
+                    .notIn("UID", WarehousedUid)
+                    .eq("TransactionType", "315")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
+                    .orderByAsc("TransactionTime");
         } else {
-            queryWrapper.orderByAsc("CreateDate");
+            transQueryWrapper2
+                    .likeRight("UID", "FG")
+                    .notIn("UID", WarehousedUid)
+                    .eq("TransactionType", "315")
+                    .orderByAsc("TransactionTime");
         }
-        productStoragePage = kanbanMapper.findInventory(inventoryPage, queryWrapper);
-        return productStoragePage;
+        productNotInStoragePage = kanbanMapper.findNotInStock(inventoryPage, transQueryWrapper2);
+        return productNotInStoragePage;
     }
 
 }
