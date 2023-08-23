@@ -52,7 +52,7 @@ public class FgChecklist extends BaseEntity
 
     /** 卡板号 */
     @Excel(name = "卡板数")
-    private Long palletItems;
+    private String palletItems;
 
     /** 批量 */
     @Excel(name = "批量")
@@ -125,11 +125,11 @@ public class FgChecklist extends BaseEntity
     @Excel(name = "修改时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date updateDate;
 
-    public Long getPalletItems() {
+    public String getPalletItems() {
         return palletItems;
     }
 
-    public void setPalletItems(Long palletItems) {
+    public void setPalletItems(String palletItems) {
         this.palletItems = palletItems;
     }
 

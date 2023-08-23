@@ -306,7 +306,7 @@ public class FgChecklistController extends BaseController {
                 // 设置旧UID
                 fgChecklist.setOldUid(fgChecklist.getId().toString());
                 // 660开头PN直接查PO并插入数据
-                return checkPo1(fgChecklist, pn_660);
+                return checkPo2(fgChecklist, pn_660);
             }
         } else {
             // UID不为空则 重打印 -- 检查QA检验结果
@@ -321,18 +321,43 @@ public class FgChecklistController extends BaseController {
                     return AjaxResult.error("未查询到QA检验结果，不允许重打印");
                 }
                 int n1 = 0;
+                int qaresult = 999;
                 for (String[] arr : list) {
-                    if (Arrays.asList(arr).contains("321")) {
-                        // 321 QA结果为TRUE
-                        int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), 1, fgChecklist1.getPlant().toString());
-                        FgChecklist fgChecklist2 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
-                        System.out.println(fgChecklist2.getUidNo() + "===" + fgChecklist.getUidNo());
-                        return repeatPrint(fgChecklist, fgChecklist2);
+                    // 直接输出是带有[]框
+                    String batch = Arrays.asList(arr[0]).toString();
+                    String Mvt = Arrays.asList(arr[1]).toString();
+                    System.out.println("ceshi:" + batch.substring(1, batch.length() -1) + "---" + fgChecklist1.getBatch().toString());
+                    if (batch.substring(1, batch.length() -1).equals(fgChecklist1.getBatch().toString())) {
+                        System.out.println("测试：" + Mvt.substring(1, Mvt.length() - 1) + "---");
+                        if (Mvt.substring(1, Mvt.length() - 1).equals("321")) {
+                            qaresult = 1;
+                            // 321 QA结果为TRUE
+                            int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), qaresult, fgChecklist1.getPlant().toString(), fgChecklist1.getBatch().toString());
+                            FgChecklist fgChecklist2 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
+                            System.out.println(fgChecklist2.getUidNo() + "===" + fgChecklist.getUidNo());
+                            return repeatPrint(fgChecklist, fgChecklist2);
+                        } else if (Mvt.substring(1, Mvt.length() - 1).equals("122")) {
+                            qaresult = 0;
+                            // 122 QA结果为Fail
+                            int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), qaresult, fgChecklist1.getPlant().toString(), fgChecklist1.getBatch().toString());
+                            FgChecklist fgChecklist2 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
+                            System.out.println(fgChecklist2.getUidNo() + "===" + fgChecklist.getUidNo());
+                            return AjaxResult.error("QA检验结果为fail，不允许重打印");
+                        }
                     }
+//                    if (Arrays.asList(arr).contains("321")) {
+//
+//                        // 321 QA结果为TRUE
+//                        int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), 1, fgChecklist1.getPlant().toString(), fgChecklist1.getBatch().toString());
+//                        FgChecklist fgChecklist2 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
+//                        System.out.println(fgChecklist2.getUidNo() + "===" + fgChecklist.getUidNo());
+//                        return repeatPrint(fgChecklist, fgChecklist2);
+//                    }
                     n1 += 1;
                     if (n1 == list.size()) {
-                        int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), 0, fgChecklist1.getPlant().toString());
-                        returnMessage = "查询结果为fail，不允许重打印";
+//                        int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), 2, fgChecklist1.getPlant().toString(), fgChecklist1.getBatch().toString());
+//                        returnMessage = "QA未检验，不允许重打印";
+                        return repeatPrint(fgChecklist, fgChecklist1);
                     }
                 }
                 return AjaxResult.error(returnMessage);
@@ -345,6 +370,66 @@ public class FgChecklistController extends BaseController {
         }
     }
 
+    // 只判321
+//    public AjaxResult checkPo(@RequestBody FgChecklist fgChecklist) {
+//        SAPUtil sapUtil = new SAPUtil();
+//        String pn_660 = "";
+//        // uid为空即 第一次打印（非重打印）
+//        if (fgChecklist.getUid() == null || fgChecklist.getUid() == "") {
+//            if (fgChecklist.getPn().toString().substring(0, 3).equals("650")) {
+//
+//                System.out.println("ok");
+//                // 打印650型号送检单时查询SAP BOM 层次中对应的660型号，将650送检单自动关联至660型号送检单中
+//                pn_660 = sapUtil.get660Info(fgChecklist.getPn().toString(), fgChecklist.getPlant().toString());
+//                if (pn_660.equals("")) {
+//                    return AjaxResult.error("该650型号没有找到相关连的660型号");
+//                }
+//                fgChecklist.setPn660(pn_660);
+//                // 检查po，并插入数据
+//                return checkPo1(fgChecklist, pn_660);
+//            } else {
+//                // 设置旧UID
+//                fgChecklist.setOldUid(fgChecklist.getId().toString());
+//                // 660开头PN直接查PO并插入数据
+//                return checkPo1(fgChecklist, pn_660);
+//            }
+//        } else {
+//            // UID不为空则 重打印 -- 检查QA检验结果
+//            FgChecklist fgChecklist1 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
+//            if (fgChecklist1.getQaResult() == null) {
+//                String returnMessage = "";
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+//                String productDate = sdf.format(fgChecklist1.getProductionDate());
+//                List<String[]> list = sapUtil.Z_HTMES_YMMR04_2(fgChecklist1.getPlant().toString(), fgChecklist1.getPn().toString(), productDate, productDate);
+//                System.out.println("查询QA结果数量：" + list.size());
+//                if (list.size() == 0) {
+//                    return AjaxResult.error("未查询到QA检验结果，不允许重打印");
+//                }
+//                int n1 = 0;
+//                for (String[] arr : list) {
+//                    if (Arrays.asList(arr).contains("321")) {
+//                        // 321 QA结果为TRUE
+//                        int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), 1, fgChecklist1.getPlant().toString(), fgChecklist1.getBatch().toString());
+//                        FgChecklist fgChecklist2 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
+//                        System.out.println(fgChecklist2.getUidNo() + "===" + fgChecklist.getUidNo());
+//                        return repeatPrint(fgChecklist, fgChecklist2);
+//                    }
+//                    n1 += 1;
+//                    if (n1 == list.size()) {
+//                        int n = fgChecklistService.updateQAresult(fgChecklist1.getPn().toString(), 0, fgChecklist1.getPlant().toString(), fgChecklist1.getBatch().toString());
+//                        returnMessage = "查询结果为fail，不允许重打印";
+//                    }
+//                }
+//                return AjaxResult.error(returnMessage);
+//            } else if (fgChecklist1.getQaResult() == 1) {
+//                System.out.println(fgChecklist.getUidNo() + "===" + fgChecklist1.getUidNo());
+//                return repeatPrint(fgChecklist, fgChecklist1);
+//            } else {
+//                return AjaxResult.error("QA检验结果为fail，不允许重打印");
+//            }
+//        }
+//    }
+
     /**
      * 根据拆箱提醒 拆分成品送检单
      *
@@ -356,12 +441,13 @@ public class FgChecklistController extends BaseController {
         SAPUtil sapUtil = new SAPUtil();
 
         FgChecklist fgChecklist1 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
+        if (fgChecklist1 == null || fgChecklist1.getQaResult() != 1)
+            return AjaxResult.error("没有QA检验结果或QA检验结果为fail，请执行重打印更新QA检验结果！");
+
         if (!fgChecklist1.getPo().toString().equals(fgChecklist.getPo().toString())) {
             return AjaxResult.error("拆分成品单PO不能改变");
         }
-        if (fgChecklist1.getQaResult() != 1) {
-            return AjaxResult.error("没有QA检验结果或QA检验结果为fail，请执行重打印更新QA检验结果！");
-        }
+
         FgToList toList = fgTosMapper.getTolistInfo(fgChecklist.getUid().toString());
         if (toList != null) {
             FgInventory inventory = fgInventoryService.getInventoryInfo(fgChecklist.getUid().toString());
@@ -1131,6 +1217,325 @@ public class FgChecklistController extends BaseController {
      *
      * @param fgChecklist
      */
+    public AjaxResult checkPo3(FgChecklist fgChecklist, String pn_660) {
+        SAPUtil sapUtil = new SAPUtil();
+        List<String[]> list = new ArrayList<>();
+        // 查询SAP中是否有该PO
+        if (!pn_660.equals("")) {
+            list = sapUtil.getPoInfo(pn_660);
+        } else {
+            list = sapUtil.getPoInfo(fgChecklist.getPn().toString());
+        }
+        if (fgChecklist.getPo().toString().equals("NA")) {
+
+            // 卡控打印数量总和 与 批量
+            Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
+            System.out.println("eee" + sum);
+            if (sum == 0) {
+                String uid = getGuid();
+                fgChecklist.setUid(uid);
+                // 生成二维码UID不能为空
+                String path = fgChecklistService.generateBarcode(fgChecklist);
+                System.out.println("path:" + path);
+                fgChecklist.setBarcodeUrl(path);
+                int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
+                if (n1 > 0) {
+                    return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                } else {
+                    return AjaxResult.error("未知错误，请联系开发人员");
+                }
+
+            } else if (fgChecklist.getBatchQty() >= (sum + fgChecklist.getUidNo())) {
+                String uid = getGuid();
+                fgChecklist.setUid(uid);
+                // 生成二维码UID不能为空
+                String path = fgChecklistService.generateBarcode(fgChecklist);
+                System.out.println("path:" + path);
+                fgChecklist.setBarcodeUrl(path);
+                // 判重
+                if (fgChecklistService.checkInfonChcklist(fgChecklist) == 0) {
+                    int n2 = fgChecklistService.insertFgChecklist(fgChecklist);
+                    if (n2 > 0) {
+                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                    } else {
+                        return AjaxResult.error("未知错误，请联系开发人员");
+                    }
+                } else {
+                    return AjaxResult.error("已存在数据，请在“已打印”中选择打印");
+                }
+
+            } else {
+                return AjaxResult.error("打印数量总和不能大于批量，剩余可打印数量为" + (fgChecklist.getBatchQty() - sum));
+            }
+        } else {
+            int n = list.size();
+            int i = 0;
+            for (String[] arr : list) {
+                if (Arrays.asList(arr).contains(fgChecklist.getPo().toString())) {
+                    break;
+                }
+                i += 1;
+            }
+            if (n == i) {
+                return AjaxResult.error("PO未查询到");
+            } else {
+                // 卡控打印数量总和 与 批量
+                Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
+                System.out.println("eee" + sum);
+                String uid = getGuid();
+                fgChecklist.setUid(uid);
+                // 生成二维码UID不能为空
+                String path = fgChecklistService.generateBarcode(fgChecklist);
+                System.out.println("path:" + path);
+                fgChecklist.setBarcodeUrl(path);
+                FgChecklist fgChecklist1 = new FgChecklist();
+                fgChecklist1 = fgChecklistMapper.getIdInfo(fgChecklist);
+                System.out.println(fgChecklist);
+                System.out.println(fgChecklist1);
+
+                if (sum == 0) {
+
+                    System.out.println(fgChecklist.getBatchQty() + "===" + fgChecklist.getUidNo());
+                    // 打印数量等于批量直接修改原数据为已打印
+                    if (Math.abs(fgChecklist.getBatchQty() - fgChecklist.getUidNo()) < 0.000000002f) {
+                        int n2 = fgChecklistService.insertFgChecklist(fgChecklist);
+                        if (n2 > 0) {
+                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                        } else {
+                            return AjaxResult.error("未知错误，请联系开发人员");
+                        }
+                    } else {
+                        int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
+                        if (n1 > 0) {
+                            fgChecklist1.setUidNo(fgChecklist.getBatchQty() - fgChecklist.getUidNo());
+                            fgChecklist1.setStatus(3);
+                            // 设置原数据的数量为打印后的剩余数量，状态还是未打印
+                            System.out.println("1221" + fgChecklist);
+                            System.out.println("2212" + fgChecklist1);
+                            int n2 = fgChecklistService.insertFgChecklist(fgChecklist1);
+                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                        } else {
+                            return AjaxResult.error("未知错误，请联系开发人员");
+                        }
+                    }
+                } else {
+                    FgChecklist fgChecklist2 = fgChecklistMapper.getIdInfo2(fgChecklist);
+                    if (fgChecklist.getBatchQty() > (sum + fgChecklist.getUidNo())) {
+
+                        // 判重
+                        if (fgChecklistService.checkInfonChcklist(fgChecklist) == 0) {
+                            int n2 = fgChecklistService.insertFgChecklist(fgChecklist);
+                            if (n2 > 0) {
+                                fgChecklist2.setUidNo(fgChecklist.getBatchQty() - (sum + fgChecklist.getUidNo()));
+                                // 设置原数据的数量为打印后的剩余数量，状态还是未打印
+                                int n3 = fgChecklistService.updateFgChecklist(fgChecklist2);
+                                return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                            } else {
+                                return AjaxResult.error("未知错误，请联系开发人员");
+                            }
+                        } else {
+                            return AjaxResult.error("已存在数据，请在“已打印”中选择打印");
+                        }
+
+                    } else if (Math.abs(fgChecklist.getBatchQty() - (sum + fgChecklist.getUidNo())) < 0.000000002f) {
+                        fgChecklist2.setUid(uid);
+                        fgChecklist2.setPo(fgChecklist.getPo().toString());
+
+                        // 打印数量刚好等于剩余数量
+                        int n2 = fgChecklistService.updateFgChecklist(fgChecklist);
+                        if (n2 > 0) {
+                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                        } else {
+                            return AjaxResult.error("未知错误，请联系开发人员");
+                        }
+                    } else {
+                        return AjaxResult.error("打印数量总和不能大于批量，剩余可打印数量为" + (fgChecklist.getBatchQty() - sum));
+                    }
+                }
+            }
+        }
+    }
+
+
+    public AjaxResult checkPo2(FgChecklist fgChecklist, String pn_660) {
+        SAPUtil sapUtil = new SAPUtil();
+        List<String[]> list = new ArrayList<>();
+        Date date = new Date();
+        // 查询SAP中是否有该PO
+        if (!pn_660.equals("")) {
+            list = sapUtil.getPoInfo(pn_660);
+        } else {
+            list = sapUtil.getPoInfo(fgChecklist.getPn().toString());
+        }
+        if (fgChecklist.getPo().toString().equals("NA")) {
+
+            // 卡控打印数量总和 与 批量
+            Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
+            System.out.println("eee" + sum);
+            System.out.println("eee" + sum);
+            String uid = getGuid();
+            fgChecklist.setUid(uid);
+            // 生成二维码UID不能为空
+            String path = fgChecklistService.generateBarcode(fgChecklist);
+            System.out.println("path:" + path);
+            fgChecklist.setBarcodeUrl(path);
+            FgChecklist fgChecklist1 = new FgChecklist();
+            fgChecklist1 = fgChecklistMapper.getIdInfo(fgChecklist);
+            fgChecklist.setCreatedate(date);
+            fgChecklist1.setCreatedate(date);
+            System.out.println(fgChecklist);
+            System.out.println(fgChecklist1);
+            if (sum == 0) {
+
+                System.out.println(fgChecklist.getBatchQty() + "===" + fgChecklist.getUidNo());
+                // 打印数量等于批量直接修改原数据为已打印
+                if (Math.abs(fgChecklist.getBatchQty() - fgChecklist.getUidNo()) < 0.000000002f) {
+                    fgChecklist1.setUid(uid);
+                    fgChecklist1.setBarcodeUrl(path);
+                    fgChecklist1.setUidNo(fgChecklist.getUidNo());
+                    fgChecklist1.setStatus(1);
+                    fgChecklist1.setPo(fgChecklist.getPo().toString());
+                    fgChecklist1.setPalletNo(fgChecklist.getPalletNo());
+                    fgChecklist1.setPalletItems(fgChecklist.getPalletItems());
+                    int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
+                    if (n2 > 0) {
+                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist1.getUid().toString()));
+                    } else {
+                        return AjaxResult.error("未知错误，请联系开发人员");
+                    }
+                } else {
+                    int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
+                    if (n1 > 0) {
+                        fgChecklist1.setUidNo(fgChecklist.getBatchQty() - fgChecklist.getUidNo());
+                        // 设置原数据的数量为打印后的剩余数量，状态还是未打印
+                        System.out.println("1221" + fgChecklist);
+                        System.out.println("2212" + fgChecklist1);
+                        int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
+                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                    } else {
+                        return AjaxResult.error("未知错误，请联系开发人员");
+                    }
+                }
+
+            } else if (fgChecklist.getBatchQty() > (sum + fgChecklist.getUidNo())) {
+
+                // 判重
+                if (fgChecklistService.checkInfonChcklist(fgChecklist) == 0) {
+                    int n2 = fgChecklistService.insertFgChecklist(fgChecklist);
+                    if (n2 > 0) {
+                        fgChecklist1.setUidNo(fgChecklist.getBatchQty() - (sum + fgChecklist1.getUidNo()));
+                        // 设置原数据的数量为打印后的剩余数量，状态还是未打印
+                        int n3 = fgChecklistService.updateFgChecklist(fgChecklist1);
+                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                    } else {
+                        return AjaxResult.error("未知错误，请联系开发人员");
+                    }
+                } else {
+                    return AjaxResult.error("已存在数据，请在“已打印”中选择打印");
+                }
+
+            } else if (Math.abs(fgChecklist.getBatchQty() - (sum + fgChecklist.getUidNo())) < 0.000000002f) {
+                // 打印数量刚好等于剩余数量
+                int n2 = fgChecklistService.updateFgChecklist(fgChecklist);
+                if (n2 > 0) {
+                    return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                } else {
+                    return AjaxResult.error("未知错误，请联系开发人员");
+                }
+            } else {
+                return AjaxResult.error("打印数量总和不能大于批量，剩余可打印数量为" + (fgChecklist.getBatchQty() - sum));
+            }
+        } else {
+            int n = list.size();
+            int i = 0;
+            for (String[] arr : list) {
+                if (Arrays.asList(arr).contains(fgChecklist.getPo().toString())) {
+                    break;
+                }
+                i += 1;
+            }
+            if (n == i) {
+                return AjaxResult.error("PO未查询到");
+            } else {
+                // 卡控打印数量总和 与 批量
+                Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
+                System.out.println("eee" + sum);
+                String uid = getGuid();
+                fgChecklist.setUid(uid);
+                // 生成二维码UID不能为空
+                String path = fgChecklistService.generateBarcode(fgChecklist);
+                System.out.println("path:" + path);
+                fgChecklist.setBarcodeUrl(path);
+                FgChecklist fgChecklist1 = new FgChecklist();
+                fgChecklist1 = fgChecklistMapper.getIdInfo(fgChecklist);
+                fgChecklist.setCreatedate(date);
+                fgChecklist1.setCreatedate(date);
+                System.out.println(fgChecklist);
+                System.out.println(fgChecklist1);
+
+                if (sum == 0) {
+
+                    System.out.println(fgChecklist.getBatchQty() + "===" + fgChecklist.getUidNo());
+                    // 打印数量等于批量直接修改原数据为已打印
+                    if (Math.abs(fgChecklist.getBatchQty() - fgChecklist.getUidNo()) < 0.000000002f) {
+                        fgChecklist1.setUid(uid);
+                        fgChecklist1.setBarcodeUrl(path);
+                        fgChecklist1.setUidNo(fgChecklist.getUidNo());
+                        fgChecklist1.setStatus(1);
+                        fgChecklist1.setPo(fgChecklist.getPo().toString());
+                        fgChecklist1.setPalletNo(fgChecklist.getPalletNo());
+                        fgChecklist1.setPalletItems(fgChecklist.getPalletItems());
+                        int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
+                        if (n2 > 0) {
+                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist1.getUid().toString()));
+                        } else {
+                            return AjaxResult.error("未知错误，请联系开发人员");
+                        }
+                    } else {
+                        int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
+                        if (n1 > 0) {
+                            fgChecklist1.setUidNo(fgChecklist.getBatchQty() - fgChecklist.getUidNo());
+                            // 设置原数据的数量为打印后的剩余数量，状态还是未打印
+                            System.out.println("1221" + fgChecklist);
+                            System.out.println("2212" + fgChecklist1);
+                            int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
+                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                        } else {
+                            return AjaxResult.error("未知错误，请联系开发人员");
+                        }
+                    }
+                } else if (fgChecklist.getBatchQty() > (sum + fgChecklist.getUidNo())) {
+
+                    // 判重
+                    if (fgChecklistService.checkInfonChcklist(fgChecklist) == 0) {
+                        int n2 = fgChecklistService.insertFgChecklist(fgChecklist);
+                        if (n2 > 0) {
+                            fgChecklist1.setUidNo(fgChecklist.getBatchQty() - (sum + fgChecklist1.getUidNo()));
+                            // 设置原数据的数量为打印后的剩余数量，状态还是未打印
+                            int n3 = fgChecklistService.updateFgChecklist(fgChecklist1);
+                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                        } else {
+                            return AjaxResult.error("未知错误，请联系开发人员");
+                        }
+                    } else {
+                        return AjaxResult.error("已存在数据，请在“已打印”中选择打印");
+                    }
+
+                } else if (Math.abs(fgChecklist.getBatchQty() - (sum + fgChecklist.getUidNo())) < 0.000000002f) {
+                    // 打印数量刚好等于剩余数量
+                    int n2 = fgChecklistService.updateFgChecklist(fgChecklist);
+                    if (n2 > 0) {
+                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
+                    } else {
+                        return AjaxResult.error("未知错误，请联系开发人员");
+                    }
+                } else {
+                    return AjaxResult.error("打印数量总和不能大于批量，剩余可打印数量为" + (fgChecklist.getBatchQty() - sum));
+                }
+            }
+        }
+    }
+
     public AjaxResult checkPo1(FgChecklist fgChecklist, String pn_660) {
         SAPUtil sapUtil = new SAPUtil();
         List<String[]> list = new ArrayList<>();
@@ -1140,7 +1545,7 @@ public class FgChecklistController extends BaseController {
         } else {
             list = sapUtil.getPoInfo(fgChecklist.getPn().toString());
         }
-        if (fgChecklist.getPo() != null || fgChecklist.getPo().toString().equals("NA")) {
+        if (fgChecklist.getPo().toString().equals("NA")) {
 
             // 卡控打印数量总和 与 批量
             Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
@@ -1197,29 +1602,19 @@ public class FgChecklistController extends BaseController {
                 Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
                 System.out.println("eee" + sum);
                 if (sum == 0) {
-
                     String uid = getGuid();
                     fgChecklist.setUid(uid);
                     // 生成二维码UID不能为空
                     String path = fgChecklistService.generateBarcode(fgChecklist);
                     System.out.println("path:" + path);
                     fgChecklist.setBarcodeUrl(path);
-                    // 打印数量等于批量直接修改原数据为已打印
-                    if (fgChecklist.getBatchQty() == fgChecklist.getUidNo()) {
-                        int n2 = fgChecklistService.updateFgChecklist(fgChecklist);
-                        if (n2 > 0) {
-                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
-                        } else {
-                            return AjaxResult.error("未知错误，请联系开发人员");
-                        }
+                    int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
+                    if (n1 > 0) {
+                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
                     } else {
-                        int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
-                        if (n1 > 0) {
-                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
-                        } else {
-                            return AjaxResult.error("未知错误，请联系开发人员");
-                        }
+                        return AjaxResult.error("未知错误，请联系开发人员");
                     }
+
                 } else if (fgChecklist.getBatchQty() >= (sum + fgChecklist.getUidNo())) {
                     String uid = getGuid();
                     fgChecklist.setUid(uid);
@@ -1245,111 +1640,6 @@ public class FgChecklistController extends BaseController {
             }
         }
     }
-
-//    public AjaxResult checkPo1(FgChecklist fgChecklist, String pn_660) {
-//        SAPUtil sapUtil = new SAPUtil();
-//        List<String[]> list = new ArrayList<>();
-//        // 查询SAP中是否有该PO
-//        if (!pn_660.equals("")) {
-//            list = sapUtil.getPoInfo(pn_660);
-//        } else {
-//            list = sapUtil.getPoInfo(fgChecklist.getPn().toString());
-//        }
-//        if (fgChecklist.getPo() != null || fgChecklist.getPo().toString().equals("NA")) {
-//
-//            // 卡控打印数量总和 与 批量
-//            Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
-//            System.out.println("eee" + sum);
-//            if (sum == 0) {
-//                String uid = getGuid();
-//                fgChecklist.setUid(uid);
-//                // 生成二维码UID不能为空
-//                String path = fgChecklistService.generateBarcode(fgChecklist);
-//                System.out.println("path:" + path);
-//                fgChecklist.setBarcodeUrl(path);
-//                int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
-//                if (n1 > 0) {
-//                    return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
-//                } else {
-//                    return AjaxResult.error("未知错误，请联系开发人员");
-//                }
-//
-//            } else if (fgChecklist.getBatchQty() >= (sum + fgChecklist.getUidNo())) {
-//                String uid = getGuid();
-//                fgChecklist.setUid(uid);
-//                // 生成二维码UID不能为空
-//                String path = fgChecklistService.generateBarcode(fgChecklist);
-//                System.out.println("path:" + path);
-//                fgChecklist.setBarcodeUrl(path);
-//                // 判重
-//                if (fgChecklistService.checkInfonChcklist(fgChecklist) == 0) {
-//                    int n2 = fgChecklistService.insertFgChecklist(fgChecklist);
-//                    if (n2 > 0) {
-//                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
-//                    } else {
-//                        return AjaxResult.error("未知错误，请联系开发人员");
-//                    }
-//                } else {
-//                    return AjaxResult.error("已存在数据，请在“已打印”中选择打印");
-//                }
-//
-//            } else {
-//                return AjaxResult.error("打印数量总和不能大于批量，剩余可打印数量为" + (fgChecklist.getBatchQty() - sum));
-//            }
-//        } else {
-//            int n = list.size();
-//            int i = 0;
-//            for (String[] arr : list) {
-//                if (Arrays.asList(arr).contains(fgChecklist.getPo().toString())) {
-//                    break;
-//                }
-//                i += 1;
-//            }
-//            if (n == i) {
-//                return AjaxResult.error("PO未查询到");
-//            } else {
-//                // 卡控打印数量总和 与 批量
-//                Long sum = fgChecklistService.getUidNo_Sum(fgChecklist.getPn().toString(), fgChecklist.getSap101().toString());
-//                System.out.println("eee" + sum);
-//                if (sum == 0) {
-//                    String uid = getGuid();
-//                    fgChecklist.setUid(uid);
-//                    // 生成二维码UID不能为空
-//                    String path = fgChecklistService.generateBarcode(fgChecklist);
-//                    System.out.println("path:" + path);
-//                    fgChecklist.setBarcodeUrl(path);
-//                    int n1 = fgChecklistService.insertFgChecklist(fgChecklist);
-//                    if (n1 > 0) {
-//                        return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
-//                    } else {
-//                        return AjaxResult.error("未知错误，请联系开发人员");
-//                    }
-//
-//                } else if (fgChecklist.getBatchQty() >= (sum + fgChecklist.getUidNo())) {
-//                    String uid = getGuid();
-//                    fgChecklist.setUid(uid);
-//                    // 生成二维码UID不能为空
-//                    String path = fgChecklistService.generateBarcode(fgChecklist);
-//                    System.out.println("path:" + path);
-//                    fgChecklist.setBarcodeUrl(path);
-//                    // 判重
-//                    if (fgChecklistService.checkInfonChcklist(fgChecklist) == 0) {
-//                        int n2 = fgChecklistService.insertFgChecklist(fgChecklist);
-//                        if (n2 > 0) {
-//                            return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist.getUid().toString()));
-//                        } else {
-//                            return AjaxResult.error("未知错误，请联系开发人员");
-//                        }
-//                    } else {
-//                        return AjaxResult.error("已存在数据，请在“已打印”中选择打印");
-//                    }
-//
-//                } else {
-//                    return AjaxResult.error("打印数量总和不能大于批量，剩余可打印数量为" + (fgChecklist.getBatchQty() - sum));
-//                }
-//            }
-//        }
-//    }
 
     /**
      * 重打印（销毁/不销毁）
@@ -1479,21 +1769,36 @@ public class FgChecklistController extends BaseController {
             String pn = fgChecklist.getPn().toString();
             String line = "";
             String qasign = "";
+            FgChecklist fgChecklist1 = new FgChecklist();
             // 判断该数据是否已在数据库
 //            List<FgChecklist> list1 = fgChecklistMapper.checkinfo(sap101, pn);
             int n = fgChecklistMapper.checkinfo(sap101, pn);
             //System.out.println(list1.size());
             if (n == 0) {
                 // 获取拉别 (建立索引，否则很慢)
-                line = fgChecklistMapper.checkLine(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-                if (line == null || line.equals("")) {
-                    line = fgChecklistMapper.checkLine2(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-                }
+//                line = fgChecklistMapper.checkLine(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+//                if (line == null || line.equals("")) {
+//                    line = fgChecklistMapper.checkLine2(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+//                }
                 // 获取检验员
-                qasign = fgChecklistMapper.checkQasign(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-                if (qasign == null || qasign.equals("")) {
-                    qasign = fgChecklistMapper.checkQasign2(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+                fgChecklist1 = fgChecklistMapper.checkQasign(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+                System.out.println("测试" + fgChecklist1);
+                if (fgChecklist1 == null) {
+                    fgChecklist1 = fgChecklistMapper.checkQasign2(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+                    if (fgChecklist1 != null) {
+                        qasign = fgChecklist1.getQaSign() == null ? "" : fgChecklist1.getQaSign().toString();
+                        line = fgChecklist1.getLine() == null ? "" : fgChecklist1.getLine().toString();
+                    }
+                } else {
+                    qasign = fgChecklist1.getQaSign() == null ? "" : fgChecklist1.getQaSign().toString();
+                    line = fgChecklist1.getLine() == null ? "" : fgChecklist1.getLine().toString();
                 }
+                System.out.println("测试2" + fgChecklist1);
+
+//                qasign = fgChecklistMapper.checkQasign(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+//                if (qasign == null || qasign.equals("")) {
+//                    qasign = fgChecklistMapper.checkQasign2(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+//                }
                 System.out.println(fgChecklist.getWo().toString().toString() + "----121212");
                 fgChecklist.setQaSign(qasign);
                 fgChecklist.setLine(line);

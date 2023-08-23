@@ -19,13 +19,13 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
      * 下载车牌号
      * */
     @DS("slave_2")
-    List<String> downloadCarno();
+    List<String> downloadCarno(String date);
 
     /**
      * 根据车牌号下载走货单号
      * */
     @DS("slave_2")
-    List<String> downloadShipmentno(String carno);
+    List<String> downloadShipmentno(@Param("carno") String carno, @Param("date") String date);
 
     /**
      * 根据走货编号下载TO单
@@ -159,7 +159,7 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
      * 下载走货单 （排除有车号的走货单）
      * */
     @DS("slave_2")
-    List<String> downloadShipmentNo2();
+    List<String> downloadShipmentNo2(String date);
 
     /**
      * 查询已手动备货数量和当前用户总数量

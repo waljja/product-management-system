@@ -39,7 +39,7 @@ public interface FgTosMapper
 
     /**
      * 根据PN和PO、最后确认部门查询是否存在
-     * @param SapPn po lastcomfirm
+     * @param --SapPn po lastcomfirm
      * @return int
      */
     int checkInfoFs(FgShipmentInfo fgShipmentInfo);
@@ -146,6 +146,10 @@ public interface FgTosMapper
     int updatebatchSum(@Param("quantity") long quantity, @Param("toNo") String toNo);
 
     int updateQHStatus(FgToList fgToList);
+
+    int updateQHQuantuty(@Param("fgToList") FgToList fgToList, @Param("Quantity2") long Quantity2);
+
+    int updateTosQHQuantuty(@Param("Quantity") long Quantity, @Param("toNo") String toNo);
 
     int updateInventoryStatus(String uid);
 

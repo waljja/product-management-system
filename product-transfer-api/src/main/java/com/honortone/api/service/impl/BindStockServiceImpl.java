@@ -45,6 +45,11 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
     private SaveInfoMapper saveInfoMapper;
 
     @Override
+    public int checkUID(String uid) {
+        return bindStockMapper.checkUID(uid);
+    }
+
+    @Override
     public String bindStock_1(String uid, String stock, String username) {
 
         String returnMessage = "";
@@ -63,6 +68,7 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
 
         String returnMessage = "";
         CheckList checkList = inStockMapper.ifSuccess(uid);
+        System.out.println("ceimpl" + tz);
         SAPUtil sapUtil = new SAPUtil();
         if (bindStockMapper.checkInstock(checkList) > 0) {
             Inventory inventory = new Inventory();
@@ -109,8 +115,10 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                         int n1 = bindStockMapper.insertTagsInventory(tagsInventory);
                         if (n1 > 0) {
                             // 修改绑库UID数量
-                            bindStockMapper.updateQuantity(inventory1.getUid().toString(), (long) inventory1.getUid_no() + qty);
-                            returnMessage = "绑定客户贴纸成功";
+                            int n2 = bindStockMapper.updateQuantity(inventory1.getUid().toString(), (long) inventory1.getUid_no() + qty);
+                            if (n2 > 0) {
+                                returnMessage = "绑定客户贴纸成功";
+                            }
                         }
                     } else {
                         inventory.setUid_no(qty);
@@ -119,11 +127,55 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                         int n2 = bindStockMapper.toinsert(inventory);
                         if (n2 > 0) {
                             // 保存贴纸信息
-                            bindStockMapper.insertTagsInventory(tagsInventory);
-                            returnMessage = "绑定客户贴纸成功";
+                            int n3 = bindStockMapper.insertTagsInventory(tagsInventory);
+                            if (n3 > 0) {
+                                returnMessage = "绑定客户贴纸成功";
+                            }
                         }
                     }
                 }
+            } else if (!tz.contains("/") && !tz.contains("@")) {
+                System.out.println(tz);
+                BoxInventory boxInventory = bindStockMapper.getBoxInfo(tz);
+                if (boxInventory != null && boxInventory.getPn().toString().equals(checkList.getPn().toString()) && boxInventory.getPo().toString().equals(checkList.getPo().toString())) {
+
+                    BeanUtil.copyProperties(checkList, inventory, true);
+                    inventory.setStock(stock);
+                    BeanUtil.copyProperties(inventory, boxInventory, true);
+                    // 是否存在该uid
+                    Inventory inventory1 = bindStockMapper.checkInventory(inventory.getUid().toString());
+                    if (inventory1 != null) {
+                        long sumqty = bindStockMapper.checkBoxQuantity(inventory1.getUid().toString());
+                        if (sumqty >= inventory1.getUid_no() || (sumqty + boxInventory.getCartonQty()) > inventory1.getUid_no()) {
+                            returnMessage = "绑定箱子数量大于成品单数量";
+                        } else {
+                            // 保存贴纸信息
+                            int n3 = bindStockMapper.insertBoxInventory(boxInventory);
+                            if (n3 > 0) {
+                                returnMessage = "绑定客户贴纸成功";
+                            }
+                        }
+                    } else {
+                        // 保存绑库UID
+                        int n2 = bindStockMapper.toinsert(inventory);
+                        if (n2 > 0) {
+                            System.out.println(boxInventory + "===" + inventory);
+                            // 保存贴纸信息
+                            if (boxInventory.getCartonQty() > inventory.getUid_no()) {
+                                returnMessage = "绑定箱子数量大于成品单数量";
+                            } else {
+                                int n3 = bindStockMapper.insertBoxInventory(boxInventory);
+                                if (n3 > 0) {
+                                    returnMessage = "绑定客户贴纸成功";
+                                }
+                            }
+                        }
+                    }
+
+                } else {
+                    returnMessage = "不存在箱号或该箱号PN、PO与成品单PN、PO不一致！";
+                }
+
             } else {
                 returnMessage = "送检单型号与客户贴纸型号不一致或客户贴纸为空";
             }
@@ -360,15 +412,21 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
         String toNo = bindStockMapper.checkStatusByUid(uid) == null ? "" : bindStockMapper.checkStatusByUid(uid).toString();
         if ("".equals(toNo))
             return "UID对应备货单未完成拣货";
+// 不会更新TOS备货单状态问题
 
-        FgShipmentInfo fgShipmentInfo = bindStockMapper.getShipmentInfoBytoNo(toNo);
-        if (saveInfoMapper.checkStatusTosQH(fgShipmentInfo.getShipmentNO().toString()) > 0)
-            return "走货单存在欠货单，不允许绑定走货区";
-
-        if (saveInfoMapper.checkStatusTosBH(fgShipmentInfo.getShipmentNO().toString()) > 0)
-            return "走货单未备完货，不允许绑定走货区";
+//        FgShipmentInfo fgShipmentInfo = bindStockMapper.getShipmentInfoBytoNo(toNo);
+//        if (saveInfoMapper.checkStatusTosQH(fgShipmentInfo.getShipmentNO().toString()) > 0)
+//            return "走货单存在欠货单，不允许绑定走货区";
+//
+//        if (saveInfoMapper.checkStatusTosBH(fgShipmentInfo.getShipmentNO().toString()) > 0)
+//            return "走货单未备完货，不允许绑定走货区";
 
         return toNo;
+    }
+
+    @Override
+    public int checkStatusTosQH(String toNo) {
+        return bindStockMapper.checkStatusTosQH(toNo);
     }
 
     public String checkInstockAndBindstock(CheckList checkList, String stock, String username) {

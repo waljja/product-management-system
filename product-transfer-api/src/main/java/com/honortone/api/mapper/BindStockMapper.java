@@ -16,6 +16,9 @@ import java.util.List;
 public interface BindStockMapper extends BaseMapper<Inventory> {
 
     @DS("slave_2")
+    int checkUID(String uid);
+
+    @DS("slave_2")
     List<Inventory> checkInfoByUid_1(String uid);
 
     @DS("slave_2")
@@ -35,6 +38,15 @@ public interface BindStockMapper extends BaseMapper<Inventory> {
 
     @DS("slave_2")
     int insertTagsInventory(TagsInventory tagsInventory);
+
+    @DS("slave_4")
+    BoxInventory getBoxInfo(String cartonNo);
+
+    @DS("slave_2")
+    int insertBoxInventory(BoxInventory boxInventory);
+
+    @DS("slave_2")
+    long checkBoxQuantity(String uid);
 
     @DS("slave_2")
     int updateQuantity(@Param("uid") String uid, @Param("quantity") long quantity);
@@ -78,5 +90,7 @@ public interface BindStockMapper extends BaseMapper<Inventory> {
     @DS("slave_2")
     FgShipmentInfo getShipmentInfoBytoNo(String toNo);
 
+    @DS("slave_2")
+    int checkStatusTosQH(String toNo);
 
 }

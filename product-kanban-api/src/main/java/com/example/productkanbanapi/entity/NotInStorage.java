@@ -14,7 +14,7 @@ import java.util.Date;
  * @date 2023-08-15-10:18
  */
 @Data
-public class ProductNotInStorage {
+public class NotInStorage {
 
     /**
      * 序号

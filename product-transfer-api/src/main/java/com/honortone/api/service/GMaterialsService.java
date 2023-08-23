@@ -16,9 +16,9 @@ public interface GMaterialsService extends IService<Inventory> {
 
     String checkQuantity(String uid);
 
-    List<String> downloadCarno();
+    List<String> downloadCarno(String date);
 
-    List<String> downloadShipmentno(String carno);
+    List<String> downloadShipmentno(String carno, String date);
 
     List<String> downloadTos(String shipmentno);
 
@@ -48,7 +48,7 @@ public interface GMaterialsService extends IService<Inventory> {
 
     List<Map<Integer, Integer>> getQty(String tono);
 
-    List<String> downloadShipmentNo2();
+    List<String> downloadShipmentNo2(String date);
 
     List<Map<Integer, Integer>> getQuantity(String client);
 

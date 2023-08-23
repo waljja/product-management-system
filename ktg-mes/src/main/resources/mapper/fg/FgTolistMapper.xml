@@ -21,7 +21,7 @@
     <sql id="selectFgTolistVo">
         select id, to_no, uid, replace_uid, pn, quantity, batch_qty, status, po, batch, stock from fg_tolist
     </sql>
-
+<!--<if test="status != null and status != '' "> and status = #{status}</if>-->
     <select id="selectFgTolistList" parameterType="FgToList" resultMap="FgTolistResult">
         <include refid="selectFgTolistVo"/>
         <where>
@@ -31,7 +31,8 @@
             <if test="pn != null  and pn != ''"> and pn like concat(#{pn}, '%')</if>
             <if test="Quantity != null "> and quantity = #{Quantity}</if>
             <if test="sap_qty != null "> and batch_qty = #{sap_qty}</if>
-            <if test="status != null "> and status = #{status}</if>
+            <if test="status != null"> and status = #{status}</if>
+            <if test="status == null"> and status in (0,2)</if>
             <if test="po != null  and po != ''"> and po = #{po}</if>
             <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
             <if test="stock != null  and stock != ''"> and stock like concat('%', #{stock}, '%')</if>

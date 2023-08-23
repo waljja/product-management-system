@@ -55,7 +55,7 @@ public interface InStockMapper extends BaseMapper<Inventory> {
     // int updateRecordStatus(MaterialTransationsDto materialTransationsDto);
 
     @DS("slave_2")
-    int updateQAresult(@Param("pn") String pn, @Param("qaresult") int qaresult);
+    int updateQAresult(@Param("pn") String pn, @Param("qaresult") int qaresult, @Param("plant") String plant, @Param("batch") String batch);
 
     @DS("slave_3")
     int checkInfoAlreadyTransfer(MaterialTransationsDto materialTransationsDto);

@@ -271,8 +271,8 @@ public class FgChecklistServiceImpl implements IFgChecklistService
     }
 
     @Override
-    public int updateQAresult(String pn,int qaresult,String plant) {
-        int n = fgChecklistMapper.updateQAresult(pn,qaresult,plant);
+    public int updateQAresult(String pn,int qaresult,String plant, String batch) {
+        int n = fgChecklistMapper.updateQAresult(pn,qaresult,plant, batch);
         return n;
     }
 
@@ -509,10 +509,14 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                     // 在TO明细表查询欠货总数赋值到TO管理表
                     long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
                     fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
-                    // 用于邮件提醒欠货
-                    String[] s = new String[2];
-                    s[0] = list1.get(i).getPn().toString();
-                    s[1] = list1.get(i).getBatchsum() + "";
+                    // 用于邮件提醒欠货 欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量，
+                    String[] s = new String[6];
+                    s[0] = QH;
+                    s[1] = list1.get(i).getShipmentNO().toString();
+                    s[2] = list1.get(i).getShipmentDate() + "";
+                    s[3] = list1.get(i).getPn().toString();
+                    s[4] = shipment_qty + "";
+                    s[5] = list1.get(i).getBatchsum() + "";
                     strings.add(s);
 
                 } else {
@@ -540,7 +544,6 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                             long toNoSum = fgTosMapper.gettoNoSum(BH);
                             fgTosMapper.updateTosQuantity(toNoSum, BH);
                             fgTosMapper.updateTolistQuantity(toNoSum, BH);
-                            continue;
 
                         } else if (fgTosAndTosListDtos.get(j).getSum_uidno() > list1.get(i).getBatchsum()) {
                             System.out.println("产生备货单2");
@@ -615,6 +618,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                             if (sum_uidno == fgTosAndTosListDtos.get(j).getSum_uidno()) {
                                 BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
                                 fgToList = setFgToList(fgToList, BH, 0l, 0);
+                                fgToList.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
                                 fgTosMapper.insertFgTolist(fgToList);
                                 fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
                                 long toNoSum = fgTosMapper.gettoNoSum(BH);
@@ -631,14 +635,20 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 fgToList.setBatch("");
                                 fgToList.setStock("");
                                 fgToList.setUid("");
+                                fgToList.setQuantity(qty);
                                 // 将欠料数存到TO明细表
                                 fgToList = setFgToList(fgToList, QH, qty, 2);
                                 fgTosMapper.insertFgTolist(fgToList);
                                 long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
                                 fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
-                                String[] s = new String[2];
-                                s[0] = fgTosAndTosListDtos.get(j).getPn().toString();
-                                s[1] = qty + "";
+                                // 用于邮件提醒欠货 欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量
+                                String[] s = new String[6];
+                                s[0] = QH;
+                                s[1] = fgTosAndTosListDtos.get(j).getShipmentNO().toString();
+                                s[2] = list1.get(i).getShipmentDate() + "";
+                                s[3] = fgTosAndTosListDtos.get(j).getPn().toString();
+                                s[4] = list1.get(i).getBatchsum() + "";
+                                s[5] = sumqty + "";
                                 strings.add(s);
                                 break;
                             } else {
@@ -659,10 +669,11 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                 fgTosMapper.updatePMCstatus(list1.get(i).getPn().toString(), list1.get(i).getPo().toString(), "船务", list1.get(i).getShipmentNO().toString());
             }
             // 邮件提醒欠货/拆分成品单
-            // AutoDownload_BitchPrint autoDownloadBitchPrint = new AutoDownload_BitchPrint();
-            // 参数strings集合
-            // autoDownloadBitchPrint.sendMail();
-            System.out.println("邮件提醒欠货***");
+            if (strings.size() > 0) {
+                System.out.println("邮件提醒欠货***");
+                sendMail_QH(strings);
+            }
+
 
             isok = "OK";
             System.out.println("The end...." + new Date());
@@ -737,6 +748,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
         return fgToList;
     }
 
+    // 拆箱邮件
     public void sendMail(List<FgShipmentInfo> objectList) throws MessagingException, javax.mail.MessagingException, IOException {
 
         try {
@@ -817,6 +829,84 @@ public class FgChecklistServiceImpl implements IFgChecklistService
             helper2.setText("请查收附件，谢谢！", true);
             // MimeUtility.encodeWord 解决附件名和格式乱码问题
             helper2.addAttachment(MimeUtility.encodeWord("拆箱邮件.xlsx"), file);
+            //7. 发送邮件
+            javaMailSender.send(message2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    // 欠货提醒邮件
+    public void sendMail_QH(List<String[]> strings) throws MessagingException, javax.mail.MessagingException, IOException {
+
+        try {
+            System.out.println("进入");
+
+            //1. 创建一个工作簿对象
+            XSSFWorkbook workbook2 = new XSSFWorkbook();
+            //2. 创建一个工作表对象
+            XSSFSheet sheet2 = workbook2.createSheet("Sheet1");
+            // 设置表头   欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量
+            String[] headers = {"欠货TO", "走货单", "走货日期", "PN", "走货数量", "欠货数量"};
+            XSSFRow headerRow = sheet2.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+            }
+
+            Cell cell = null;
+            // 在表格中写入数据
+            int rowCount = 1;
+
+            for (int i = 0;i < strings.size();i++) {
+                XSSFRow row = sheet2.createRow(rowCount++);
+                int cellCount = 0;
+
+                cell = row.createCell(cellCount++);
+                cell.setCellValue((String) strings.get(i)[0] == null ? "" : strings.get(i)[0].toString());
+
+                cell = row.createCell(cellCount++);
+                cell.setCellValue((String) strings.get(i)[1] == null ? "" : strings.get(i)[1].toString());
+
+                cell = row.createCell(cellCount++);
+                cell.setCellValue(strings.get(i)[2]);
+
+                cell = row.createCell(cellCount++);
+                cell.setCellValue((String) strings.get(i)[3] == null ? "" : strings.get(i)[3].toString());
+
+                cell = row.createCell(cellCount++);
+                cell.setCellValue((String) strings.get(i)[4] == null ? "" : strings.get(i)[4].toString());
+
+                cell = row.createCell(cellCount++);
+                cell.setCellValue((String) strings.get(i)[5] == null ? "" : strings.get(i)[5].toString());
+
+            }
+            // 自适应宽度
+            for (int i = 0; i < headers.length; i++) {
+                sheet2.autoSizeColumn(i);
+            }
+            //4. 创建文件并保存
+            File file = new File("欠货数据报表.xlsx");
+            FileOutputStream outputStream = new FileOutputStream(file);
+            workbook2.write(outputStream);
+            outputStream.close();
+            workbook2.close();
+            String[] to = {"tingming.jiang@honortone.com"};
+            String[] cc = {"tingming.jiang@honortone.com"};
+            //5. 创建一个邮件对象
+            MimeMessage message2 = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper2 = new MimeMessageHelper(message2, true);
+            //6. 设置发件人、收件人、抄送、密送、主题、内容和附件
+            helper2.setFrom(from);
+            helper2.setTo(to);
+            helper2.setCc(cc);
+            // 密送
+            // helper2.setBcc("tingming.jiang@honortone.com");
+            helper2.setSubject("欠货提醒");
+            helper2.setText("请查收附件，谢谢！", true);
+            // MimeUtility.encodeWord 解决附件名和格式乱码问题
+            helper2.addAttachment(MimeUtility.encodeWord("欠货提醒邮件.xlsx"), file);
             //7. 发送邮件
             javaMailSender.send(message2);
         } catch (Exception e) {

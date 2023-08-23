@@ -26,6 +26,7 @@
         select id, partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason from fg_inventory
     </sql>
 
+    <!-- 注意日期类型不能判空字符 and createTime != ''，只能判空   2023-08-17 00:00:00.0 date_format(#{createTime}, '%Y-%m-%d')  -->
     <select id="selectFgInventoryList" parameterType="FgInventory" resultMap="FgInventoryResult">
         <include refid="selectFgInventoryVo"/>
         <where>
@@ -41,7 +42,7 @@
             <if test="plant != null "> and plant = #{plant}</if>
             <if test="createUser != null "> and create_user = #{createUser}</if>
             <if test="uidId != null "> and uid_id = #{uidId}</if>
-            <if test="createTime != null and createTime != '' "> and create_time = #{createTime}</if>
+            <if test="createTime != null "> and create_time like concat(date_format(#{createTime}, '%Y-%m-%d'), '%') </if>
         </where>
         order by create_time desc
     </select>

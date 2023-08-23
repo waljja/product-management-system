@@ -336,7 +336,7 @@ public class SAPUtil {
 				// 注：目前获取的所有数据字段都没有进行非空判断
 				for (int j = 0; j < rs.getNumRows(); j++) {
 
-					String[] data = new String[2];
+					String[] data = new String[3];
 					// 移动类型
 					if (rs.getString("BWART") != null && !rs.getString("BWART").equals("")) {
 						data[0] = rs.getString("BWART").toString();
@@ -344,6 +344,10 @@ public class SAPUtil {
 					// 库存地点
 					if (rs.getString("LGORT") != null && !rs.getString("LGORT").equals("")) {
 						data[1] = rs.getString("LGORT").toString();
+					}
+					// 批次
+					if (rs.getString("CHARG") != null && !rs.getString("CHARG").equals("")) {
+						data[2] = rs.getString("CHARG").toString();
 					}
 					list.add(data);
 					rs.nextRow();

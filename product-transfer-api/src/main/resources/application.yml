@@ -36,6 +36,12 @@ spring:
           url: jdbc:sqlserver://172.31.2.182;DatabaseName=HTMES_MES_Main
           username: mes
           password: htMesV2!@
+        slave_4:
+          driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+          type: com.alibaba.druid.pool.DruidDataSource
+          url: jdbc:sqlserver://172.31.2.51;DatabaseName=OrBitX
+          username: sa
+          password: s=a2011!
 
   # 邮件 smtp服务器
   mail:

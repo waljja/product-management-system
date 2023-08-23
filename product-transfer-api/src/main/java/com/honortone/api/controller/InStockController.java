@@ -63,7 +63,7 @@ public class InStockController {
         String username = nodes.getStr("username");
 
         returnMessage = inStockService.inAndUpdateStatus(uid, fromstock, tostock, username);
-        if (returnMessage.equals("收货成功") || returnMessage.equals("收货成功，过账315成功")) {
+        if (returnMessage.equals("收货成功") || returnMessage.equals("收货成功，已自动过账315")) {
             return Result.success(returnMessage);
         } else {
             return Result.error("600", returnMessage);

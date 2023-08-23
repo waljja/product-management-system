@@ -41,13 +41,13 @@ public class GMaterailsController {
     private GMterialsMapper gMterialsMapper;
 
     /**
-     * 下载车牌号
+     * 根据日期下载车牌号
      * */
     @ResponseBody
     @PostMapping(value = "/downloadcarno")
-    public Result downloadCarno() {
+    public Result downloadCarno(@RequestBody String date) {
 
-        List<String> list = gMaterialsService.downloadCarno();
+        List<String> list = gMaterialsService.downloadCarno(date);
         System.out.println(list.toString());
         if (list.size() > 0) {
             return Result.success(list);
@@ -57,13 +57,18 @@ public class GMaterailsController {
     }
 
     /**
-     * 根据车牌号下载走货单号（有车）
+     * 根据车牌号、日期下载走货单号（有车）
      * */
     @ResponseBody
     @PostMapping(value = "/downloadshipmentno")
-    public Result downloadShipmentno(@RequestBody String carno) {
+    public Result downloadShipmentno(@RequestBody JSONObject params) {
 
-        List<String> list = gMaterialsService.downloadShipmentno(carno);
+        JSONObject nodes = new JSONObject(params.getStr("params"));
+        String carno = nodes.getStr("carno");
+        String date = nodes.getStr("date");
+        System.out.println(carno + date);
+
+        List<String> list = gMaterialsService.downloadShipmentno(carno, date);
         System.out.println(list.toString());
         if (list.size() > 0) {
             return Result.success(list);
@@ -212,6 +217,8 @@ public class GMaterailsController {
                 } else if (toList.getQuantity() < sum) {
                     return Result.error("600", "出库数量大于应出库数量，应出库" + (sum - (sum - toList.getQuantity())));
                 }
+            } else {
+                return Result.error("600", "不存在相关贴纸");
             }
 
         } else {
@@ -263,13 +270,13 @@ public class GMaterailsController {
     }
 
     /**
-     * 下载走货单（无车情况）
+     * 根据日期下载走货单（无车情况）
      * */
     @ResponseBody
     @PostMapping(value = "/downloadshipmentno2")
-    public Result downloadShipmentNo2() {
+    public Result downloadShipmentNo2(@RequestBody String date) {
 
-        List<String> list = gMaterialsService.downloadShipmentNo2();
+        List<String> list = gMaterialsService.downloadShipmentNo2(date);
         System.out.println(list.toString());
         if (list.size() > 0) {
             return Result.success(list);

@@ -112,7 +112,7 @@ public interface IFgChecklistService
 
     int updateBeforeUidNo(String uid,Long uidNo);
 
-    int updateQAresult(String pn,int qaresult,String plant);
+    int updateQAresult(String pn,int qaresult,String plant, String batch);
 
     FgChecklist getPrintInfo(String uid);
 

@@ -206,7 +206,7 @@ public class AutoDownload_BitchPrint {
      * 定时更新欠货是否已补货状态
      */
     @Log(title = "更新欠货单状态")
-    @Scheduled(cron = "0 */3 * * * ?")
+    // @Scheduled(cron = "0 */3 * * * ?")
     @PostMapping("/timer")
     public String QHisReady_Timer() {
 
@@ -220,32 +220,34 @@ public class AutoDownload_BitchPrint {
          *   若集合2为空，则该欠货单已补全货，修改状态为已补货状态
          * */
 
-        String returnMessage = "";
+        // 目前按欠货明细数量判断，非欠货总数（可能需要改）
+        String returnMessage = "12";
         List<FgTos> list1 = fgTosMapper.getQHList();
         if (list1.size() == 0) {
             return returnMessage = "没有欠货单";
         }
         for (int i = 0;i < list1.size();i++) {
 
+            // 是否存在没有拣货的备货单
+            FgTos fgTos = fgTosMapper.checkBHstatus(list1.get(i).getShipmentNO().toString());
             // 是否存在备货单/欠货单
-            FgTos fgTos2 = fgTosMapper.checkBHstatus(list1.get(i).getShipmentNO().toString());
-            String BH = "";
-            if (fgTos2 != null) {
-                BH = fgTos2.getTo_No().toString();
-            }
+//            FgTos fgTos2 = fgTosMapper.checkBHstatus(list1.get(i).getShipmentNO().toString());
+//            String BH = "";
+//            if (fgTos2 != null) {
+//                BH = fgTos2.getTo_No().toString();
+//            }
+            // 根据欠货单查询有多少条欠货明细（大概率是一条）
             List<FgToList> list2 = fgTosMapper.getToListByQH(list1.get(i).getTo_No() == null ? "" : list1.get(i).getTo_No().toString());
             if (list2.size() == 0) {
                 // 更新TOS管理的欠货单状态为已补货（注：补货完成后，下一次执行才会更新 即有一定延迟）
                 fgTosMapper.updateTosQH(list1.get(i).getTo_No().toString(), list1.get(i).getShipmentNO().toString());
             } else {
                 for (int j = 0;j < list2.size();j++) {
+                    // 根据明细的欠货数量（非欠货总数）查询库存是否有补货
                     FgInventory fgInventory = fgTosMapper.checkInventory(list2.get(j));
                     if (fgInventory != null) {
-                        // 批量和欠货总数问题，什么时候拣货完成，定时检测？
-                        FgTos fgTos = fgTosMapper.checkBHstatus(list1.get(i).getShipmentNO().toString());
+
                         if (fgTos != null) {
-                            fgTosMapper.sumBH(list2.get(j).getQuantity(), list1.get(i).getShipmentNO().toString());
-                            fgTosMapper.updateQHStatus(list2.get(j));
                             FgToList fgToList = new FgToList();
                             fgToList.setStatus(0);
                             fgToList.setTo_No(fgTos.getTo_No().toString());
@@ -257,16 +259,25 @@ public class AutoDownload_BitchPrint {
                             fgToList.setStock(fgInventory.getStock().toString());
                             fgToList.setBatch(fgInventory.getBatch().toString());
                             fgTosMapper.insertFgTolist(fgToList);
-                            // fgTosMapper.updatebatchSum(list2.get(j).getQuantity(), fgTos.getTo_No().toString());
+                            // 修改明细表中原有备货单的批次总数
+                            fgTosMapper.updatebatchSum(list2.get(j).getQuantity(), fgTos.getTo_No().toString());
+                            // 修改累加备货单数量
+                            fgTosMapper.sumBH(list2.get(j).getQuantity(), list1.get(i).getShipmentNO().toString());
+                            // 修改欠货明细状态为已补货（欠货管理在上面更新）
+                            fgTosMapper.updateQHStatus(list2.get(j));
+                            // 更新库存表已备货成品状态
                             fgTosMapper.updateInventoryStatus(fgInventory.getUid().toString());
 
                         } else {
                             FgTos fgTos1 = new FgTos();
                             BeanUtil.copyProperties(list1.get(i), fgTos1, true);
-                            fgTos1.setTo_No(generateTo_No("备货单"));
+                            String BH = generateTo_No("备货单");
+                            fgTos1.setTo_No(BH);
                             fgTos1.setStatus(0);
                             // fgTos1.setSap_qty(list2.get(j).getQuantity());
+                            // 生成新备货单并插入TO管理
                             fgTosMapper.insertFgTos(fgTos1);
+                            // 更新欠货明细状态
                             fgTosMapper.updateQHStatus(list2.get(j));
                             FgToList fgToList = new FgToList();
                             fgToList.setStatus(0);
@@ -279,7 +290,126 @@ public class AutoDownload_BitchPrint {
                             fgToList.setStock(fgInventory.getStock().toString());
                             fgToList.setBatch(fgInventory.getBatch().toString());
                             fgTosMapper.insertFgTolist(fgToList);
+                            // 更新库存装填为已备货
                             fgTosMapper.updateInventoryStatus(fgInventory.getUid().toString());
+                        }
+                    } else {
+                        // 没有库存成品数量等于欠货数量，但有存在相同PN、PO的情况，执行累加，判大小分情况
+                        List<FgInventory> fgInventorys = fgTosMapper.checkInventory2(list2.get(j));
+                        String BH = "";
+                        if (fgInventorys.size() > 0 && fgTos != null) {
+                            BH = fgTos.getTo_No().toString();
+
+                        } else if (fgInventorys.size() > 0){
+                            FgTos fgTos1 = new FgTos();
+                            BH = generateTo_No("备货单");
+                            BeanUtil.copyProperties(list2.get(i), fgTos1, true);
+                            fgTos1.setTo_No(BH);
+                            fgTos1.setStatus(0);
+                            // fgTos1.setSap_qty(list2.get(j).getQuantity());
+                            // 生成新备货单并插入TO管理
+                            fgTosMapper.insertFgTos(fgTos1);
+                        }
+                        long sumqty = 0;
+                        if (fgInventorys.size() > 0) {
+                            for (int k = 0; k < fgInventorys.size(); k++) {
+                                FgToList fgToList = new FgToList();
+                                // 库存总数小于欠货时，直接全备货（修改库存状态），修改欠货数量（明细表和管理表）
+                                if (fgInventorys.get(k).getSumQuantity() < list2.get(j).getQuantity()) {
+
+                                    fgToList.setStatus(0);
+                                    fgToList.setTo_No(BH);
+                                    fgToList.setUid(fgInventorys.get(k).getUid().toString());
+                                    fgToList.setPo(list2.get(j).getPo().toString());
+                                    fgToList.setPn(list2.get(j).getPn().toString());
+                                    fgToList.setQuantity(fgInventorys.get(k).getQuantity());
+                                    fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
+                                    fgToList.setStock(fgInventorys.get(k).getStock().toString());
+                                    fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
+                                    // 插入TO明细
+                                    fgTosMapper.insertFgTolist(fgToList);
+                                    // 修改TO明细备货单总数
+                                    fgTosMapper.updatebatchSum(fgInventorys.get(k).getQuantity(), BH);
+                                    // fgTosMapper.sumBH(fgInventorys.get(k).getQuantity(), list1.get(i).getShipmentNO().toString());
+                                    // 更新欠货单剩余的欠货数量
+                                    list2.get(j).setSap_qty(list2.get(j).getSap_qty() - fgInventorys.get(k).getQuantity());
+                                    fgTosMapper.updateQHQuantuty(list2.get(j), list2.get(j).getQuantity() - fgInventorys.get(k).getQuantity());
+                                    // 修改库存表已备货的成品状态
+                                    fgTosMapper.updateInventoryStatus(fgInventorys.get(k).getUid().toString());
+                                    // 修改TO管理表中欠货单数量
+                                    fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
+                                    // 更新备货总数
+                                    fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
+
+                                } else if (fgInventorys.get(k).getSumQuantity() > list2.get(j).getQuantity()) {
+                                    sumqty += fgInventorys.get(k).getQuantity();
+                                    if (sumqty > list2.get(j).getQuantity()) {
+                                        long qty = fgInventorys.get(k).getQuantity() - (sumqty - list2.get(j).getQuantity());
+                                        fgToList.setStatus(0);
+                                        fgToList.setTo_No(BH);
+                                        fgToList.setUid(fgInventorys.get(k).getUid().toString());
+                                        fgToList.setPo(list2.get(j).getPo().toString());
+                                        fgToList.setPn(list2.get(j).getPn().toString());
+                                        fgToList.setQuantity(qty);
+                                        fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + qty);
+                                        fgToList.setStock(fgInventorys.get(k).getStock().toString());
+                                        fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
+                                        fgTosMapper.insertFgTolist(fgToList);
+                                        fgTosMapper.updatebatchSum(qty, BH);
+                                        // fgTosMapper.sumBH(fgInventorys.get(k).getQuantity(), list1.get(i).getShipmentNO().toString());
+                                        list2.get(j).setSap_qty(list2.get(j).getSap_qty() - qty);
+                                        fgTosMapper.updateQHQuantuty(list2.get(j), list2.get(j).getQuantity() - qty);
+                                        fgTosMapper.updateInventoryStatus(fgInventorys.get(k).getUid().toString());
+                                        // 修改TO管理表中欠货单数量
+                                        fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
+                                        // 更新备货总数
+                                        fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + qty, BH);
+                                        break;
+                                    } else if (sumqty == list2.get(j).getQuantity()) {
+                                        fgToList.setStatus(0);
+                                        fgToList.setTo_No(BH);
+                                        fgToList.setUid(fgInventorys.get(k).getUid().toString());
+                                        fgToList.setPo(list2.get(j).getPo().toString());
+                                        fgToList.setPn(list2.get(j).getPn().toString());
+                                        fgToList.setQuantity(fgInventorys.get(k).getQuantity());
+                                        fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
+                                        fgToList.setStock(fgInventorys.get(k).getStock().toString());
+                                        fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
+                                        fgTosMapper.insertFgTolist(fgToList);
+                                        fgTosMapper.updatebatchSum(fgInventorys.get(k).getQuantity(), BH);
+                                        // fgTosMapper.sumBH(fgInventorys.get(k).getQuantity(), list1.get(i).getShipmentNO().toString());
+                                        list2.get(j).setSap_qty(list2.get(j).getSap_qty() - fgInventorys.get(k).getQuantity());
+                                        fgTosMapper.updateQHQuantuty(list2.get(j), list2.get(j).getQuantity() - fgInventorys.get(k).getQuantity());
+                                        fgTosMapper.updateInventoryStatus(fgInventorys.get(k).getUid().toString());
+                                        // 修改TO管理表中欠货单数量
+                                        fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
+                                        // 更新备货总数
+                                        fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
+                                        break;
+                                    } else {
+
+                                        fgToList.setStatus(0);
+                                        fgToList.setTo_No(BH);
+                                        fgToList.setUid(fgInventorys.get(k).getUid().toString());
+                                        fgToList.setPo(list2.get(j).getPo().toString());
+                                        fgToList.setPn(list2.get(j).getPn().toString());
+                                        fgToList.setQuantity(fgInventorys.get(k).getQuantity());
+                                        fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
+                                        fgToList.setStock(fgInventorys.get(k).getStock().toString());
+                                        fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
+                                        fgTosMapper.insertFgTolist(fgToList);
+                                        fgTosMapper.updatebatchSum(fgInventorys.get(k).getQuantity(), BH);
+                                        // fgTosMapper.sumBH(fgInventorys.get(k).getQuantity(), list1.get(i).getShipmentNO().toString());
+                                        list2.get(j).setSap_qty(list2.get(j).getSap_qty() - fgInventorys.get(k).getQuantity());
+                                        fgTosMapper.updateQHQuantuty(list2.get(j), list2.get(j).getQuantity() - fgInventorys.get(k).getQuantity());
+                                        fgTosMapper.updateInventoryStatus(fgInventorys.get(k).getUid().toString());
+                                        // 修改TO管理表中欠货单数量
+                                        fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
+                                        // 更新备货总数
+                                        fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -287,6 +417,88 @@ public class AutoDownload_BitchPrint {
         }
         return returnMessage;
     }
+
+
+//    public String QHisReady_Timer() {
+//
+//        /**
+//         * 1.查询TOS管理表中QH状态为3的欠货单 为一个集合1
+//         * 2.遍历集合1去TOList明细表中查询欠货单对应的欠货明细单 为一个集合2
+//         * 3.遍历集合2去库存表查询是否已补货:
+//         *                              1:遍历完都没有补货，集合1直接遍历下一个欠货单，生成下一个集合2
+//         *                              2:有其中一些欠货单已补货，查询TO管理表该走货单对应备货单状态是否为0,0则UID总数累加，并根据该备货单生成备货明细；若不为0则生成新备货单和备货明细，
+//         *                                  生成后修改库存状态开已备货
+//         *   若集合2为空，则该欠货单已补全货，修改状态为已补货状态
+//         * */
+//
+//        String returnMessage = "";
+//        List<FgTos> list1 = fgTosMapper.getQHList();
+//        if (list1.size() == 0) {
+//            return returnMessage = "没有欠货单";
+//        }
+//        for (int i = 0;i < list1.size();i++) {
+//
+//            // 是否存在备货单/欠货单
+////            FgTos fgTos2 = fgTosMapper.checkBHstatus(list1.get(i).getShipmentNO().toString());
+////            String BH = "";
+////            if (fgTos2 != null) {
+////                BH = fgTos2.getTo_No().toString();
+////            }
+//            List<FgToList> list2 = fgTosMapper.getToListByQH(list1.get(i).getTo_No() == null ? "" : list1.get(i).getTo_No().toString());
+//            if (list2.size() == 0) {
+//                // 更新TOS管理的欠货单状态为已补货（注：补货完成后，下一次执行才会更新 即有一定延迟）
+//                fgTosMapper.updateTosQH(list1.get(i).getTo_No().toString(), list1.get(i).getShipmentNO().toString());
+//            } else {
+//                for (int j = 0;j < list2.size();j++) {
+//                    FgInventory fgInventory = fgTosMapper.checkInventory(list2.get(j));
+//                    if (fgInventory != null) {
+//                        // 批量和欠货总数问题，什么时候拣货完成，定时检测？
+//                        FgTos fgTos = fgTosMapper.checkBHstatus(list1.get(i).getShipmentNO().toString());
+//                        if (fgTos != null) {
+//                            FgToList fgToList = new FgToList();
+//                            fgToList.setStatus(0);
+//                            fgToList.setTo_No(fgTos.getTo_No().toString());
+//                            fgToList.setUid(fgInventory.getUid().toString());
+//                            fgToList.setPo(list2.get(j).getPo().toString());
+//                            fgToList.setPn(list2.get(j).getPn().toString());
+//                            fgToList.setQuantity(list2.get(j).getQuantity());
+//                            fgToList.setSap_qty(fgTos.getSap_qty() + list2.get(j).getQuantity());
+//                            fgToList.setStock(fgInventory.getStock().toString());
+//                            fgToList.setBatch(fgInventory.getBatch().toString());
+//                            fgTosMapper.insertFgTolist(fgToList);
+//                            fgTosMapper.updatebatchSum(list2.get(j).getQuantity(), fgTos.getTo_No().toString());
+//                            fgTosMapper.sumBH(list2.get(j).getQuantity(), list1.get(i).getShipmentNO().toString());
+//                            fgTosMapper.updateQHStatus(list2.get(j));
+//                            fgTosMapper.updateInventoryStatus(fgInventory.getUid().toString());
+//
+//                        } else {
+//                            FgTos fgTos1 = new FgTos();
+//                            BeanUtil.copyProperties(list1.get(i), fgTos1, true);
+//                            String BH = generateTo_No("备货单");
+//                            fgTos1.setTo_No(BH);
+//                            fgTos1.setStatus(0);
+//                            // fgTos1.setSap_qty(list2.get(j).getQuantity());
+//                            fgTosMapper.insertFgTos(fgTos1);
+//                            fgTosMapper.updateQHStatus(list2.get(j));
+//                            FgToList fgToList = new FgToList();
+//                            fgToList.setStatus(0);
+//                            fgToList.setTo_No(fgTos1.getTo_No().toString());
+//                            fgToList.setUid(fgInventory.getUid().toString());
+//                            fgToList.setPo(list2.get(j).getPo().toString());
+//                            fgToList.setPn(list2.get(j).getPn().toString());
+//                            fgToList.setQuantity(fgTos1.getSap_qty());
+//                            fgToList.setSap_qty(fgTos1.getSap_qty());
+//                            fgToList.setStock(fgInventory.getStock().toString());
+//                            fgToList.setBatch(fgInventory.getBatch().toString());
+//                            fgTosMapper.insertFgTolist(fgToList);
+//                            fgTosMapper.updateInventoryStatus(fgInventory.getUid().toString());
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        return returnMessage;
+//    }
 
     // @Scheduled(cron = "0 */1 * * * ?")
 //    /**
@@ -773,31 +985,31 @@ public class AutoDownload_BitchPrint {
      **/
     public void insertInto(List<FgChecklist> list) {
 
-        for (int i = 0; i < list.size(); i++) {
-            FgChecklist fgChecklist = list.get(i);
-            System.out.println(fgChecklist.toString());
-            System.out.println(fgChecklist.getSap101().toString() + "---" + fgChecklist.getPn().toString());
-            String sap101 = fgChecklist.getSap101().toString();
-            String pn = fgChecklist.getPn().toString();
-            // 判断该数据是否已在数据库
-//            List<FgChecklist> list1 = fgChecklistMapper.checkinfo(sap101, pn);
-            int n = fgChecklistMapper.checkinfo(sap101, pn);
-            // System.out.println(list1.size());
-            if (n == 0) {
-                // 获取拉别 (建立索引，否则很慢)
-                String line = fgChecklistMapper.checkLine(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-                // 获取检验员
-                String qasign = fgChecklistMapper.checkQasign(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-                System.out.println(fgChecklist.getWo().toString().toString() + "----121212");
-                fgChecklist.setQaSign(qasign);
-                fgChecklist.setLine(line);
-                // 插入数据
-                fgChecklistMapper.insertFgChecklist(fgChecklist);
-            } else {
-                System.out.println(fgChecklist.getWo().toString().toString() + "----121212");
-                System.out.println("该条数据已存在" + fgChecklist.getSap101().toString());
-            }
-        }
+//        for (int i = 0; i < list.size(); i++) {
+//            FgChecklist fgChecklist = list.get(i);
+//            System.out.println(fgChecklist.toString());
+//            System.out.println(fgChecklist.getSap101().toString() + "---" + fgChecklist.getPn().toString());
+//            String sap101 = fgChecklist.getSap101().toString();
+//            String pn = fgChecklist.getPn().toString();
+//            // 判断该数据是否已在数据库
+////            List<FgChecklist> list1 = fgChecklistMapper.checkinfo(sap101, pn);
+//            int n = fgChecklistMapper.checkinfo(sap101, pn);
+//            // System.out.println(list1.size());
+//            if (n == 0) {
+//                // 获取拉别 (建立索引，否则很慢)
+//                String line = fgChecklistMapper.checkLine(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+//                // 获取检验员
+//                String qasign = fgChecklistMapper.checkQasign(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
+//                System.out.println(fgChecklist.getWo().toString().toString() + "----121212");
+//                fgChecklist.setQaSign(qasign);
+//                fgChecklist.setLine(line);
+//                // 插入数据
+//                fgChecklistMapper.insertFgChecklist(fgChecklist);
+//            } else {
+//                System.out.println(fgChecklist.getWo().toString().toString() + "----121212");
+//                System.out.println("该条数据已存在" + fgChecklist.getSap101().toString());
+//            }
+//        }
     }
 
     /**

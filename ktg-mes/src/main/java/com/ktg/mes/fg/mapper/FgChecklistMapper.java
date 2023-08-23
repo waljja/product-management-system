@@ -127,10 +127,10 @@ public interface FgChecklistMapper
      * @return String
      */
     @DataSource(value = DataSourceType.SLAVE)
-    String checkQasign(String wo);
+    FgChecklist checkQasign(String wo);
 
     @DataSource(value = DataSourceType.SLAVE1)
-    String checkQasign2(String wo);
+    FgChecklist checkQasign2(String wo);
 
     /**
      * 查询QA结果
@@ -153,6 +153,10 @@ public interface FgChecklistMapper
      */
     Long getUidNo_Sum(@Param("pn") String pn,@Param("sap101") String sap101);
 
+    FgChecklist getIdInfo(FgChecklist fgChecklist);
+
+    FgChecklist getIdInfo2(FgChecklist fgChecklist);
+
     /**
      * 更新被拆分的成品单数量
      * @param uid uidNo
@@ -172,7 +176,7 @@ public interface FgChecklistMapper
      * @param pn qaresult plant
      * @return int
      */
-    int updateQAresult(@Param("pn") String pn,@Param("qaresult") int qaresult,@Param("plant") String plant);
+    int updateQAresult(@Param("pn") String pn,@Param("qaresult") int qaresult,@Param("plant") String plant, @Param("batch") String batch);
 
     /**
      *  根据uid查询打印数据

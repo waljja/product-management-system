@@ -1,6 +1,9 @@
 package com.ktg.mes.fg.domain.Dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ktg.common.annotation.Excel;
+
+import java.util.Date;
 
 /**
  * 获取SAP走货资料总数、走货单、PO、PN
@@ -32,6 +35,10 @@ public class ShipmentPart {
 
     @Excel(name = "工厂")
     private String plant;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "走货时间", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date shipmentDate;
 
     public String getShipmentNO() {
         return ShipmentNO;
@@ -81,6 +88,14 @@ public class ShipmentPart {
         this.plant = plant;
     }
 
+    public Date getShipmentDate() {
+        return shipmentDate;
+    }
+
+    public void setShipmentDate(Date shipmentDate) {
+        this.shipmentDate = shipmentDate;
+    }
+
     @Override
     public String toString() {
         return "ShipmentPart{" +
@@ -90,6 +105,7 @@ public class ShipmentPart {
                 ", batchsum=" + batchsum +
                 ", carno='" + carno + '\'' +
                 ", plant='" + plant + '\'' +
+                ", shipmentDate=" + shipmentDate +
                 '}';
     }
 }

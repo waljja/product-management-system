@@ -241,9 +241,12 @@ public class SAPUtil {
 
             // 注：目前获取的所有数据字段都没有进行非空判断
             for (int j = 0; j < rs.getNumRows(); j++) {
-                String[] data = new String[1];
+                String[] data = new String[2];
+                if (rs.getString("CHARG") != null && !rs.getString("CHARG").equals("")) {
+                    data[0] = rs.getString("CHARG").toString();
+                }
                 if (rs.getString("BWART") != null && !rs.getString("BWART").equals("")) {
-                    data[0] = rs.getString("BWART").toString();
+                    data[1] = rs.getString("BWART").toString();
                 }
                 list.add(data);
                 rs.nextRow();

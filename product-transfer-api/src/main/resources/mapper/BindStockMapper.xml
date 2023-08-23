@@ -59,18 +59,19 @@
     </sql>
 
     <!-- 1:绑库 2:出库 -->
-    <!-- 没有贴纸情况 -->
+    <!-- 判断是否已拣货（下架），避免重复上架 -->
+    <select id="checkUID" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tolist where uid = #{uid} and status = 1
+    </select>
+    <!-- 没有贴纸情况 and status = 1  and stock is not null and uid_id is null -->
     <select id="checkInfoByUid_1" parameterType="java.lang.String" resultMap="BaseResultMap">
         <include refid="selectFgInventoryVo"/>
-        where uid = #{uid} and status = 1 and stock is not null and uid_id is null
+        where uid = #{uid}
     </select>
     <update id="updateStock">
         update fg_inventory
         set stock = #{stock}
         where uid = #{uid}
-          and status = 1
-          and stock is not null
-          and uid_id is null
     </update>
     <!-- 没有贴纸情况 -->
 
@@ -105,10 +106,53 @@
         where uid = #{uid}
     </select>
 
-    <!-- 保存贴纸信息 -->
-    <select id="insertTagsInventory">
+    <!-- 保存贴纸信息（珠飞） -->
+    <insert id="insertTagsInventory">
         insert into (uid, client_pn, quantity, stauts, client_batch, production_date, pn, stock, po, createtime)
         values(#{uid}, #{khpn}, #{qty}, 0, #{clientBatch}, #{rectime}, #{pn}, #{stock}, #{po}, now())
+    </insert>
+
+    <select id="getBoxInfo" parameterType="java.lang.String" resultType="com.honortone.api.entity.BoxInventory">
+        SELECT TOP 1
+        A.PO po,
+        A.POQty,
+        M.MOName wo,
+        A.QTY AS '工单数量',
+        PRD.ProductName pn,
+        C.CartonNO cartonNo,
+        C.CartonNOQty cartonQty,
+        B.LotSN AS '镭雕码',
+        BCS.LotSN AS 'Pcba SN',
+        C.Createdate AS '包装时间',
+        CASE WHEN ISNULL(C.LotId,'') ='' AND B.SNState = 1 THEN '已镭雕未包装'
+        WHEN ISNULL(C.LotId,'') <![CDATA[ <> ]]> '' THEN '已包装'
+        WHEN ISNULL(C.LotId,'') ='' AND ISNULL(B.SNState,'') =''
+        THEN '未镭雕'
+        WHEN ISNULL(C.LotId,'') ='' AND B.SNState = 0
+        THEN '待镭雕'
+        WHEN ISNULL(B.EquipmenId,'') <![CDATA[ <> ]]> '' AND B.SNState = 1 AND ISNULL(C.LotId,'') =''
+        THEN '已镭雕'
+        ELSE '' END AS '状态',
+        BCS.WorkcenterName
+        FROM Product_SNList_Head A WITH(NOLOCK)
+        INNER JOIN MO M WITH(NOLOCK) ON M.MOId = A.Moid
+        INNER JOIN ProductRoot PRD WITH(NOLOCK) ON PRD.DefaultProductId = M.ProductId
+        LEFT JOIN Product_SNList_Item B WITH(NOLOCK) ON A.Product_SNList_HeadID = B.Product_SNList_HeadID
+        LEFT JOIN PackingScan C WITH(NOLOCK) ON A.Moid = C.MOid AND C.ScanSN = B.LotSN
+        LEFT JOIN BindCustomerSn BCS ON BCS.CustomerSn = B.LotSN
+        where C.CartonNO = #{cartonNo}
+        ORDER BY C.Createdate DESC
+    </select>
+
+    <!-- 保存贴纸信息（） -->
+    <insert id="insertBoxInventory">
+        insert into fg_box_inventory (uid, carton_no, wo, pn, carton_qty, status, batch, production_date, stock, po, createtime)
+        values(#{uid}, #{cartonNo}, #{wo}, #{pn}, #{cartonQty}, 0, #{Batch}, #{production_date}, #{stock}, #{po}, now())
+    </insert>
+
+    <!-- 根据UID查询绑定的箱号数量 -->
+    <select id="checkBoxQuantity" parameterType="java.lang.String" resultType="java.lang.Long">
+        select isnull(sum(carton_qty), 0) sumqty from fg_box_inventory where uid = #{uid}
     </select>
 
     <!-- 修改UID库存数量（贴纸数量累加） -->
@@ -196,6 +240,12 @@
     <!-- 根据To单获取走货信息 -->
     <select id="getShipmentInfoBytoNo" parameterType="java.lang.String" resultType="com.honortone.api.entity.FgShipmentInfo">
         select t.shipment_no ShipmentNO, s.shipment_date ShipmentDate  from fg_tos t left join fg_shipmentinfo s on t.shipment_no = s.shipment_number where t.to_no = #{toNo} limit 1
+    </select>
+
+    <!-- 检查是欠货单是否已补货 -->
+    <select id="checkStatusTosQH" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select ifnull(sum(quantity), 0) qh_sum from fg_tos
+        where shipment_no = (select shipment_no from fg_tos where to_no = #{toNo} limit 1) and status = 3
     </select>
 
     <!-- 绑定走货区 -->

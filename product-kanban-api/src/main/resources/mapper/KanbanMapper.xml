@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.productkanbanapi.mapper.KanbanMapper">
 
-    <resultMap id="BaseResultMap" type="com.example.productkanbanapi.entity.ProductNotInStorage">
+    <resultMap id="BaseResultMap" type="com.example.productkanbanapi.entity.NotInStorage">
         <result property="partNumber" column="PartNumber" jdbcType="VARCHAR"/>
         <result property="batch" column="Batch" jdbcType="VARCHAR"/>
         <result property="uid" column="UID" jdbcType="VARCHAR"/>
@@ -41,8 +41,24 @@
               from fg_inventory_out fio) warehoused ${ew.customSqlSegment}
     </select>
 
-    <select id="findNotPutIn" resultType="com.example.productkanbanapi.entity.ProductNotInStorage">
+    <select id="findNotPutIn" resultType="com.example.productkanbanapi.entity.NotInStorage">
         select *
+        from xTend_MaterialTransactions ${ew.customSqlSegment}
+    </select>
+
+    <select id="findShipment" resultType="com.example.productkanbanapi.entity.Shipment"></select>
+
+    <select id="findStockKanbanData" resultMap="BaseResultMap">
+        select row_number() over (order by TransactionTime) as item,
+               PartNumber,
+               PO_NUMBER,
+               Batch,
+               UID,
+               Quantity,
+               ToStock,
+               TransactionTime,
+               Plant,
+               '待上架'                                     as Status
         from xTend_MaterialTransactions ${ew.customSqlSegment}
     </select>
 

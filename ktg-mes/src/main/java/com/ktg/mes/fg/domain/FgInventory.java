@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ktg.common.annotation.Excel;
 import com.ktg.common.core.domain.BaseEntity;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 
 import java.util.Date;
 
@@ -180,12 +178,10 @@ public class FgInventory extends BaseEntity {
         this.recTime = recTime;
     }
 
-    @Override
     public Date getCreateTime() {
         return createTime;
     }
 
-    @Override
     public void setCreateTime(Date createTime) {
         this.createTime = createTime;
     }

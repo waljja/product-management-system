@@ -252,10 +252,10 @@
 <!--  公共处理  -->
     <!-- 用于拆箱\产生备货/欠货单 #{lastcomfirm} -->
     <select id="selectShipmentPart" parameterType="java.lang.String" resultType="com.ktg.mes.fg.domain.Dto.ShipmentPart">
-        select sum(quantity) batchsum, shipment_number ShipmentNO, pn, po,carno, plant
+        select sum(quantity) batchsum, shipment_number ShipmentNO, pn, po,carno, plant, shipment_date shipmentDate
         from fg_shipmentinfo
         where last_comfirm in ('船务','货仓') and status = 0
-        group by shipment_number, pn, po,carno, plant
+        group by shipment_number, pn, po,carno, plant, shipment_date
     </select>
 
     <!-- 根据走货编号获取走货数量 -->
@@ -386,7 +386,10 @@
     </select>
     <!-- 查询库存是否已补货（不同数量） -->
     <select id="checkInventory2" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgInventory">
-        select uid, stock, batch, sum(quantity) sumQuantity from fg_inventory where partnumber = #{pn} and status = 1 and po = #{po}
+        select uid, stock, batch, quantity, (select sum(quantity) from fg_inventory where partnumber = #{pn} and status = 1 and po = #{po}) sumQuantity
+        from fg_inventory where partnumber = #{pn} and status = 1 and po = #{po}
+        group by uid, stock, batch, quantity
+        order by batch asc
     </select>
 
 
@@ -415,6 +418,18 @@
         update fg_tolist
         set status = 3
         where to_no = #{to_No} and status = 2 and pn = #{pn} and quantity = #{Quantity} and po = #{po}
+    </update>
+    <!-- 修改欠货明细补货一部分货后的数量 -->
+    <update id="updateQHQuantuty">
+        update fg_tolist
+        set quantity = #{Quantity2}, batch_qty = #{fgToList.sap_qty}
+        where to_no = #{fgToList.to_No} and status = 2 and pn = #{fgToList.pn} and quantity = #{fgToList.Quantity} and po = #{fgToList.po}
+    </update>
+    <!-- 修改欠货明细补货一部分货后的数量 -->
+    <update id="updateTosQHQuantuty">
+        update fg_tos
+        set quantity = #{Quantity}
+        where to_no = #{toNo} and status = 3
     </update>
 
     <!-- 将补货明细存到明细表 -->

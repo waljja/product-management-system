@@ -118,7 +118,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 插入前检查是否保存了但没打印 < <= &等字符在mybatis需使用转义符或<![CDATA[ 符号 ]] -->
     <select id="checkInfonChcklist" parameterType="FgChecklist" resultType="java.lang.Integer">
         select count(id) from fg_checklist
-        where pn = #{pn} and po = #{po} and sap101 = #{sap101} and uid_no = #{uidNo} and status <![CDATA[ <> ]]> 2
+        where pn = #{pn} and po = #{po} and sap101 = #{sap101} and uid_no = #{uidNo} and status <![CDATA[ <> ]]> 2 and uid = #{uid}
     </select>
     <!-- 插入操作 注意字段允不允许空值传入 -->
     <insert id="insertFgChecklist" parameterType="FgChecklist" useGeneratedKeys="true" keyProperty="id">
@@ -193,7 +193,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="line != null">line = #{line},</if>
             <if test="wo != null">wo = #{wo},</if>
             <if test="po != null">po = #{po},</if>
-            <if test="fromStock != null">fromstock = #{fromstock},</if>
+            <if test="fromStock != null">fromstock = #{fromStock},</if>
             <if test="palletNo != null">pallet_no = #{palletNo},</if>
             <if test="batchQty != null">batch_qty = #{batchQty},</if>
             <if test="uidNo != null">uid_no = #{uidNo},</if>
@@ -205,12 +205,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="qaResult != null">qa_result = #{qaResult},</if>
             <if test="customerResult != null">customer_result = #{customerResult},</if>
             <if test="createdate != null">createdate = #{createdate},</if>
+            <if test="createdate == null">createdate = now(),</if>
             <if test="oldUid != null">old_uid = #{oldUid},</if>
             <if test="pn660 != null">pn660 = #{pn660},</if>
             <if test="status != null">status = #{status},</if>
             <if test="createUser != null">create_user = #{createUser},</if>
             <if test="updateUser != null">update_user = #{updateUser},</if>
             <if test="updateDate != null">update_date = #{updateDate},</if>
+            <if test="updateDate == null">update_date = now(),</if>
             <if test="barcodeUrl != null  and barcodeUrl != ''">barcode_url = #{barcodeUrl},</if>
             <if test="barcodeFormart != null and barcodeFormart != ''">barcode_formart = #{barcodeFormart},</if>
             <if test="palletItems != null and palletItems != ''">pallet_Items = #{palletItems},</if>
@@ -262,14 +264,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <!-- B2 51数据库 QA签署人（可能有多个【拼接】） -->
-    <select id="checkQasign" parameterType="String" resultType="java.lang.String">
-        select distinct WorkerNO = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
+    <select id="checkQasign" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
+        select distinct qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''), WorkcenterName as line
         from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
         <!--select top 1 WorkerNo from OrBitX.dbo.DataChainBonding090 WHERE WorkflowstepName LIKE '%OQA%' and MOName = #{wo}-->
     </select>
     <!-- B1 72数据库 QA签署人（可能有多个【拼接】） -->
-    <select id="checkQasign2" parameterType="String" resultType="java.lang.String">
-        select distinct WorkerNO = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
+    <select id="checkQasign2" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
+        select distinct qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
+        line = stuff((select distinct '、' + WorkcenterName from OrBitX.dbo.DataChainBonding090
+        where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
         from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
         <!--select top 1 WorkerNo from OrBitX.dbo.DataChainBonding090 WHERE WorkflowstepName LIKE '%OQA%' and MOName = #{wo}-->
     </select>
@@ -278,7 +282,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateQAresult">
         update fg_checklist
         set qa_result = #{qaresult}
-        where pn = #{pn} and plant = #{plant}
+        where pn = #{pn} and plant = #{plant} and batch = #{batch}
     </update>
 
     <!-- 查询QA检查结果 -->
@@ -290,7 +294,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 查询数据是否存在 -->
     <select id="checkinfo" resultType="java.lang.Integer">
         select count(*) from fg_checklist
-        where sap101 = #{sap101} and pn = #{pn} and status = 0
+        where sap101 = #{sap101} and pn = #{pn} and status in (0, 1)
     </select>
 
     <!-- 销毁前送检单（即状态设为2  废弃） -->
@@ -303,6 +307,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 根据PN和启用状态获取所有已打印的数量 -->
     <select id="getUidNo_Sum" resultType="java.lang.Long">
        select sum(uid_no) from fg_checklist where pn = #{pn} and sap101 = #{sap101} and status = 1
+    </select>
+
+    <!-- 根据PN、PO、批次、数量查找原数据(默认数据) -->
+    <select id="getIdInfo" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"></include>
+        where pn = #{pn} and sap101 = #{sap101} and batch = #{batch} and status = 0 and batch_qty = #{batchQty}
+    </select>
+    <!-- 根据PN、PO、批次、数量查找原数据（未打印数据） -->
+    <select id="getIdInfo2" resultMap="FgChecklistResult">
+        <include refid="selectFgChecklistVo"></include>
+        where pn = #{pn} and sap101 = #{sap101} and batch = #{batch} and status = 3 and batch_qty = #{batchQty}
     </select>
 
     <!-- 更新被拆分的成品单数量 -->

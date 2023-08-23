@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 
@@ -35,6 +36,7 @@ public class FgInventoryController extends BaseController {
     public TableDataInfo list(FgInventory fgInventory)
     {
         startPage();
+        System.out.println(fgInventory.getCreateTime());
         List<FgInventory> list = fgInventoryService.selectFgInventoryList(fgInventory);
         return getDataTable(list);
     }

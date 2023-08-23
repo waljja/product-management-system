@@ -67,15 +67,36 @@ public class InStockServiceImpl extends ServiceImpl<InStockMapper, Inventory> im
             for (String[] arr : list) {
                 System.out.println(Arrays.asList(arr[0]));
                 if (Arrays.asList(arr[0]).contains("321")) {
-                    int n = inStockMapper.updateQAresult(checkList.getPn().toString(), 1);
+                    int n = inStockMapper.updateQAresult(checkList.getPn().toString(), 1, checkList.getPlant().toString(), checkList.getBatch().toString());
                     materialTransationsDto = insertInfo(checkList, arr[1].toString(), stock);
                     break;
                 }
                 n1 += 1;
                 if (n1 == list.size()) {
-                    int n = inStockMapper.updateQAresult(checkList.getPn().toString(), 0);
+                    int n = inStockMapper.updateQAresult(checkList.getPn().toString(), 0, checkList.getPlant().toString(), checkList.getBatch().toString());
                     materialTransationsDto.setMsg("查询结果为fail，不允许收货");
                 }
+                // 直接输出是带有[]框
+//                String batch = Arrays.asList(arr[3]).toString();
+//                String Mvt = Arrays.asList(arr[0]).toString();
+//                if (batch.substring(1, batch.length() -1).equals(checkList.getBatch().toString())) {
+//                    if (Mvt.substring(1, Mvt.length() - 1).equals("321")) {
+//                        int n = inStockMapper.updateQAresult(checkList.getPn().toString(), 1, checkList.getPlant().toString(), checkList.getBatch().toString());
+//                        materialTransationsDto = insertInfo(checkList, arr[1].toString(), stock);
+//                        break;
+//                    } else if (Mvt.substring(1, Mvt.length() - 1).equals("122")) {
+//                        int n = inStockMapper.updateQAresult(checkList.getPn().toString(), 0, checkList.getPlant().toString(), checkList.getBatch().toString());
+//                        materialTransationsDto = insertInfo(checkList, arr[1].toString(), stock);
+//                        materialTransationsDto.setMsg("查询结果为fail，不允许收货");
+//                        break;
+//                    }
+//                }
+//                n1 += 1;
+//                if (n1 == list.size()) {
+////                    int n = inStockMapper.updateQAresult(checkList.getPn().toString(), 0, checkList.getPlant().toString(), checkList.getBatch().toString());
+//                    materialTransationsDto.setMsg("QA未检验，不允许收货");
+//                }
+//            }
             }
         }
         System.out.println("2" + materialTransationsDto.getMsg().toString());
@@ -214,7 +235,7 @@ public class InStockServiceImpl extends ServiceImpl<InStockMapper, Inventory> im
         if (quantity_sum == checkList.getBatch_qty()) {
             int n1 = inStockMapper.updateRecordStatus(materialTransationsDto);
             if (n1 > 0) {
-                returnMessage = "收货成功，过账315成功";
+                returnMessage = "收货成功，已自动过账315";
             } else {
                 returnMessage = "收货成功，315过账失败";
             }

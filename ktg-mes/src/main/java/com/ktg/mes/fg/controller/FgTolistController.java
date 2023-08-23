@@ -36,7 +36,7 @@ public class FgTolistController extends BaseController {
     {
         startPage();
         List<FgToList> list = fgTolistService.selectFgTolistList(fgTolist);
-        //List<FgToList> list = fgTolistService.selectFgTolistList2(fgTolist);
+        // List<FgToList> list = fgTolistService.selectFgTolistList2(fgTolist);
         System.out.println(list);
         return getDataTable(list);
     }

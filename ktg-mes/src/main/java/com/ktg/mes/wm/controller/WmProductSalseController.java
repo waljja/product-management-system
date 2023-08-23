@@ -64,6 +64,8 @@ public class WmProductSalseController extends BaseController
     public TableDataInfo list(WmProductSalse wmProductSalse)
     {
         startPage();
+        System.out.println(wmProductSalse.getSalseDate());
+        System.out.println(wmProductSalse);
         List<WmProductSalse> list = wmProductSalseService.selectWmProductSalseList(wmProductSalse);
         return getDataTable(list);
     }

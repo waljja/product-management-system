@@ -1,7 +1,8 @@
 package com.example.productkanbanapi.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.productkanbanapi.entity.ProductNotInStorage;
+import com.example.productkanbanapi.entity.NotInStorage;
+import com.example.productkanbanapi.entity.Shipment;
 
 /**
  * KanbanService
@@ -12,13 +13,23 @@ import com.example.productkanbanapi.entity.ProductNotInStorage;
 public interface KanbanService {
 
     /**
-     * 获取成品入库数据
+     * 获取成品待入库数据
      *
      * @param current 当前页码
      * @param startDate 开始时间
      * @param endDate 结束时间
-     * @return 成品入库数据
+     * @return 成品待入库数据
      */
-    Page<ProductNotInStorage> getStorageList(int current, String startDate, String endDate);
+    Page<NotInStorage> getStorageList(int current, String startDate, String endDate);
+
+    /**
+     * 获取成品待出货数据
+     *
+     * @param current 当前页码
+     * @param startDate 开始时间
+     * @param endDate 结束时间
+     * @return 成品待出货数据
+     */
+    Page<Shipment> getShipmentList(int current, String startDate, String endDate);
 
 }

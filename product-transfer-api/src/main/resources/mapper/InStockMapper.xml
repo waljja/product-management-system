@@ -53,7 +53,7 @@
     <update id="updateQAresult">
         update fg_checklist
         set qa_result = #{qaresult}
-        where pn = #{pn}
+        where pn = #{pn} and plant = #{plant} and batch = #{batch}
     </update>
 
     <!-- 判断是否已存在 -->

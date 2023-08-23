@@ -48,13 +48,13 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
     private String from;
 
     @Override
-    public List<String> downloadCarno() {
-        return gMterialsMapper.downloadCarno();
+    public List<String> downloadCarno(String date) {
+        return gMterialsMapper.downloadCarno(date);
     }
 
     @Override
-    public List<String> downloadShipmentno(String carno) {
-        return gMterialsMapper.downloadShipmentno(carno);
+    public List<String> downloadShipmentno(String carno, String date) {
+        return gMterialsMapper.downloadShipmentno(carno, date);
     }
 
     @Override
@@ -231,8 +231,8 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
     }
 
     @Override
-    public List<String> downloadShipmentNo2() {
-        return gMterialsMapper.downloadShipmentNo2();
+    public List<String> downloadShipmentNo2(String date) {
+        return gMterialsMapper.downloadShipmentNo2(date);
     }
 
     @Override

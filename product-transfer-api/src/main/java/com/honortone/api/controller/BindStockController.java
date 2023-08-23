@@ -50,11 +50,18 @@ public class BindStockController {
 //        System.out.println("uid:" + nodes.getStr("cp"));
 //        // uid:---
 
+
         System.out.println("s:" + params);
         JSONObject nodes = new JSONObject(params.getStr("params"));
         String uid = nodes.getStr("cp");
         String stock = nodes.getStr("kw");
         String username = nodes.getStr("username");
+
+        // 不允许重复绑库上架（未拣货之前都可以重复扫描上架，只改变库位【移库功能】），拣货了不能再上架，只能回仓
+        int n = bindStockService.checkUID(uid);
+        if (n > 0)
+            return Result.error("600", "该成品已拣货出库，不允许再上架，请检查是否需要做回仓");
+
         String returnMessage = bindStockService.bindStock_1(uid, stock, username);
 
         return Result.success(returnMessage);
@@ -105,7 +112,7 @@ public class BindStockController {
         if (tz.contains("@")) {
             htpn = tz.split("@P")[1];
             htpn = htpn.split("@T")[0];
-        } else {
+        } else if (tz.contains("/")){
             // 查询需要有空格，不能去掉空格
             // tz = tz.replace(" ", "");
             String[] tz1 = tz.split("/");
@@ -115,14 +122,13 @@ public class BindStockController {
             clientBatch = tz1[5];
         }
         // String s = FirstBind_1(uid);
-
+        System.out.println("测试" + tz);
         String returnMessage = bindStockService.bindStock_2(uid, tz, stock, htpn, khpn, rectime, qty, clientBatch);
         if (returnMessage.equals("HT贴纸绑库成功") || returnMessage.equals("绑定客户贴纸成功")) {
             return Result.success(returnMessage);
         } else {
             return Result.error("600",returnMessage);
         }
-
 
     }
 
@@ -135,6 +141,9 @@ public class BindStockController {
         String uid = nodes.getStr("uid");
         System.out.println(uid);
         String rollbackReason = nodes.getStr("rollbackReason");
+
+        if ("".equals(rollbackReason) || rollbackReason == null)
+            return Result.error("600", "请选择回仓原因");
 
         String returnMessage = bindStockService.RollBack(uid, rollbackReason);
         if (returnMessage.equals("回仓成功")) {
@@ -159,7 +168,12 @@ public class BindStockController {
 
         int n = bindStockService.updateTosStock(returnMessage, stock);
         if (n > 0) {
-            return Result.success("绑定走货区成功");
+            int qh_sum = bindStockService.checkStatusTosQH(returnMessage);
+            if (qh_sum > 0) {
+                return Result.success("绑定走货区成功，对应走货单存在欠货，欠货数量：" + qh_sum);
+            } else {
+                return Result.success("绑定走货区成功");
+            }
         } else if (n == -10) {
             return Result.error("600","走货资料有变动，请更新");
         } else {
