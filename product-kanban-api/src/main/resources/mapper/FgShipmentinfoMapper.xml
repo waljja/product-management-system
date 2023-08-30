@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="generator.mapper.FgShipmentinfoMapper">
+
+    <resultMap id="BaseResultMap" type="generator.domain.FgShipmentinfo">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="shipmentNumber" column="shipment_number" jdbcType="VARCHAR"/>
+            <result property="pn" column="pn" jdbcType="VARCHAR"/>
+            <result property="po" column="po" jdbcType="VARCHAR"/>
+            <result property="shipmentDate" column="shipment_date" jdbcType="TIMESTAMP"/>
+            <result property="shipmentCar" column="shipment_car" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="BIGINT"/>
+            <result property="plant" column="plant" jdbcType="VARCHAR"/>
+            <result property="quantity" column="quantity" jdbcType="FLOAT"/>
+            <result property="pelletQty" column="pellet_qty" jdbcType="FLOAT"/>
+            <result property="shipmentType" column="shipment_type" jdbcType="VARCHAR"/>
+            <result property="remark" column="remark" jdbcType="VARCHAR"/>
+            <result property="boxcount" column="boxcount" jdbcType="FLOAT"/>
+            <result property="carno" column="carno" jdbcType="VARCHAR"/>
+            <result property="careta" column="careta" jdbcType="TIMESTAMP"/>
+            <result property="lastComfirm" column="last_comfirm" jdbcType="VARCHAR"/>
+            <result property="clientCode" column="client_code" jdbcType="VARCHAR"/>
+            <result property="clientPn" column="client_pn" jdbcType="VARCHAR"/>
+            <result property="shipmentPlace" column="shipment_place" jdbcType="VARCHAR"/>
+            <result property="confirmTime" column="confirm_time" jdbcType="VARCHAR"/>
+            <result property="updateDatetime" column="update_datetime" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,shipment_number,pn,
+        po,shipment_date,shipment_car,
+        status,plant,quantity,
+        pellet_qty,shipment_type,remark,
+        boxcount,carno,careta,
+        last_comfirm,client_code,client_pn,
+        shipment_place,confirm_time,update_datetime
+    </sql>
+</mapper>

@@ -16,6 +16,17 @@
         <result property="plant" column="Plant" jdbcType="VARCHAR"/>
     </resultMap>
 
+    <resultMap id="ShipmentMap" type="com.example.productkanbanapi.entity.Shipment">
+        <result property="shipmentNo" column="shipment_number" jdbcType="VARCHAR"/>
+        <result property="po" column="po" jdbcType="VARCHAR"/>
+        <result property="shipmentDate" column="shipment_date" jdbcType="TIMESTAMP"/>
+        <result property="state" column="state" jdbcType="VARCHAR"/>
+        <result property="shipmentQty" column="shipment_quantity" jdbcType="FLOAT"/>
+        <result property="palletQty" column="pallet_quantity" jdbcType="FLOAT"/>
+        <result property="boxQty" column="box_quantity" jdbcType="FLOAT"/>
+        <result property="clientCode" column="client_code" jdbcType="VARCHAR"/>
+    </resultMap>
+
     <!-- ew.customSqlSegment -> 条件构造器拼接语句（一定要加，否则会出现变量设置问题） -->
     <!-- 字段不能加 []，mybatis plus 不能识别 []，有 bug -->
     <select id="findNotInStock" resultMap="BaseResultMap">
@@ -29,7 +40,8 @@
                TransactionTime,
                Plant,
                '待上架'                                     as Status
-        from xTend_MaterialTransactions ${ew.customSqlSegment}
+        from xTend_MaterialTransactions
+        ${ew.customSqlSegment}
     </select>
 
     <select id="findWarehousedUid" resultType="java.lang.String">
@@ -38,7 +50,8 @@
               from fg_inventory fi
               union
               select uid
-              from fg_inventory_out fio) warehoused ${ew.customSqlSegment}
+              from fg_inventory_out fio) warehoused
+        ${ew.customSqlSegment}
     </select>
 
     <select id="findNotPutIn" resultType="com.example.productkanbanapi.entity.NotInStorage">
@@ -46,7 +59,23 @@
         from xTend_MaterialTransactions ${ew.customSqlSegment}
     </select>
 
-    <select id="findShipment" resultType="com.example.productkanbanapi.entity.Shipment"></select>
+    <select id="findShipment" resultMap="ShipmentMap">
+        select shipment_date,
+               shipment_number,
+               client_code,
+               ship.po,
+               (case
+                    when tos.status = 0 then '待拣货'
+                    when tos.status = 1 then '备货中'
+                    when tos.status = 2 then '待装车'
+                   end) as state,
+               (select sum(quantity) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as shipment_quantity,
+               (select sum(boxcount) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as box_quantity,
+               (select sum(pellet_qty) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as pallet_quantity
+        from fg_tos tos
+                 left join fg_shipmentinfo ship on tos.shipment_no = ship.shipment_number
+        ${ew.customSqlSegment}
+    </select>
 
     <select id="findStockKanbanData" resultMap="BaseResultMap">
         select row_number() over (order by TransactionTime) as item,
@@ -59,7 +88,14 @@
                TransactionTime,
                Plant,
                '待上架'                                     as Status
-        from xTend_MaterialTransactions ${ew.customSqlSegment}
+        from xTend_MaterialTransactions
+        ${ew.customSqlSegment}
+    </select>
+
+    <select id="findPnByShipNo" resultType="java.lang.String">
+        select pn
+        from fg_shipmentinfo
+        ${ew.customSqlSegment}
     </select>
 
 </mapper>

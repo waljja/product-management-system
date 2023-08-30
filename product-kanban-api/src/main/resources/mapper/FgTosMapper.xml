@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="generator.mapper.FgTosMapper">
+
+    <resultMap id="BaseResultMap" type="generator.domain.FgTos">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="toNo" column="to_no" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="BIGINT"/>
+            <result property="quantity" column="quantity" jdbcType="FLOAT"/>
+            <result property="shipmentNo" column="shipment_no" jdbcType="VARCHAR"/>
+            <result property="carNo" column="car_no" jdbcType="VARCHAR"/>
+            <result property="plant" column="plant" jdbcType="VARCHAR"/>
+            <result property="stock" column="stock" jdbcType="VARCHAR"/>
+            <result property="createdate" column="createdate" jdbcType="DATE"/>
+            <result property="pn" column="pn" jdbcType="VARCHAR"/>
+            <result property="po" column="po" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,to_no,status,
+        quantity,shipment_no,car_no,
+        plant,stock,createdate,
+        pn,po
+    </sql>
+</mapper>
