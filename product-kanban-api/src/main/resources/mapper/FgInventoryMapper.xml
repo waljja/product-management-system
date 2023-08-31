@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="generator.mapper.FgInventoryMapper">
+
+    <resultMap id="BaseResultMap" type="generator.domain.FgInventory">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="partnumber" column="partnumber" jdbcType="VARCHAR"/>
+            <result property="pn650" column="pn650" jdbcType="VARCHAR"/>
+            <result property="po" column="po" jdbcType="VARCHAR"/>
+            <result property="batch" column="batch" jdbcType="VARCHAR"/>
+            <result property="uid" column="uid" jdbcType="VARCHAR"/>
+            <result property="quantity" column="quantity" jdbcType="FLOAT"/>
+            <result property="tagsQuantity" column="tags_quantity" jdbcType="FLOAT"/>
+            <result property="stock" column="stock" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="BIT"/>
+            <result property="wo" column="wo" jdbcType="VARCHAR"/>
+            <result property="recTime" column="rec_time" jdbcType="TIMESTAMP"/>
+            <result property="plant" column="plant" jdbcType="INTEGER"/>
+            <result property="createUser" column="create_user" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="uidId" column="uid_id" jdbcType="BIGINT"/>
+            <result property="replaceStatus" column="replace_status" jdbcType="BIGINT"/>
+            <result property="rollbackReason" column="rollback_reason" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,partnumber,pn650,
+        po,batch,uid,
+        quantity,tags_quantity,stock,
+        status,wo,rec_time,
+        plant,create_user,create_time,
+        uid_id,replace_status,rollback_reason
+    </sql>
+</mapper>

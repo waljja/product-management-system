@@ -16,6 +16,37 @@
         <result property="plant" column="Plant" jdbcType="VARCHAR"/>
     </resultMap>
 
+    <resultMap id="StorageMap" type="com.example.productkanbanapi.entity.StorageReport">
+        <result property="partNumber" column="partnumber" jdbcType="VARCHAR"/>
+        <result property="po" column="po" jdbcType="VARCHAR"/>
+        <result property="batch" column="batch" jdbcType="VARCHAR"/>
+        <result property="wo" column="wo" jdbcType="VARCHAR"/>
+        <result property="uid" column="uid" jdbcType="VARCHAR"/>
+        <result property="quantity" column="quantity" jdbcType="FLOAT"/>
+        <result property="storageLoc" column="stock" jdbcType="VARCHAR"/>
+        <result property="state" column="state" jdbcType="VARCHAR"/>
+        <result property="recTime" column="rec_time" jdbcType="TIMESTAMP"/>
+        <result property="plant" column="plant" jdbcType="VARCHAR"/>
+        <result property="createUser" column="create_user" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap id="RecMap" type="com.example.productkanbanapi.entity.RecReport">
+        <result property="partNumber" column="PartNumber" jdbcType="VARCHAR"/>
+        <result property="batch" column="Batch" jdbcType="VARCHAR"/>
+        <result property="wo" column="PO_NUMBER" jdbcType="VARCHAR"/>
+        <result property="uid" column="UID" jdbcType="VARCHAR"/>
+        <result property="quantity" column="Quantity" jdbcType="FLOAT"/>
+        <result property="fromStock" column="FromStock" jdbcType="VARCHAR"/>
+        <result property="toStock" column="ToStock" jdbcType="VARCHAR"/>
+        <result property="plant" column="Plant" jdbcType="VARCHAR"/>
+        <result property="transactionUser" column="TransactionUser" jdbcType="VARCHAR"/>
+        <result property="transactionTime" column="TransactionTime" jdbcType="TIMESTAMP"/>
+        <result property="transactionType" column="TransactionType" jdbcType="VARCHAR"/>
+        <result property="refDocNo" column="RefDocNo" jdbcType="VARCHAR"/>
+        <result property="docHeader" column="DocHeader" jdbcType="VARCHAR"/>
+    </resultMap>
+
     <resultMap id="ShipmentMap" type="com.example.productkanbanapi.entity.Shipment">
         <result property="shipmentNo" column="shipment_number" jdbcType="VARCHAR"/>
         <result property="po" column="po" jdbcType="VARCHAR"/>
@@ -54,9 +85,39 @@
         ${ew.customSqlSegment}
     </select>
 
-    <select id="findNotPutIn" resultType="com.example.productkanbanapi.entity.NotInStorage">
-        select *
-        from xTend_MaterialTransactions ${ew.customSqlSegment}
+    <select id="findInStock" resultMap="StorageMap">
+        select partnumber,
+               po,
+               batch,
+               wo,
+               uid,
+               quantity,
+               stock,
+               (case when status = 0 then '已预留' when status = 1 then '未预留' end) as state,
+               rec_time,
+               plant,
+               create_user,
+               create_time
+        from fg_inventory
+        ${ew.customSqlSegment}
+    </select>
+
+    <select id="findRec" resultMap="RecMap">
+        select Batch,
+               PartNumber,
+               PO_NUMBER,
+               UID,
+               Quantity,
+               FromStock,
+               ToStock,
+               TransactionUser,
+               TransactionTime,
+               TransactionType,
+               RefDocNo,
+               DocHeader,
+               Plant
+        from xTend_MaterialTransactions
+        ${ew.customSqlSegment}
     </select>
 
     <select id="findShipment" resultMap="ShipmentMap">
@@ -93,7 +154,7 @@
     </select>
 
     <select id="findPnByShipNo" resultType="java.lang.String">
-        select pn
+        select distinct pn
         from fg_shipmentinfo
         ${ew.customSqlSegment}
     </select>

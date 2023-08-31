@@ -3,10 +3,7 @@ package com.example.productkanbanapi.mapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.productkanbanapi.entity.NotInStorage;
-import com.example.productkanbanapi.entity.Shipment;
-import com.example.productkanbanapi.entity.StockReport;
-import com.example.productkanbanapi.entity.TosShipInfo;
+import com.example.productkanbanapi.entity.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -42,13 +39,21 @@ public interface KanbanMapper {
     List<String> findWarehousedUid(@Param("ew") QueryWrapper queryWrapper);
 
     /**
-     * 查找 未入库成品 数据
+     * 查找 库存 数据
      *
-     * @param page         分页配置
      * @param queryWrapper 条件构造器
-     * @return 未入库成品数据
+     * @return 库存数据
      */
-    Page<NotInStorage> findNotPutIn(Page page, @Param("ew") QueryWrapper queryWrapper);
+    List<StorageReport> findInStock(@Param("ew") QueryWrapper queryWrapper);
+
+    /**
+     * 查找 收货 数据
+     *
+     * @param queryWrapper 条件构造器
+     * @return 收货数据
+     */
+    @DS("sqlserver")
+    List<RecReport> findRec(@Param("ew") QueryWrapper queryWrapper);
 
     /**
      * 查找 成品出货 数据
