@@ -59,6 +59,7 @@ public class KanbanServiceImpl implements KanbanService {
                     .likeRight("UID", "FG")
                     .notIn("UID", warehousedUid)
                     .eq("TransactionType", "315")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2023-09-01 00:00:00.000'")
                     .orderByDesc("TransactionTime");
         }
         productNotInStoragePage = kanbanMapper.findNotInStock(inventoryPage, transQueryWrapper2);

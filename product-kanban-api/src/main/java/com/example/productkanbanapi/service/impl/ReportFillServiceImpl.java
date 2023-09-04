@@ -77,6 +77,7 @@ public class ReportFillServiceImpl implements ReportFillService {
             queryWrapper
                     .likeRight("UID", "FG")
                     .eq("TransactionType", "315")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2023-09-01 00:00:00.000'")
                     .orderByDesc("TransactionTime");
         }
         recReportList = kanbanMapper.findRec(queryWrapper);
