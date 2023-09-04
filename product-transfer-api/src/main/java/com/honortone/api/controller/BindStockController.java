@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.text.ParseException;
 
 /**
  * <p>
@@ -96,13 +97,14 @@ public class BindStockController {
      * **/
     @ResponseBody
     @PostMapping("/bindstock_2")
-    public Result BindStock_2(@RequestBody JSONObject params) {
+    public Result BindStock_2(@RequestBody JSONObject params) throws ParseException {
 
         System.out.println("s:" + params);
         JSONObject nodes = new JSONObject(params.getStr("params"));
         String uid = nodes.getStr("cp");
         String stock = nodes.getStr("kw");
         String tz = nodes.getStr("tz");
+        String username = nodes.getStr("username");
 
         String htpn = "";
         String khpn = "";
@@ -123,8 +125,8 @@ public class BindStockController {
         }
         // String s = FirstBind_1(uid);
         System.out.println("测试" + tz);
-        String returnMessage = bindStockService.bindStock_2(uid, tz, stock, htpn, khpn, rectime, qty, clientBatch);
-        if (returnMessage.equals("HT贴纸绑库成功") || returnMessage.equals("绑定客户贴纸成功")) {
+        String returnMessage = bindStockService.bindStock_2(uid, tz, stock, htpn, khpn, rectime, qty, clientBatch, username);
+        if (returnMessage.equals("HT贴纸绑库成功") || returnMessage.equals("珠飞客户贴纸成功") || returnMessage.equals("CC4U客户贴纸成功")) {
             return Result.success(returnMessage);
         } else {
             return Result.error("600",returnMessage);

@@ -161,7 +161,7 @@
             <if test="ShipmentNO != null">shipment_no,</if>
             <if test="plant != null">plant,</if>
             <if test="CarNo != null">car_no,</if>
-            <if test="CreateTime != null">createdate,</if>
+            <if test="CreateTime == null">createdate,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="To_No != null and To_No != ''">#{To_No},</if>
@@ -170,7 +170,7 @@
             <if test="ShipmentNO != null">#{ShipmentNO},</if>
             <if test="plant != null">#{plant},</if>
             <if test="CarNo != null">#{CarNo},</if>
-            <if test="CreateTime != null">#{CreateTime},</if>
+            <if test="CreateTime == null">now(),</if>
         </trim>
     </insert>
     <select id="checkInfoTos" resultType="java.lang.Integer">
@@ -281,6 +281,12 @@
         update fg_tos
         set quantity = #{sumqty}
         where shipment_no = #{shipmentNO} and status = 3
+    </update>
+    <!-- 根据欠货单更新TO明细的欠货单总数 -->
+    <update id="updateQuantity2">
+        update fg_tolist
+        set batch_qty = #{sumqty}
+        where to_no = #{toNo} and status = 2
     </update>
 
     <!-- 关联查询【用于拆箱提醒】 同一个PN、PO会有不同走货单的情况 条件暂时加上根据走货单关联（PN、PO、shipment_number）-->
@@ -403,14 +409,14 @@
     <update id="sumBH" >
         update fg_tos
         set quantity = quantity + #{quantity}
-        where to_no like 'BH%' and status = 0 and shipment_no = #{shipmentNo}
+        where to_no = #{toNo} and status = 0
     </update>
 
-    <!-- 修改明细表中原有备货单的批次总数 -->
+    <!-- 修改明细表中原有备货单的批次总数  and status = 0 -->
     <update id="updatebatchSum">
         update fg_tolist
         set batch_qty = batch_qty + #{quantity}
-        where to_no = #{toNo} and status = 0
+        where to_no = #{toNo}
     </update>
 
     <!-- 修改欠货明细状态为已补货 -->
@@ -441,5 +447,20 @@
         where uid = #{uid} and status = 1
     </update>
 
+
+
+    <!-- 更新走货日期（定时） -->
+    <!-- 查询当天起到后两天的走货单 -->
+    <select id="getShipmentInfo" resultType="com.ktg.mes.fg.domain.FgShipmentInfo">
+        select distinct shipment_number ShipmentNO, shipment_date ShipmentDate from fg_shipmentinfo where shipment_date >= #{startDate} and shipment_date <![CDATA[ <= ]]> #{endDate} and last_comfirm in ('货场', '船务')
+    </select>
+    <!-- 有变更则批量更新日期 -->
+    <update id="updateShipmentDate" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            update fg_shipmentinfo
+            set shipment_date = #{item.ShipmentDate}
+            where shipment_number = #{item.ShipmentNO} and last_comfirm in ('船务', '货仓')
+        </foreach>
+    </update>
 
 </mapper>

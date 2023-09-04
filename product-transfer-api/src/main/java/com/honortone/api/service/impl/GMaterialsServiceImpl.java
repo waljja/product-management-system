@@ -121,7 +121,7 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
     }
 
     @Override
-    public String soldOut(String cpno, String role) {
+    public String soldOut(String cpno, String role, String toNo) {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         String returnMessage = "成品出库成功";
@@ -132,11 +132,12 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
             return returnMessage = "库存表未查询到相关成品信息";
         }
         // 判断UID是否在TO明细表（是否是备货单），不是则 执行替换拣料功能
-        if (gMterialsMapper.checkTolistByUid(inventory.getUid().toString()) <= 0) {
+        String toNo1 = gMterialsMapper.checkTolistByUid(inventory.getUid().toString()) == null ? "" : gMterialsMapper.checkTolistByUid(inventory.getUid().toString());
+        if ("".equals(toNo1)) {
             // 根据PN、PO、批次、数量、状态 判是否允许替换拣料 并获取被替换的备货单的UID
             String uid = gMterialsMapper.checkTolistInfo(inventory);
             if (uid == null || uid.equals(""))
-                return returnMessage = "PO或批次或数量不符合要求，不能替换拣料";
+                return returnMessage = "PO或PN或数量不符合要求，不能替换拣料";
 
             String recTime = gMterialsMapper.checkDate(uid);
             if (!recTime.substring(0, 10).equals(sdf.format(inventory.getProduction_date()).toString())) {
@@ -165,16 +166,19 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
                 return returnMessage = "替换拣料成品下架失败2(库存表删除失败)";
 
             // 查询即存在已拣货和未拣货备货单（TO明细表）
-            int n3 = gMterialsMapper.checkStauts();
+            int n3 = gMterialsMapper.checkStauts2(cpno);
             if (n3 > 0) {
                 // 更新TO管理表对应备货单为拣货中
                 gMterialsMapper.updateTosBHStatus2(cpno, 1);
             } else {
                 gMterialsMapper.updateTosBHStatus2(cpno, 2);
             }
-
             return returnMessage = "替换拣料成功！";
+
         } else {
+            if (toNo.equals(toNo1))
+                return "该UID已被其它备货单预留";
+
             // 将扫描的下架数据存到成品下架表
             int n = gMterialsMapper.insertInventoryOut(inventory);
             if (n <= 0) {
@@ -191,7 +195,7 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
                 return returnMessage = "成品下架失败2(TO明细表更新失败)";
             }
             // 查询即存在已拣货和未拣货备货单（TO明细表）
-            int n3 = gMterialsMapper.checkStauts();
+            int n3 = gMterialsMapper.checkStauts(cpno);
             if (n3 > 0) {
                 // 更新TO管理表对应备货单为拣货中
                 gMterialsMapper.updateTosBHStatus(cpno, 1);
@@ -240,15 +244,510 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
         return gMterialsMapper.getQuantity(client);
     }
 
-    @Override
-    public String updateToNo(String shipmintNO) throws javax.mail.MessagingException, IOException {
+//    @Override
+//    public String updateToNo(String shipmintNO) throws javax.mail.MessagingException, IOException {
+//
+//        Date date = new Date();
+//        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+//        String startDate = simpleDateFormat.format(date);
+//
+//        SAPUtil sapUtil = new SAPUtil();
+//        List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_1(startDate, startDate);
+//        // 存放船务/货仓确认信息
+//        List<FgShipmentInfo> list1 = new ArrayList<>();
+//        // 根据走货单统计出对应的数据
+//        List<FgShipmentInfo> list2 = new ArrayList<>();
+//
+//        // 筛选船务确认走货信息
+//        for (int i = 0; i < list.size(); i++) {
+//            if (list.get(i).getLastComfirm() != null && (list.get(i).getLastComfirm().equals("船务") || list.get(i).getLastComfirm().equals("货仓"))) {
+//
+//                list1.add(list.get(i));
+//                System.out.println(list.get(i).toString());
+//            }
+//        }
+//        // 对应走货单数据
+//        if (shipmintNO != null && !"".equals(shipmintNO)) {
+//            for (int i = 0;i < list1.size();i++) {
+//                if (shipmintNO.equals(list1.get(i).getShipmentNO().toString())) {
+//                    list2.add(list1.get(i));
+//                }
+//            }
+//        }
+//
+//        // 记录是否有变更
+//        int n = 0;
+//        // 根据走货编号、PN、PO统计数量（与已产生备货单的做对比）
+//        long sumqty1 = 0l;
+//        long sumqty2 = 0l;
+//        List<Object[]> objectList = new ArrayList<>();
+//        Object[] objects = new Object[4];
+//        // 循环完一次，再次遇到相同pn、po的话数量已相等，因已更新了一次
+//        for (int i = 0; i < list2.size(); i++) {
+//
+//            // 是否存在未拣货的备货单
+//            FgTosAndTosListDto fgTosAndTosListDto = gMterialsMapper.checkBHorQH(list2.get(i), 0);
+//            // 是否存在已拣货的备货单
+//            FgTosAndTosListDto fgTosAndTosListDto_1 = gMterialsMapper.checkBHorQH(list2.get(i), 2);
+//            // 查询是否存在欠货单
+//            FgTosAndTosListDto fgTosAndTosListDto2 = gMterialsMapper.checkBHorQH(list2.get(i), 3);
+//            // 关联库存表
+//            List<FgTosAndTosListDto> fgTosAndTosListDtos = gMterialsMapper.getTosAndTOListInfo(list2.get(i));
+//            // 该走货单是否存在对应PN、PO
+//            int count = gMterialsMapper.checkPnAndPo(list2.get(i));
+//            if (count == 0) {
+//                if (fgTosAndTosListDtos.size() == 0) {
+//                    // 库存没有对应PN、PO的UID数量，产生欠货单 （需邮件告知？）
+//                    FgTosAndTosListDto fgTosAndTosListDto1 = new FgTosAndTosListDto();
+//                    fgTosAndTosListDto1.setStatus(3);
+//                    fgTosAndTosListDto1.setQuantity(list2.get(i).getQuantity());
+//                    fgTosAndTosListDto1.setSap_qty(list2.get(i).getQuantity());
+//                    fgTosAndTosListDto1.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                    fgTosAndTosListDto1.setCarNo(list2.get(i).getCarNo().toString());
+//                    fgTosAndTosListDto1.setPlant(list2.get(i).getPlant().toString());
+//                    fgTosAndTosListDto1.setPn(list2.get(i).getSapPn().toString());
+//                    fgTosAndTosListDto1.setPo(list2.get(i).getPo().toString());
+//
+//                    if (fgTosAndTosListDto2 == null) {
+//                        String QH = generateTo_No("欠货单");
+//                        fgTosAndTosListDto1.setTo_No(QH);
+//                        gMterialsMapper.insertTos(fgTosAndTosListDto1);
+//                        gMterialsMapper.insertToList(fgTosAndTosListDto1);
+//                    } else {
+//                        fgTosAndTosListDto1.setTo_No(fgTosAndTosListDto1.getTo_No().toString());
+//                        fgTosAndTosListDto1.setSap_qty(fgTosAndTosListDto1.getSap_qty() + list2.get(i).getQuantity());
+//                        gMterialsMapper.insertToList(fgTosAndTosListDto1);
+//                        gMterialsMapper.updateTosQuantity(fgTosAndTosListDto1);
+//                    }
+//                } else {
+//                    FgTosAndTosListDto fgTosAndTosListDto3 = new FgTosAndTosListDto();
+//                    String BH = fgTosAndTosListDto.getTo_No() == null ? "" : fgTosAndTosListDto.getTo_No().toString();
+//                    if (fgTosAndTosListDto == null) {
+//                        BH = generateTo_No("备货单");
+//                    }
+//                    fgTosAndTosListDto3.setTo_No(BH);
+//                    fgTosAndTosListDto3.setStatus(0);
+//                    fgTosAndTosListDto3.setQuantity(list2.get(i).getQuantity());
+//                    fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                    fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                    fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                    fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                    fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                    gMterialsMapper.insertTos(fgTosAndTosListDto3);
+//
+//                    long sum_uidno = 0l;
+//                    for (int j = 0; j < fgTosAndTosListDtos.size(); j++) {
+//                        // 数量大于库存对应PN、PO的总数（产生备货单和欠货单）
+//                        if (list2.get(i).getQuantity() == fgTosAndTosListDtos.get(j).getSum_uidno()) {
+//
+//                            fgTosAndTosListDto3.setTo_No(BH);
+//                            fgTosAndTosListDto3.setStatus(0);
+//                            fgTosAndTosListDto3.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
+//                            fgTosAndTosListDto3.setSap_qty(list2.get(i).getQuantity());
+//                            fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                            fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                            fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                            fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                            fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                            gMterialsMapper.insertToList(fgTosAndTosListDto3);
+//                        } else if (list2.get(i).getQuantity() > fgTosAndTosListDtos.get(j).getSum_uidno()) {
+//                            sum_uidno += fgTosAndTosListDtos.get(j).getQuantity();
+//                            if (sum_uidno > list2.get(i).getQuantity()) {
+//                                // 累加到大于临界值情况 提醒拆分该成品单后 减去多出的部分 生成欠货单（后续判断库存表是否有拆分的数据 再生成新备货单）
+//                                // 生成欠货单前判断TO管理是否已存在该走货单的欠货单，存在则直接在TO明细表生成欠货单，不存在则现在TO管理生成欠货单，再存到TO明细表
+//                                String QH = fgTosAndTosListDto2 == null ? "" : fgTosAndTosListDto2.getTo_No().toString();
+//                                // 欠货数量（即所需要备货的数量）
+//                                long qty = sum_uidno - list2.get(i).getQuantity();
+//                                if (fgTosAndTosListDto2 == null) {
+//                                    QH = generateTo_No("欠货单");
+//                                    // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
+//                                    fgTosAndTosListDto3.setTo_No(QH);
+//                                    fgTosAndTosListDto3.setStatus(3);
+//                                    fgTosAndTosListDto3.setQuantity(qty);
+//                                    fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                    fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                    fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                    fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                    fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                    gMterialsMapper.insertTos(fgTosAndTosListDto3);
+//                                }
+//                                // 插入TO明细
+//                                fgTosAndTosListDto3.setTo_No(QH);
+//                                fgTosAndTosListDto3.setStatus(2);
+//                                fgTosAndTosListDto3.setQuantity(qty);
+//                                fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                gMterialsMapper.insertToList(fgTosAndTosListDto3);
+//
+//                            } else if (sum_uidno == list2.get(i).getQuantity()) {
+//                                // 累加到刚好等于的情况 则备货后直接break退出循环，后面的关联数据就不用进行备货了
+//                                fgTosAndTosListDto3.setTo_No(BH);
+//                                fgTosAndTosListDto3.setStatus(0);
+//                                fgTosAndTosListDto3.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
+//                                fgTosAndTosListDto3.setSap_qty(list2.get(i).getQuantity());
+//                                fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                gMterialsMapper.insertToList(fgTosAndTosListDto3);
+//                                gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                                break;
+//                            } else {
+//                                // 累加还未达到临界值前 直接将关联的数据直接存到TO明细表里作为备货单
+//                                fgTosAndTosListDto3.setTo_No(BH);
+//                                fgTosAndTosListDto3.setStatus(0);
+//                                fgTosAndTosListDto3.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
+//                                fgTosAndTosListDto3.setSap_qty(list2.get(i).getQuantity());
+//                                fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                gMterialsMapper.insertToList(fgTosAndTosListDto3);
+//                                gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                            }
+//                        } else if (list2.get(i).getQuantity() < fgTosAndTosListDtos.get(j).getSum_uidno()) {
+//                            System.out.println("产生备货单3");
+//                            String QH = fgTosAndTosListDto2 == null ? "" : fgTosAndTosListDto2.getTo_No().toString();
+//                            sum_uidno += fgTosAndTosListDtos.get(j).getQuantity();
+//                            // 临界值为库存总数
+//                            if (sum_uidno == fgTosAndTosListDtos.get(j).getSum_uidno()) {
+//                                fgTosAndTosListDto3.setTo_No(BH);
+//                                fgTosAndTosListDto3.setStatus(0);
+//                                fgTosAndTosListDto3.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
+//                                fgTosAndTosListDto3.setSap_qty(list2.get(i).getQuantity());
+//                                fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                gMterialsMapper.insertToList(fgTosAndTosListDto3);
+//                                gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                                // 总数小于 批次总数则产生备货单（即剩下的数量为欠货数量）
+//                                if (fgTosAndTosListDto2 == null) {
+//                                    QH = generateTo_No("欠货单");
+//                                    fgTosAndTosListDto3.setTo_No(QH);
+//                                    fgTosAndTosListDto3.setStatus(3);
+//                                    fgTosAndTosListDto3.setQuantity(list2.get(i).getQuantity() - sum_uidno);
+//                                    fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                    fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                    fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                    fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                    fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                    gMterialsMapper.insertTos(fgTosAndTosListDto3);
+//                                }
+//                                long qty = list2.get(i).getQuantity() - sum_uidno;
+//                                fgTosAndTosListDto3.setTo_No(QH);
+//                                fgTosAndTosListDto3.setStatus(0);
+//                                fgTosAndTosListDto3.setQuantity(list2.get(i).getQuantity() - sum_uidno);
+//                                fgTosAndTosListDto3.setSap_qty(fgTosAndTosListDto2.getQuantity() + qty);
+//                                fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                gMterialsMapper.insertToList(fgTosAndTosListDto3);
+//                                // long sumqty = gMterialsMapper.getSumqty(list1.get(i).getShipmentNO().toString());
+//                                gMterialsMapper.updateTosQuantity(fgTosAndTosListDto3);
+//                            } else {
+//                                // 累加还未达到临界值前 直接将关联的数据直接存到TO明细表里作为备货单
+//                                fgTosAndTosListDto3.setTo_No(BH);
+//                                fgTosAndTosListDto3.setStatus(0);
+//                                fgTosAndTosListDto3.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
+//                                fgTosAndTosListDto3.setSap_qty(list2.get(i).getQuantity());
+//                                fgTosAndTosListDto3.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                fgTosAndTosListDto3.setCarNo(list2.get(i).getCarNo().toString());
+//                                fgTosAndTosListDto3.setPlant(list2.get(i).getPlant().toString());
+//                                fgTosAndTosListDto3.setPn(list2.get(i).getSapPn().toString());
+//                                fgTosAndTosListDto3.setPo(list2.get(i).getPo().toString());
+//                                gMterialsMapper.insertToList(fgTosAndTosListDto3);
+//                                gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                            }
+//                        }
+//                    }
+//                }
+//            } else {
+//                sumqty1 = sumQty(list2, list2.get(i).getShipmentNO().toString(), list2.get(i).getSapPn().toString(), list2.get(i).getPo().toString());
+//                sumqty2 = gMterialsMapper.getsumQty(list2.get(i));
+//                String QH = fgTosAndTosListDto2 == null ? "" : fgTosAndTosListDto2.getTo_No().toString();
+//                String BH = fgTosAndTosListDto == null ? "" : fgTosAndTosListDto.getTo_No().toString();
+//                FgTosAndTosListDto fgTosAndTosListDto4 = new FgTosAndTosListDto();
+//                if (sumqty1 > sumqty2) {
+//                    long qty = sumqty1 - sumqty2;
+//                    if (fgTosAndTosListDtos.size() == 0) {
+//                        if (fgTosAndTosListDto2 == null) {
+//                            QH = generateTo_No("欠货单");
+//                        }
+//                        fgTosAndTosListDto4.setTo_No(QH);
+//                        fgTosAndTosListDto4.setStatus(3);
+//                        fgTosAndTosListDto4.setQuantity(qty);
+//                        fgTosAndTosListDto4.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                        fgTosAndTosListDto4.setCarNo(list2.get(i).getCarNo().toString());
+//                        fgTosAndTosListDto4.setPlant(list2.get(i).getPlant().toString());
+//                        fgTosAndTosListDto4.setPn(list2.get(i).getSapPn().toString());
+//                        fgTosAndTosListDto4.setPo(list2.get(i).getPo().toString());
+//                        gMterialsMapper.insertTos(fgTosAndTosListDto4);
+//
+//                        fgTosAndTosListDto4.setSap_qty(qty);
+//                        fgTosAndTosListDto4.setStatus(2);
+//                        gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                        gMterialsMapper.updateTosQuantity(fgTosAndTosListDto4);
+//                    } else {
+//                        if (fgTosAndTosListDto == null) {
+//                            BH = generateTo_No("备货单");
+//                        }
+//                        fgTosAndTosListDto4.setTo_No(BH);
+//                        fgTosAndTosListDto4.setStatus(0);
+//                        fgTosAndTosListDto4.setQuantity(list2.get(i).getQuantity());
+//                        fgTosAndTosListDto4.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                        fgTosAndTosListDto4.setCarNo(list2.get(i).getCarNo().toString());
+//                        fgTosAndTosListDto4.setPlant(list2.get(i).getPlant().toString());
+//                        fgTosAndTosListDto4.setPn(list2.get(i).getSapPn().toString());
+//                        fgTosAndTosListDto4.setPo(list2.get(i).getPo().toString());
+//                        gMterialsMapper.insertTos(fgTosAndTosListDto4);
+//
+//                        long sum_uidno = 0l;
+//                        for (int k = 0; k < fgTosAndTosListDtos.size(); k++) {
+//                            // 数量大于库存对应PN、PO的总数（产生备货单和欠货单）
+//                            if (qty == fgTosAndTosListDtos.get(k).getSum_uidno()) {
+//
+//                                // 注意数量和批量
+//                                fgTosAndTosListDto4.setQuantity(fgTosAndTosListDtos.get(k).getQuantity());
+//                                fgTosAndTosListDto4.setSap_qty(list2.get(i).getQuantity());
+//                                gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                                gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(k).getUid().toString());
+//                            } else if (qty > fgTosAndTosListDtos.get(k).getSum_uidno()) {
+//                                sum_uidno += fgTosAndTosListDtos.get(k).getQuantity();
+//                                if (sum_uidno == fgTosAndTosListDtos.get(k).getSum_uidno()) {
+//
+//                                    fgTosAndTosListDto4.setTo_No(BH);
+//                                    fgTosAndTosListDto4.setStatus(0);
+//                                    fgTosAndTosListDto4.setQuantity(fgTosAndTosListDtos.get(k).getQuantity());
+//                                    fgTosAndTosListDto4.setSap_qty(list2.get(i).getQuantity());
+//                                    fgTosAndTosListDto4.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                    fgTosAndTosListDto4.setCarNo(list2.get(i).getCarNo().toString());
+//                                    fgTosAndTosListDto4.setPlant(list2.get(i).getPlant().toString());
+//                                    fgTosAndTosListDto4.setPn(list2.get(i).getSapPn().toString());
+//                                    fgTosAndTosListDto4.setPo(list2.get(i).getPo().toString());
+//                                    gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                                    gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(k).getUid().toString());
+//                                    // 欠货数量（即所需要备货的数量）
+//                                    long qty2 = sum_uidno - qty;
+//                                    if (fgTosAndTosListDto2 == null) {
+//                                        QH = generateTo_No("欠货单");
+//                                        // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
+//                                        fgTosAndTosListDto4.setTo_No(QH);
+//                                        fgTosAndTosListDto4.setStatus(3);
+//                                        fgTosAndTosListDto4.setQuantity(qty2);
+//                                        gMterialsMapper.insertTos(fgTosAndTosListDto4);
+//                                    }
+//                                    // 插入TO明细
+//                                    fgTosAndTosListDto4.setTo_No(QH);
+//                                    fgTosAndTosListDto4.setStatus(2);
+//                                    fgTosAndTosListDto4.setQuantity(qty2);
+//                                    fgTosAndTosListDto4.setSap_qty(fgTosAndTosListDto2.getQuantity() == null ? 0l : fgTosAndTosListDto2.getQuantity() + qty2);
+//                                    gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                                    gMterialsMapper.updateTosQuantity(fgTosAndTosListDto4);
+//                                } else {
+//                                    // 累加还未达到临界值前 直接将关联的数据直接存到TO明细表里作为备货单
+//                                    fgTosAndTosListDto4.setTo_No(BH);
+//                                    fgTosAndTosListDto4.setStatus(0);
+//                                    fgTosAndTosListDto4.setQuantity(fgTosAndTosListDtos.get(k).getQuantity());
+//                                    fgTosAndTosListDto4.setSap_qty(list2.get(i).getQuantity());
+//                                    fgTosAndTosListDto4.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                    fgTosAndTosListDto4.setCarNo(list2.get(i).getCarNo().toString());
+//                                    fgTosAndTosListDto4.setPlant(list2.get(i).getPlant().toString());
+//                                    fgTosAndTosListDto4.setPn(list2.get(i).getSapPn().toString());
+//                                    fgTosAndTosListDto4.setPo(list2.get(i).getPo().toString());
+//                                    gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                                    gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(k).getUid().toString());
+//                                }
+//                            } else if (qty < fgTosAndTosListDtos.get(k).getSum_uidno()) {
+//                                System.out.println("产生备货单3");
+//                                QH = fgTosAndTosListDto2 == null ? "" : fgTosAndTosListDto2.getTo_No().toString();
+//                                sum_uidno += fgTosAndTosListDtos.get(k).getQuantity();
+//
+//                                if (sum_uidno > qty) {
+//                                    // 累加到大于临界值情况 提醒拆分该成品单后 减去多出的部分 生成欠货单（后续判断库存表是否有拆分的数据 再生成新备货单）
+//                                    // 生成欠货单前判断TO管理是否已存在该走货单的欠货单，存在则直接在TO明细表生成欠货单，不存在则现在TO管理生成欠货单，再存到TO明细表
+//                                    //String QH = fgTosAndTosListDto2 == null ? "" : fgTosAndTosListDto2.getTo_No().toString();
+//                                    // 欠货数量（即所需要备货的数量）
+//                                    long qty2 = sum_uidno - qty;
+//                                    if (fgTosAndTosListDto2 == null) {
+//                                        QH = generateTo_No("欠货单");
+//                                        // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
+//                                        fgTosAndTosListDto4.setTo_No(QH);
+//                                        fgTosAndTosListDto4.setStatus(3);
+//                                        fgTosAndTosListDto4.setQuantity(qty2);
+//                                        gMterialsMapper.insertTos(fgTosAndTosListDto4);
+//                                    }
+//                                    // 插入TO明细
+//                                    fgTosAndTosListDto4.setTo_No(QH);
+//                                    fgTosAndTosListDto4.setStatus(2);
+//                                    fgTosAndTosListDto4.setQuantity(qty2);
+//                                    fgTosAndTosListDto4.setSap_qty(fgTosAndTosListDto2.getQuantity() == null ? 0l : fgTosAndTosListDto2.getQuantity() + qty2);
+//                                    gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                                    gMterialsMapper.updateTosQuantity(fgTosAndTosListDto4);
+//
+//                                } else if (sum_uidno == qty) {
+//                                    // 累加到刚好等于的情况 则备货后直接break退出循环，后面的关联数据就不用进行备货了
+//                                    fgTosAndTosListDto4.setTo_No(BH);
+//                                    fgTosAndTosListDto4.setStatus(0);
+//                                    fgTosAndTosListDto4.setQuantity(fgTosAndTosListDtos.get(k).getQuantity());
+//                                    fgTosAndTosListDto4.setSap_qty(list2.get(i).getQuantity());
+//                                    fgTosAndTosListDto4.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                    fgTosAndTosListDto4.setCarNo(list2.get(i).getCarNo().toString());
+//                                    fgTosAndTosListDto4.setPlant(list2.get(i).getPlant().toString());
+//                                    fgTosAndTosListDto4.setPn(list2.get(i).getSapPn().toString());
+//                                    fgTosAndTosListDto4.setPo(list2.get(i).getPo().toString());
+//                                    gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                                    gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(k).getUid().toString());
+//                                    break;
+//                                } else {
+//                                    // 累加还未达到临界值前 直接将关联的数据直接存到TO明细表里作为备货单
+//                                    fgTosAndTosListDto4.setTo_No(BH);
+//                                    fgTosAndTosListDto4.setStatus(0);
+//                                    fgTosAndTosListDto4.setQuantity(fgTosAndTosListDtos.get(k).getQuantity());
+//                                    fgTosAndTosListDto4.setSap_qty(list2.get(i).getQuantity());
+//                                    fgTosAndTosListDto4.setShipmentNO(list2.get(i).getShipmentNO().toString());
+//                                    fgTosAndTosListDto4.setCarNo(list2.get(i).getCarNo().toString());
+//                                    fgTosAndTosListDto4.setPlant(list2.get(i).getPlant().toString());
+//                                    fgTosAndTosListDto4.setPn(list2.get(i).getSapPn().toString());
+//                                    fgTosAndTosListDto4.setPo(list2.get(i).getPo().toString());
+//                                    gMterialsMapper.insertToList(fgTosAndTosListDto4);
+//                                    gMterialsMapper.updateStatusByUid(fgTosAndTosListDtos.get(k).getUid().toString());
+//                                    gMterialsMapper.updateTosListQuantity(fgTosAndTosListDto4.getTo_No().toString(), fgTosAndTosListDto4.getSap_qty());
+//                                }
+//                            }
+//                        }
+//                    }
+//                } else if (sumqty1 < sumqty2) {
+//                    long qty = sumqty2 - sumqty1;
+//                    // 是否未拣货（未拣货、拣货中、拣完货）
+//                    if (fgTosAndTosListDto == null) {
+//                        // 是否拣完或
+//                        if (fgTosAndTosListDto_1 == null) {
+//                            // 拣货中，不允许更新备货清单
+//                        } else {
+//                            // 查找是否存在于缺少数量相等的已预留的备货单UID
+//                            ToList toList1 = gMterialsMapper.checkEqualQuantity(list2.get(i), qty, 1);
+//                            // 大于
+//                            ToList toList2 = gMterialsMapper.checkEqualQuantity2(list2.get(i), qty, 1);
+//                            // 小于
+//                            // ToList toList3 = gMterialsMapper.checkEqualQuantity3(list2.get(i), qty, 1);
+//                            if (toList1 != null) {
+//                                // 邮件提醒
+//                                objects[0] = fgTosAndTosListDto_1.getShipmentNO().toString();
+//                                objects[1] = fgTosAndTosListDto_1.getTo_No().toString();
+//                                objects[2] = toList2.getUid().toString();
+//                                objects[3] = 0l;
+//                                objectList.add(objects);
+//                                // sendMail(fgTosAndTosListDto_1.getShipmentNO().toString(), fgTosAndTosListDto_1.getTo_No().toString(), toList1.getUid().toString(), 0l);
+//                                fgTosAndTosListDto.setSap_qty(fgTosAndTosListDto.getQuantity() - qty);
+//                                gMterialsMapper.updateTosQuantity(fgTosAndTosListDto);
+//                                gMterialsMapper.updateTosListQuantity(fgTosAndTosListDto.getTo_No().toString(), fgTosAndTosListDto.getSap_qty());
+//                                // 设置状态为待回仓
+//                                gMterialsMapper.updateStatusTos(fgTosAndTosListDto_1.getTo_No().toString());
+//                            } else if (toList2 != null) {
+//                                // 查找大于缺少数量的已预留q且已拣货的备货单UID(邮件通知退回？并做拆分UID松祚？)
+//                                // 退回数量（拆分数量）
+//                                long qty2 = toList2.getQuantity() - qty;
+//                                objects[0] = fgTosAndTosListDto_1.getShipmentNO().toString();
+//                                objects[1] = fgTosAndTosListDto_1.getTo_No().toString();
+//                                objects[2] = toList2.getUid().toString();
+//                                objects[3] = qty2;
+//                                objectList.add(objects);
+//                                // sendMail(fgTosAndTosListDto_1.getShipmentNO().toString(), fgTosAndTosListDto_1.getTo_No().toString(), toList2.getUid().toString(), qty2);
+//                            } else {
+//                                List<Object[]> objectList1 = lessThan(list2.get(i), fgTosAndTosListDto_1, qty);
+//                                objectList = objectList1;
+//                            }
+//                        }
+//                    } else {
+//                        // 查找是否存在于缺少数量相等的已预留的备货单UID(未拣货)
+//                        ToList toList1 = gMterialsMapper.checkEqualQuantity(list2.get(i), qty, 0);
+//                        ToList toList2 = gMterialsMapper.checkEqualQuantity2(list2.get(i), qty, 0);
+//                        if (toList1 != null) {
+//                            // 根据UID去库存下架表查询已预留UID重新放到库存表，表示在库（未预留）
+//                            Inventory inventory = gMterialsMapper.getInventoryInfo2(toList1.getUid().toString());
+//                            gMterialsMapper.insertInventory(inventory);
+//                            gMterialsMapper.deleteToListtoNo2(toList1.getUid().toString());
+//                            fgTosAndTosListDto.setSap_qty(fgTosAndTosListDto.getQuantity() - qty);
+//                            gMterialsMapper.updateTosQuantity(fgTosAndTosListDto);
+//                            gMterialsMapper.updateTosListQuantity(fgTosAndTosListDto.getTo_No().toString(), fgTosAndTosListDto.getSap_qty());
+//                        } else if (toList2 != null) {
+//                            // 未拣货 -- 找到TO明细UID，根据差量拆分该UID成品单UID数量，更新原成品单数量，原库存UID数量，新生成的成品单插到库存表，更新TO明细原UID数量，更新原UID对应备货单数量
+//                            long qty2 = toList2.getQuantity() - qty;
+//                            // 拆分成品单
+//                            FgChecklistController fgChecklistController = new FgChecklistController();
+//                            FgChecklist fgChecklist = fgChecklistController.SpiltFg2(toList2.getUid().toString(), qty2);
+//                            if (fgChecklist.getOldUid().toString().equals(toList2.getUid().toString())) {
+//                                Inventory inventory = new Inventory();
+//                                inventory.setUid(fgChecklist.getUid().toString());
+//                                inventory.setPn(fgChecklist.getPn().toString());
+//                                inventory.setPo(fgChecklist.getPo().toString());
+//                                inventory.setStock(toList2.getStock().toString());
+//                                inventory.setBatch(fgChecklist.getBatch().toString());
+//                                inventory.setUid_no(fgChecklist.getUidNo());
+//                                inventory.setStatus(1);
+//                                inventory.setWo(fgChecklist.getWo().toString());
+//                                inventory.setProduction_date(fgChecklist.getProductionDate());
+//                                inventory.setQa_sign(fgChecklist.getQaSign());
+//                                inventory.setRollbackReason("走货资料变更");
+//                                // 将拆分的UID存到库存表
+//                                bindStockMapper.toinsert(inventory);
+//                                // 更新Tolist对应UID数量（拆分前UID）
+//                                gMterialsMapper.updateTosListQuantity2(toList2.getUid().toString(), toList2.getQuantity() - qty2);
+//                                fgTosAndTosListDto.setSap_qty(fgTosAndTosListDto.getQuantity() - qty2);
+//                                // 更新TOs数量（减去拆分的）
+//                                gMterialsMapper.updateTosQuantity(fgTosAndTosListDto);
+//                                // 更新TOlist批量（减去查分的）
+//                                gMterialsMapper.updateTosListQuantity(fgTosAndTosListDto.getTo_No().toString(), fgTosAndTosListDto.getSap_qty());
+//                            }
+//                            // sendMail(fgTosAndTosListDto.getShipmentNO().toString(), fgTosAndTosListDto.getTo_No().toString(), uid2, 0l);
+//                        } else {
+//                            lessThan2(list2.get(i), fgTosAndTosListDto, qty);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//
+////        if (list2.size() == 0) {
+////            System.out.println("走货日期变更");
+////            // 更新走货信息表对应数据（删掉重新插入？）
+////
+////            int deleteShipmentNo = gMterialsMapper.deleteShipmentNo(list2.get(0).getShipmentNO().toString());
+////            if (deleteShipmentNo > 0) {
+////                gMterialsMapper.insertShipmentInfo(list2);
+////            }
+////        } else {
+////            if (objectList.size() > 0) {
+////                System.out.println("数量变更");
+////                // 退回邮件
+////                sendMail(objectList);
+////            }
+////            // 更新走货信息表对应数据（删掉重新插入？）
+////            int deleteShipmentNo = gMterialsMapper.deleteShipmentNo(list2.get(0).getShipmentNO().toString());
+////            if (deleteShipmentNo > 0) {
+////                gMterialsMapper.insertShipmentInfo(list2);
+////            }
+////        }
+//
+//
+//        return null;
+//    }
 
-        Date date = new Date();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
-        String startDate = simpleDateFormat.format(date);
+    @Override
+    public String updateToNo(String date, String shipmintNO) throws javax.mail.MessagingException, IOException {
 
         SAPUtil sapUtil = new SAPUtil();
-        List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_1(startDate, startDate);
+        List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_1(date, date);
         // 存放船务/货仓确认信息
         List<FgShipmentInfo> list1 = new ArrayList<>();
         // 根据走货单统计出对应的数据
@@ -712,6 +1211,7 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
                 }
             }
         }
+
 
 //        if (list2.size() == 0) {
 //            System.out.println("走货日期变更");

@@ -36,7 +36,7 @@ public interface GMaterialsService extends IService<Inventory> {
 
     List<ToList> downloadOrder();
 
-    String soldOut(String cpno, String role);
+    String soldOut(String cpno, String role, String toNo);
 
     List<ShipmentInfoByhand> downloadShipmentinfoByhand();
 
@@ -52,6 +52,6 @@ public interface GMaterialsService extends IService<Inventory> {
 
     List<Map<Integer, Integer>> getQuantity(String client);
 
-    String updateToNo(String toNo) throws MessagingException, IOException;
+    String updateToNo(String date, String toNo) throws MessagingException, IOException;
 
 }

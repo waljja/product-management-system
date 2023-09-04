@@ -20,6 +20,7 @@ import java.util.List;
  */
 @Service
 public class ReportFillServiceImpl implements ReportFillService {
+
     @Autowired
     KanbanMapper kanbanMapper;
 
@@ -40,11 +41,11 @@ public class ReportFillServiceImpl implements ReportFillService {
             endDate += " 23:59:59.999";
             // 根据日期范围查询，SQL Server 分页必须有 order 排序
             queryWrapper
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
-                    .orderByAsc("create_time");
+                    .apply("create_time >= str_to_date('" + startDate + "', '%Y-%m-%d %H:%i:%s')")
+                    .apply("create_time <= str_to_date('" + endDate + "', '%Y-%m-%d %H:%i:%s')")
+                    .orderByDesc("create_time");
         } else {
-            queryWrapper.orderByAsc("create_time");
+            queryWrapper.orderByDesc("create_time");
         }
         storageReportList = kanbanMapper.findInStock(queryWrapper);
         return storageReportList;
@@ -71,12 +72,12 @@ public class ReportFillServiceImpl implements ReportFillService {
                     .eq("TransactionType", "315")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
-                    .orderByAsc("TransactionTime");
+                    .orderByDesc("TransactionTime");
         } else {
             queryWrapper
                     .likeRight("UID", "FG")
                     .eq("TransactionType", "315")
-                    .orderByAsc("TransactionTime");
+                    .orderByDesc("TransactionTime");
         }
         recReportList = kanbanMapper.findRec(queryWrapper);
         return recReportList;

@@ -28,6 +28,9 @@ public class Inventory implements Serializable {
     @ApiModelProperty("型号")
     private String pn;
 
+    @ApiModelProperty("650型号")
+    private String pn650;
+
     @ApiModelProperty("po")
     private String po;
 
@@ -39,6 +42,9 @@ public class Inventory implements Serializable {
 
     @ApiModelProperty("数量")
     private float uid_no;
+
+    @ApiModelProperty("数量")
+    private long tagsQuantity;
 
     @ApiModelProperty("库位号")
     private String stock;
@@ -66,6 +72,14 @@ public class Inventory implements Serializable {
 
     @ApiModelProperty("回仓原因")
     private String rollbackReason;
+
+    public String getPn650() {
+        return pn650;
+    }
+
+    public void setPn650(String pn650) {
+        this.pn650 = pn650;
+    }
 
     public String getUid_id() {
         return uid_id;
@@ -183,15 +197,25 @@ public class Inventory implements Serializable {
         this.rollbackReason = rollbackReason;
     }
 
+    public long getTagsQuantity() {
+        return tagsQuantity;
+    }
+
+    public void setTagsQuantity(long tagsQuantity) {
+        this.tagsQuantity = tagsQuantity;
+    }
+
     @Override
     public String toString() {
         return "Inventory{" +
                 "id=" + id +
                 ", pn='" + pn + '\'' +
+                ", pn650='" + pn650 + '\'' +
                 ", po='" + po + '\'' +
                 ", batch='" + batch + '\'' +
                 ", uid='" + uid + '\'' +
                 ", uid_no=" + uid_no +
+                ", tagsQuantity=" + tagsQuantity +
                 ", stock='" + stock + '\'' +
                 ", status=" + status +
                 ", wo='" + wo + '\'' +

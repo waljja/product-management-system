@@ -19,6 +19,16 @@ public class FgTolistServiceImpl implements FgTolistService {
     @Autowired
     private FgTolistMapper fgTolistMapper;
 
+    @Override
+    public long getReadyBH() {
+        return fgTolistMapper.getReadyBH();
+    }
+
+    @Override
+    public long getBHing() {
+        return fgTolistMapper.getBHing();
+    }
+
     /**
      * 查询TO明细
      *
@@ -40,7 +50,12 @@ public class FgTolistServiceImpl implements FgTolistService {
     @Override
     public List<FgToList> selectFgTolistList(FgToList fgTolist)
     {
-        return fgTolistMapper.selectFgTolistList(fgTolist);
+        if (fgTolist.getStatus() != null && fgTolist.getStatus() == -1) {
+            return fgTolistMapper.getAreaStockInfo();
+        } else {
+            return fgTolistMapper.selectFgTolistList(fgTolist);
+        }
+
     }
 
     @Override

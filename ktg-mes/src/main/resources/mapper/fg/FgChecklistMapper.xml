@@ -141,7 +141,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="qaSign != null">qa_sign,</if>
             <if test="qaResult != null">qa_result,</if>
             <if test="customerResult != null">customer_result,</if>
-            <if test="createdate != null">createdate,</if>
+            <if test="createdate == null">createdate,</if>
             <if test="oldUid != null">old_uid,</if>
             <if test="pn660 != null">pn660,</if>
             <if test="status != null">status,</if>
@@ -170,7 +170,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="qaSign != null">#{qaSign},</if>
             <if test="qaResult != null">#{qaResult},</if>
             <if test="customerResult != null">#{customerResult},</if>
-            <if test="createdate != null">#{createdate},</if>
+            <if test="createdate == null">now(),</if>
             <if test="oldUid != null">#{oldUid},</if>
             <if test="pn660 != null">#{pn660},</if>
             <if test="status != null">#{status},</if>
@@ -205,7 +205,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="qaResult != null">qa_result = #{qaResult},</if>
             <if test="customerResult != null">customer_result = #{customerResult},</if>
             <if test="createdate != null">createdate = #{createdate},</if>
-            <if test="createdate == null">createdate = now(),</if>
             <if test="oldUid != null">old_uid = #{oldUid},</if>
             <if test="pn660 != null">pn660 = #{pn660},</if>
             <if test="status != null">status = #{status},</if>
@@ -263,15 +262,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where A.MOName = #{wo}
     </select>
 
-    <!-- B2 51数据库 QA签署人（可能有多个【拼接】） -->
+    <!-- B2 51数据库 QA签署人、拉别（可能有多个【拼接】） -->
     <select id="checkQasign" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
-        select distinct qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''), WorkcenterName as line
+        select top 1 qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
+        line = stuff((select distinct '、' + WorkcenterName from OrBitX.dbo.DataChainBonding090
+        where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
         from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
         <!--select top 1 WorkerNo from OrBitX.dbo.DataChainBonding090 WHERE WorkflowstepName LIKE '%OQA%' and MOName = #{wo}-->
     </select>
-    <!-- B1 72数据库 QA签署人（可能有多个【拼接】） -->
+    <!-- B1 72数据库 QA签署人、拉别（可能有多个【拼接】） -->
     <select id="checkQasign2" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
-        select distinct qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
+        select top 1 qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
+        line = stuff((select distinct '、' + WorkcenterName from OrBitX.dbo.DataChainBonding090
+        where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
+        from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
+        <!--select top 1 WorkerNo from OrBitX.dbo.DataChainBonding090 WHERE WorkflowstepName LIKE '%OQA%' and MOName = #{wo}-->
+    </select>
+    <!-- B1 75数据库 QA签署人、拉别（可能有多个【拼接】） -->
+    <select id="checkQasign3" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
+        select top 1 qaSign = stuff((select distinct '、' + OrBitUserName from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
         line = stuff((select distinct '、' + WorkcenterName from OrBitX.dbo.DataChainBonding090
         where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
         from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
@@ -288,7 +297,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 查询QA检查结果 -->
     <select id="getQAresult" parameterType="String" resultMap="FgChecklistResult">
         <include refid="selectFgChecklistVo"/>
-        where uid = #{uid} and status = 1
+        where uid = #{uid}
     </select>
 
     <!-- 查询数据是否存在 -->

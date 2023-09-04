@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
+import javax.mail.MessagingException;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -127,9 +129,10 @@ public class GMaterailsController {
         String cpno = nodes.getStr("cpno");
         System.out.println(cpno);
         String role = nodes.getStr("role");
+        String toNo = nodes.getStr("bill");
 
         // 扫描是成品UID还是贴纸
-        if (cpno.substring(0, 3).indexOf("FG2") == -1) {
+        if (cpno.substring(0, 2).indexOf("FG") == -1) {
             String khpn = "";
             long qty = 0;
             String rectime = "";
@@ -142,84 +145,90 @@ public class GMaterailsController {
                 qty = Long.parseLong(tz1[1]);
                 rectime = tz1[2] + "-" + tz1[3] + "-" + tz1[4];
                 clientBatch = tz1[5];
-            }
-            long sum = 0;
-            // 扫描贴纸 -- 是否存在 并 找对应成品UID
-            List<TagsInventory> tagsInventories = gMaterialsService.selectClientTag(khpn);
-            if (tagsInventories.size() > 0) {
 
-                long sumQuantity = gMaterialsService.getSumQuantity(tagsInventories.get(0).getUid().toString());
-                ToList toList = gMaterialsService.checkTolistUID(tagsInventories.get(0).getUid().toString());
-                if (toList == null)
-                    return Result.error("600", "该贴纸对应成品未产生备货单，或对应成品已出库其它对应贴纸成品");
+                long sum = 0;
+                // 扫描贴纸 -- 是否存在 并 找对应成品UID
+                List<TagsInventory> tagsInventories = gMaterialsService.selectClientTag(khpn);
+                if (tagsInventories.size() > 0) {
 
-                Inventory inventory = gMterialsMapper.getInventoryInfo(toList.getUid().toString());
-                sum = sumQuantity + qty;
-                if (toList.getQuantity() == sum) {
-                    int n1 = gMaterialsService.updateTagsStauts(clientBatch, qty);
-                    if (n1 <= 0)
-                        return Result.error("600", "贴纸出库失败");
+                    long sumQuantity = gMaterialsService.getSumQuantity(tagsInventories.get(0).getUid().toString());
+                    ToList toList = gMaterialsService.checkTolistUID(tagsInventories.get(0).getUid().toString());
+                    if (toList == null)
+                        return Result.error("600", "该贴纸对应成品未产生备货单，或对应成品已出库其它对应贴纸成品");
 
-                    // 全出库/出一部分
-                    if (inventory.getUid_no() == sum) {
-                        // 将扫描的下架数据存到成品下架表
-                        int n2 = gMterialsMapper.insertInventoryOut(inventory);
-                        if (n2 <= 0) {
-                            return Result.error("600", "贴纸出库成功，成品下架失败1(下架表写入失败)");
+                    Inventory inventory = gMterialsMapper.getInventoryInfo(toList.getUid().toString());
+                    sum = sumQuantity + qty;
+                    if (toList.getQuantity() == sum) {
+                        int n1 = gMaterialsService.updateTagsStauts(clientBatch, qty);
+                        if (n1 <= 0)
+                            return Result.error("600", "贴纸出库失败");
+
+                        // 全出库/出一部分
+                        if (inventory.getUid_no() == sum) {
+                            // 将扫描的下架数据存到成品下架表
+                            int n2 = gMterialsMapper.insertInventoryOut(inventory);
+                            if (n2 <= 0) {
+                                return Result.error("600", "贴纸出库成功，成品下架失败1(下架表写入失败)");
+                            }
+                            // 库存表删除下架的成品信息
+                            int n3 = gMterialsMapper.deleteiinventoryByUid(toList.getUid().toString());
+                            if (n3 <= 0) {
+                                return Result.error("600", "贴纸出库成功，成品下架失败2(库存表删除失败)");
+                            }
+                        } else {
+                            inventory.setUid_no(sum);
+                            int n6 = gMterialsMapper.insertInventoryOut(inventory);
+                            if (n6 <= 0) {
+                                return Result.error("600", "贴纸出库成功，成品部分下架失败1(下架表写入失败)");
+                            }
+                            int n7 = gMterialsMapper.updateQuantityStauts(inventory.getUid().toString(), (long) (inventory.getUid_no() - sum), 1);
+                            if (n7 <= 0)
+                                return Result.error("600", "贴纸出库成功，库存数量修改失败");
+
                         }
-                        // 库存表删除下架的成品信息
-                        int n3 = gMterialsMapper.deleteiinventoryByUid(toList.getUid().toString());
-                        if (n3 <= 0) {
-                            return Result.error("600", "贴纸出库成功，成品下架失败2(库存表删除失败)");
+
+                        int n4 = gMterialsMapper.updateTono(toList.getUid().toString());
+                        if (n4 <= 0)
+                            return Result.error("600", "贴纸出库后对应成品UID出库失败");
+
+                        // 查询即存在已拣货和未拣货备货单（TO明细表）
+                        int n5 = gMterialsMapper.checkStauts(toList.getUid().toString());
+                        if (n5 > 0) {
+                            // 更新TO管理表对应备货单为拣货中
+                            gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 1);
+                        } else {
+                            gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 2);
                         }
-                    } else {
-                        inventory.setUid_no(sum);
-                        int n6 = gMterialsMapper.insertInventoryOut(inventory);
-                        if (n6 <= 0) {
-                            return Result.error("600", "贴纸出库成功，成品部分下架失败1(下架表写入失败)");
+
+                        return Result.success("成品出库成功");
+
+                    } else if (toList.getQuantity() > sum) {
+                        int n = gMaterialsService.updateTagsStauts(clientBatch, qty);
+                        if (n <= 0)
+                            return Result.error("600", "贴纸出库失败！");
+
+                        // 查询即存在已拣货和未拣货备货单（TO明细表）
+                        int n1 = gMterialsMapper.checkStauts(toList.getUid().toString());
+                        if (n1 > 0) {
+                            // 更新TO管理表对应备货单为拣货中
+                            gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 1);
+                        } else {
+                            gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 2);
                         }
-                        int n7 = gMterialsMapper.updateQuantityStauts(inventory.getUid().toString(), (long) (inventory.getUid_no() - sum), 1);
-                        if (n7 <= 0)
-                            return Result.error("600", "贴纸出库成功，库存数量修改失败");
+                        return Result.success("贴纸出库成功！");
 
+                    } else if (toList.getQuantity() < sum) {
+                        return Result.error("600", "出库数量大于应出库数量，应出库" + (sum - (sum - toList.getQuantity())));
                     }
-
-                    int n4 = gMterialsMapper.updateTono(toList.getUid().toString());
-                    if (n4 <= 0)
-                        return Result.error("600", "贴纸出库后对应成品UID出库失败");
-
-                    // 查询即存在已拣货和未拣货备货单（TO明细表）
-                    int n5 = gMterialsMapper.checkStauts();
-                    if (n5 > 0) {
-                        // 更新TO管理表对应备货单为拣货中
-                        gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 1);
-                    } else {
-                        gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 2);
-                    }
-
-                    return Result.success("成品出库成功");
-
-                } else if (toList.getQuantity() > sum) {
-                    int n = gMaterialsService.updateTagsStauts(clientBatch, qty);
-                    if (n <= 0)
-                        return Result.error("600", "贴纸出库失败！");
-
-                    // 查询即存在已拣货和未拣货备货单（TO明细表）
-                    int n1 = gMterialsMapper.checkStauts();
-                    if (n1 > 0) {
-                        // 更新TO管理表对应备货单为拣货中
-                        gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 1);
-                    } else {
-                        gMterialsMapper.updateTosBHStatus(toList.getUid().toString(), 2);
-                    }
-                    return Result.success("贴纸出库成功！");
-
-                } else if (toList.getQuantity() < sum) {
-                    return Result.error("600", "出库数量大于应出库数量，应出库" + (sum - (sum - toList.getQuantity())));
+                } else {
+                    return Result.error("600", "不存在相关贴纸");
                 }
+            } else if (cpno.contains("@")) {
+                return Result.error("600" ,"鸿通贴纸");
             } else {
-                return Result.error("600", "不存在相关贴纸");
+
             }
+
 
         } else {
             int n = gMterialsMapper.checkTags(cpno);
@@ -239,7 +248,7 @@ public class GMaterailsController {
                 if (!"Y".equals(YorN))
                     return Result.error("600", "该UID未拆分，请拆分UID数量与备货数量相等");
 
-                String returnMessage = gMaterialsService.soldOut(cpno, role);
+                String returnMessage = gMaterialsService.soldOut(cpno, role, toNo);
                 System.out.println(returnMessage);
                 // 若前端返回没有提示信息，则是成品已存到下架表，还未在库存表中删除/删除失败
                 if ("成品出库成功".equals(returnMessage) || "替换拣料成功！".equals(returnMessage)) {
@@ -405,21 +414,25 @@ public class GMaterailsController {
      * */
     @ResponseBody
     @PostMapping(value = "/updatetono")
-    public Result updateToNo(String toNo) {
+    public Result updateToNo(@RequestBody JSONObject params) throws MessagingException, IOException {
 
-        Date date = new Date();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
-        String startDate = simpleDateFormat.format(date);
+        JSONObject nodes = new JSONObject(params.getStr("params"));
+        String shipmentno = nodes.getStr("shipmentno");
+        System.out.println(shipmentno);
+        String date = nodes.getStr("date");
+        date.replace("-", "");
 
-        SAPUtil sapUtil = new SAPUtil();
-        List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_1(startDate, startDate);
-        // 实体类对象存到List集合中，统计对象中某个值相同的数据
+        String returnMessage = gMaterialsService.updateToNo(date, shipmentno);
 
-        for (int i = 0;i < list.size();i++) {
-            if (list.get(i).getLastComfirm() != null && (list.get(i).getLastComfirm().equals("船务") || list.get(i).getLastComfirm().equals("货仓"))) {
-                System.out.println(list.get(i).toString());
-            }
-        }
+//        SAPUtil sapUtil = new SAPUtil();
+//        List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_1(startDate, startDate);
+//        // 实体类对象存到List集合中，统计对象中某个值相同的数据
+//
+//        for (int i = 0;i < list.size();i++) {
+//            if (list.get(i).getLastComfirm() != null && (list.get(i).getLastComfirm().equals("船务") || list.get(i).getLastComfirm().equals("货仓"))) {
+//                System.out.println(list.get(i).toString());
+//            }
+//        }
 
         return null;
     }

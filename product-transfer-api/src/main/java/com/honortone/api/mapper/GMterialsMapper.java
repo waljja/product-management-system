@@ -79,7 +79,7 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
     Inventory getInventoryInfo(String cpno);
 
     @DS("slave_2")
-    int checkTolistByUid(String uid);
+    String checkTolistByUid(String uid);
 
     @DS("slave_2")
     String checkTolistInfo(Inventory inventory);
@@ -112,10 +112,13 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
     int updateTono(String cpno);
 
     @DS("slave_2")
-    int checkStauts();
+    int checkStauts(String uid);
 
     @DS("slave_2")
     int updateTosBHStatus(@Param("uid") String uid, @Param("Status") int Status);
+
+    @DS("slave_2")
+    int checkStauts2(String replaceUid);
 
     @DS("slave_2")
     int updateTosBHStatus2(@Param("replaceUid") String replaceUid, @Param("Status") int Status);

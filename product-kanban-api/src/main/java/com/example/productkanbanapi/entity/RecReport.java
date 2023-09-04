@@ -13,7 +13,7 @@ import lombok.Setter;
 import java.util.Date;
 
 /**
- * RecReport
+ * 收获报表实体类
  *
  * @author 丁国钊
  * @date 2023-08-31-13:57
@@ -93,6 +93,7 @@ public class RecReport {
     /**
      * 过账类型
      */
+    @ColumnWidth(8)
     @ExcelProperty({"过账类型"})
     @HeadStyle(fillPatternType = FillPatternTypeEnum.SOLID_FOREGROUND, fillForegroundColor = 44)
     private String transactionType;
@@ -100,6 +101,7 @@ public class RecReport {
     /**
      * 过账编号
      */
+    @ColumnWidth(12)
     @ExcelProperty({"过账编号"})
     @HeadStyle(fillPatternType = FillPatternTypeEnum.SOLID_FOREGROUND, fillForegroundColor = 44)
     private String refDocNo;
@@ -107,6 +109,7 @@ public class RecReport {
     /**
      * 过账年份
      */
+    @ColumnWidth(8)
     @ExcelProperty({"过账年份"})
     @HeadStyle(fillPatternType = FillPatternTypeEnum.SOLID_FOREGROUND, fillForegroundColor = 44)
     private String docHeader;

@@ -120,6 +120,10 @@
         ${ew.customSqlSegment}
     </select>
 
+
+    <!--    (select sum(quantity) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as shipment_quantity,-->
+    <!--    (select sum(boxcount) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as box_quantity,-->
+    <!--    (select sum(pellet_qty) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as pallet_quantity-->
     <select id="findShipment" resultMap="ShipmentMap">
         select shipment_date,
                shipment_number,
@@ -130,26 +134,11 @@
                     when tos.status = 1 then '备货中'
                     when tos.status = 2 then '待装车'
                    end) as state,
-               (select sum(quantity) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as shipment_quantity,
-               (select sum(boxcount) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as box_quantity,
-               (select sum(pellet_qty) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as pallet_quantity
+               ship.quantity as shipment_quantity,
+               boxcount as box_quantity,
+               pellet_qty as pallet_quantity
         from fg_tos tos
                  left join fg_shipmentinfo ship on tos.shipment_no = ship.shipment_number
-        ${ew.customSqlSegment}
-    </select>
-
-    <select id="findStockKanbanData" resultMap="BaseResultMap">
-        select row_number() over (order by TransactionTime) as item,
-               PartNumber,
-               PO_NUMBER,
-               Batch,
-               UID,
-               Quantity,
-               ToStock,
-               TransactionTime,
-               Plant,
-               '待上架'                                     as Status
-        from xTend_MaterialTransactions
         ${ew.customSqlSegment}
     </select>
 

@@ -14,6 +14,11 @@ import java.util.List;
 @Mapper
 @Repository
 public interface FgTolistMapper {
+
+    long getReadyBH();
+
+    long getBHing();
+
     /**
      * 查询TO明细
      *
@@ -63,4 +68,6 @@ public interface FgTolistMapper {
      * @return 结果
      */
      int deleteFgTolistByIds(Long[] ids);
+
+     List<FgToList> getAreaStockInfo();
 }

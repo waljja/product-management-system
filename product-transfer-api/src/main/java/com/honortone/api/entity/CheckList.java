@@ -1,6 +1,7 @@
 package com.honortone.api.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.ktg.common.annotation.Excel;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -74,5 +75,8 @@ public class CheckList {
     @ApiModelProperty("客户检验结果")
     private String customer_result;
 
+    /** 成品型号 */
+    @ApiModelProperty("660成品型号")
+    private String pn660;
 
 }

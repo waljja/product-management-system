@@ -214,14 +214,25 @@ public class RuoYiApplication
 
 
     }
-    // 测试日期
     @Test
     public void DateTest01() {
 
         Date date = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        // 获取当天和后2天的走货编号（共三天的数据）
+        calendar.add(Calendar.DAY_OF_MONTH, 2);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         String startDate = simpleDateFormat.format(date);
-        System.out.println("开始时间：" + startDate);
+        String endDate = simpleDateFormat.format(calendar.getTime());
+        System.out.println(startDate + "==" + endDate);
+
+        SAPUtil sapUtil = new SAPUtil();
+        List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_2("A-20230901-62099");
+        System.out.println(simpleDateFormat.format(list.get(0).getShipmentDate()));
+        for (int i = 0;i < list.size();i++) {
+            System.out.println(list.get(i).toString());
+        }
     }
 
     @Test

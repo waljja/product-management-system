@@ -9,9 +9,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import ch.qos.logback.classic.Logger;
 import cn.hutool.core.bean.BeanUtil;
@@ -236,7 +234,7 @@ public class AutoDownload_BitchPrint {
 //            if (fgTos2 != null) {
 //                BH = fgTos2.getTo_No().toString();
 //            }
-            // 根据欠货单查询有多少条欠货明细（大概率是一条）
+            // 根据欠货单查询有多少条欠货明细
             List<FgToList> list2 = fgTosMapper.getToListByQH(list1.get(i).getTo_No() == null ? "" : list1.get(i).getTo_No().toString());
             if (list2.size() == 0) {
                 // 更新TOS管理的欠货单状态为已补货（注：补货完成后，下一次执行才会更新 即有一定延迟）
@@ -262,7 +260,7 @@ public class AutoDownload_BitchPrint {
                             // 修改明细表中原有备货单的批次总数
                             fgTosMapper.updatebatchSum(list2.get(j).getQuantity(), fgTos.getTo_No().toString());
                             // 修改累加备货单数量
-                            fgTosMapper.sumBH(list2.get(j).getQuantity(), list1.get(i).getShipmentNO().toString());
+                            fgTosMapper.sumBH(list2.get(j).getQuantity(), fgTos.getTo_No().toString());
                             // 修改欠货明细状态为已补货（欠货管理在上面更新）
                             fgTosMapper.updateQHStatus(list2.get(j));
                             // 更新库存表已备货成品状态
@@ -296,14 +294,17 @@ public class AutoDownload_BitchPrint {
                     } else {
                         // 没有库存成品数量等于欠货数量，但有存在相同PN、PO的情况，执行累加，判大小分情况
                         List<FgInventory> fgInventorys = fgTosMapper.checkInventory2(list2.get(j));
+                        FgTos fgTos1 = new FgTos();
                         String BH = "";
                         if (fgInventorys.size() > 0 && fgTos != null) {
                             BH = fgTos.getTo_No().toString();
 
                         } else if (fgInventorys.size() > 0){
-                            FgTos fgTos1 = new FgTos();
                             BH = generateTo_No("备货单");
-                            BeanUtil.copyProperties(list2.get(i), fgTos1, true);
+                            BeanUtil.copyProperties(list2.get(j), fgTos1, true);
+                            fgTos1.setShipmentNO(list1.get(i).getShipmentNO().toString());
+                            fgTos1.setCarNo(list1.get(i).getCarNo().toString());
+                            fgTos1.setPlant(list1.get(i).getPlant().toString());
                             fgTos1.setTo_No(BH);
                             fgTos1.setStatus(0);
                             // fgTos1.setSap_qty(list2.get(j).getQuantity());
@@ -323,7 +324,7 @@ public class AutoDownload_BitchPrint {
                                     fgToList.setPo(list2.get(j).getPo().toString());
                                     fgToList.setPn(list2.get(j).getPn().toString());
                                     fgToList.setQuantity(fgInventorys.get(k).getQuantity());
-                                    fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
+                                    fgToList.setSap_qty(fgTos == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
                                     fgToList.setStock(fgInventorys.get(k).getStock().toString());
                                     fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
                                     // 插入TO明细
@@ -334,12 +335,12 @@ public class AutoDownload_BitchPrint {
                                     // 更新欠货单剩余的欠货数量
                                     list2.get(j).setSap_qty(list2.get(j).getSap_qty() - fgInventorys.get(k).getQuantity());
                                     fgTosMapper.updateQHQuantuty(list2.get(j), list2.get(j).getQuantity() - fgInventorys.get(k).getQuantity());
-                                    // 修改库存表已备货的成品状态
-                                    fgTosMapper.updateInventoryStatus(fgInventorys.get(k).getUid().toString());
                                     // 修改TO管理表中欠货单数量
                                     fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
+                                    // 修改库存表已备货的成品状态
+                                    fgTosMapper.updateInventoryStatus(fgInventorys.get(k).getUid().toString());
                                     // 更新备货总数
-                                    fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
+                                    fgTosMapper.updateTosQuantity(fgTos == null ? fgTos1.getSap_qty() + fgInventorys.get(k).getQuantity() : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
 
                                 } else if (fgInventorys.get(k).getSumQuantity() > list2.get(j).getQuantity()) {
                                     sumqty += fgInventorys.get(k).getQuantity();
@@ -351,7 +352,7 @@ public class AutoDownload_BitchPrint {
                                         fgToList.setPo(list2.get(j).getPo().toString());
                                         fgToList.setPn(list2.get(j).getPn().toString());
                                         fgToList.setQuantity(qty);
-                                        fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + qty);
+                                        fgToList.setSap_qty(fgTos == null ? 0 : fgTos.getSap_qty() + qty);
                                         fgToList.setStock(fgInventorys.get(k).getStock().toString());
                                         fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
                                         fgTosMapper.insertFgTolist(fgToList);
@@ -363,7 +364,7 @@ public class AutoDownload_BitchPrint {
                                         // 修改TO管理表中欠货单数量
                                         fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
                                         // 更新备货总数
-                                        fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + qty, BH);
+                                        fgTosMapper.updateTosQuantity(fgTos == null ? fgTos1.getSap_qty() + fgInventorys.get(k).getQuantity() : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
                                         break;
                                     } else if (sumqty == list2.get(j).getQuantity()) {
                                         fgToList.setStatus(0);
@@ -372,7 +373,7 @@ public class AutoDownload_BitchPrint {
                                         fgToList.setPo(list2.get(j).getPo().toString());
                                         fgToList.setPn(list2.get(j).getPn().toString());
                                         fgToList.setQuantity(fgInventorys.get(k).getQuantity());
-                                        fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
+                                        fgToList.setSap_qty(fgTos == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
                                         fgToList.setStock(fgInventorys.get(k).getStock().toString());
                                         fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
                                         fgTosMapper.insertFgTolist(fgToList);
@@ -384,7 +385,7 @@ public class AutoDownload_BitchPrint {
                                         // 修改TO管理表中欠货单数量
                                         fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
                                         // 更新备货总数
-                                        fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
+                                        fgTosMapper.updateTosQuantity(fgTos == null ? fgTos1.getSap_qty() + fgInventorys.get(k).getQuantity() : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
                                         break;
                                     } else {
 
@@ -394,7 +395,7 @@ public class AutoDownload_BitchPrint {
                                         fgToList.setPo(list2.get(j).getPo().toString());
                                         fgToList.setPn(list2.get(j).getPn().toString());
                                         fgToList.setQuantity(fgInventorys.get(k).getQuantity());
-                                        fgToList.setSap_qty(fgTos.getSap_qty() == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
+                                        fgToList.setSap_qty(fgTos == null ? 0 : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity());
                                         fgToList.setStock(fgInventorys.get(k).getStock().toString());
                                         fgToList.setBatch(fgInventorys.get(k).getBatch().toString());
                                         fgTosMapper.insertFgTolist(fgToList);
@@ -406,7 +407,7 @@ public class AutoDownload_BitchPrint {
                                         // 修改TO管理表中欠货单数量
                                         fgTosMapper.updateTosQHQuantuty(list2.get(j).getSap_qty(), list2.get(j).getTo_No().toString());
                                         // 更新备货总数
-                                        fgTosMapper.updateTosQuantity(fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
+                                        fgTosMapper.updateTosQuantity(fgTos == null ? fgTos1.getSap_qty() + fgInventorys.get(k).getQuantity() : fgTos.getSap_qty() + fgInventorys.get(k).getQuantity(), BH);
                                     }
                                 }
                             }
@@ -416,6 +417,54 @@ public class AutoDownload_BitchPrint {
             }
         }
         return returnMessage;
+    }
+
+    /**
+     * 定时更新走货日期变更
+     * */
+    @PostMapping("/changeDate")
+    public void changeShipmentNoDate() {
+
+        try {
+            System.out.println("starting..  check start....." + new Date());
+
+            Date date = new Date();
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            // 获取当天和后2天的走货编号（共三天的数据）
+            calendar.add(Calendar.DAY_OF_MONTH, 2);
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+            String startDate = simpleDateFormat.format(date);
+            String endDate = simpleDateFormat.format(calendar.getTime());
+
+            List<FgShipmentInfo> fgShipmentInfos = fgTosMapper.getShipmentInfo(startDate, endDate);
+            List<FgShipmentInfo> fgShipmentInfos1 = new ArrayList<>();
+
+            SAPUtil sapUtil = new SAPUtil();
+            for (int i = 0;i < fgShipmentInfos.size();i++) {
+                List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_2(fgShipmentInfos.get(i).getShipmentNO().toString());
+                if (simpleDateFormat.format(list.get(0).getShipmentDate()).toString().equals(simpleDateFormat.format(fgShipmentInfos.get(i).getShipmentDate()))) {
+                    continue;
+                } else {
+                    fgShipmentInfos.get(i).setShipmentDate(list.get(0).getShipmentDate());
+                    fgShipmentInfos1.add(fgShipmentInfos.get(i));
+                }
+            }
+            if (fgShipmentInfos1.size() > 0) {
+                int n = fgTosMapper.updateShipmentDate(fgShipmentInfos1);
+                if (n > 0) {
+                    System.out.println("更新走货日期成功");
+                } else {
+                    System.out.println("更新出错，请检查语句");
+                }
+            } else {
+                System.out.println("今天起至两天内没有走货日期变更");
+            }
+            System.out.println("end..  check end....." + new Date());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

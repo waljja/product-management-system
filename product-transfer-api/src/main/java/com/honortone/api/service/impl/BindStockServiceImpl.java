@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +55,9 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
 
         String returnMessage = "";
         CheckList checkList = inStockMapper.ifSuccess(uid);
+        if (checkList == null)
+            return "未找到该UID信息，请检查是否输入错误!";
+
         System.out.println("1112u" + uid);
         System.out.println(checkList);
 
@@ -64,20 +68,26 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
     }
 
     @Override
-    public String bindStock_2(String uid, String tz, String stock, String htpn, String khpn, String rectime, long qty, String clientBatch) {
+    public String bindStock_2(String uid, String tz, String stock, String htpn, String khpn, String rectime, long qty, String clientBatch, String username) throws ParseException {
 
         String returnMessage = "";
         CheckList checkList = inStockMapper.ifSuccess(uid);
+        if (checkList == null)
+            return "未查询到该UID信息，请检查是否输入错误";
+
         System.out.println("ceimpl" + tz);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String date_checklist = "";
+        String date_box = "";
         SAPUtil sapUtil = new SAPUtil();
         if (bindStockMapper.checkInstock(checkList) > 0) {
             Inventory inventory = new Inventory();
             if (htpn != "" && htpn != null && htpn.equals(checkList.getPn().toString())) {
                 BeanUtil.copyProperties(checkList, inventory, true);
                 // 因为checkList没有stock字段可赋值给inventoryDto
-                inventory.setStock(stock);
-                String uid_id = bindStockMapper.getUidId(uid);
-                inventory.setUid_id(uid_id);
+//                inventory.setStock(stock);
+//                String uid_id = bindStockMapper.getUidId(uid);
+//                inventory.setUid_id(uid_id);
                 int n1 = bindStockMapper.toinsert(inventory);  //临时注释：是否需要判断贴纸是否存在，htpn\khpn是否需要保存
                 if (n1 > 0)
                     returnMessage = "HT贴纸绑库成功";
@@ -99,45 +109,80 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                 if (i == n) {
                     returnMessage = "送检单型号与客户贴纸型号不一致";
                 } else {
+                    SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     BeanUtil.copyProperties(checkList, inventory, true);
                     inventory.setStock(stock);
+                    inventory.setQa_sign(username);
+                    // 暂用不上
                     String uid_id = bindStockMapper.getUidId(uid);
                     TagsInventory tagsInventory = new TagsInventory();
                     BeanUtil.copyProperties(inventory, tagsInventory, true);
                     tagsInventory.setClientBatch(clientBatch);
                     tagsInventory.setClientPn(khpn);
                     tagsInventory.setQuantity(qty);
+                    String rectime1 = rectime + " 00:00:00";
+                    Date date = sdf1.parse(rectime1);
+                    tagsInventory.setProductionDate(date);
 
-                    // 是否存在该uid
-                    Inventory inventory1 = bindStockMapper.checkInventory(inventory.getUid().toString());
-                    if (inventory1 != null) {
-                        // 保存贴纸信息
-                        int n1 = bindStockMapper.insertTagsInventory(tagsInventory);
-                        if (n1 > 0) {
-                            // 修改绑库UID数量
-                            int n2 = bindStockMapper.updateQuantity(inventory1.getUid().toString(), (long) inventory1.getUid_no() + qty);
-                            if (n2 > 0) {
-                                returnMessage = "绑定客户贴纸成功";
+                    if (rectime.equals(sdf.format(inventory.getProduction_date()))) {
+                        // 是否存在该uid
+                        Inventory inventory1 = bindStockMapper.checkInventory(inventory.getUid().toString());
+                        long tagsSum = bindStockMapper.checktagsSum(inventory.getUid().toString());
+                        if (inventory1 != null) {
+                            if ((tagsSum + tagsInventory.getQuantity()) > inventory1.getUid_no()) {
+                                System.out.println();
+                                return "绑定贴纸总数大于成品单打印数量，不允许打印";
+                            } else {
+                                if (bindStockMapper.checkTags(clientBatch) > 0) {
+                                    returnMessage = "该贴纸 批次已绑定过";
+                                } else {
+                                    // 保存贴纸信息
+                                    int n1 = bindStockMapper.insertTagsInventory(tagsInventory);
+                                    if (n1 > 0) {
+                                        inventory1.setTagsQuantity(tagsSum + tagsInventory.getQuantity());
+                                        bindStockMapper.updateInventory(inventory1);
+                                        returnMessage = "珠飞客户贴纸成功";
+                                    }
+                                }
+                            }
+                        } else {
+                            // inventory.setUid_no(qty);
+                            // inventory.setUid_id(uid_id);
+                            long uidNo = (long)inventory.getUid_no();
+                            if (tagsInventory.getQuantity() < uidNo) {
+                                System.out.println(tagsInventory.getQuantity() + "===" + uidNo);
+                                inventory.setTagsQuantity(tagsInventory.getQuantity());
+                                // 保存绑库UID
+                                int n2 = bindStockMapper.toinsert(inventory);
+                                if (n2 > 0) {
+                                    if (bindStockMapper.checkTags(clientBatch) > 0) {
+                                        returnMessage = "该贴纸 批次已绑定过";
+                                    } else {
+                                        // 保存贴纸信息
+                                        int n3 = bindStockMapper.insertTagsInventory(tagsInventory);
+                                        if (n3 > 0) {
+                                            returnMessage = "珠飞客户贴纸成功";
+                                        }
+                                    }
+                                }
+                            } else {
+                                System.out.println(tagsInventory.getQuantity() + "===" + uidNo);
+                                return "贴纸数量大于成品单打印数量";
                             }
                         }
                     } else {
-                        inventory.setUid_no(qty);
-                        inventory.setUid_id(uid_id);
-                        // 保存绑库UID
-                        int n2 = bindStockMapper.toinsert(inventory);
-                        if (n2 > 0) {
-                            // 保存贴纸信息
-                            int n3 = bindStockMapper.insertTagsInventory(tagsInventory);
-                            if (n3 > 0) {
-                                returnMessage = "绑定客户贴纸成功";
-                            }
-                        }
+                        return "珠飞贴纸日期与成品单101过账日期不相等，不允许绑定";
                     }
                 }
             } else if (!tz.contains("/") && !tz.contains("@")) {
+
                 System.out.println(tz);
                 BoxInventory boxInventory = bindStockMapper.getBoxInfo(tz);
-                if (boxInventory != null && boxInventory.getPn().toString().equals(checkList.getPn().toString()) && boxInventory.getPo().toString().equals(checkList.getPo().toString())) {
+                date_checklist = sdf.format(checkList.getProduction_date());
+                System.out.println(boxInventory.getCreateTime());
+                System.out.println(boxInventory.getProductionDate());
+                date_box = sdf.format(boxInventory.getProductionDate());
+                if (boxInventory != null && boxInventory.getPn().toString().equals(checkList.getPn().toString()) && boxInventory.getPo().toString().equals(checkList.getPo().toString()) && date_checklist.equals(date_box)) {
 
                     BeanUtil.copyProperties(checkList, inventory, true);
                     inventory.setStock(stock);
@@ -152,7 +197,7 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                             // 保存贴纸信息
                             int n3 = bindStockMapper.insertBoxInventory(boxInventory);
                             if (n3 > 0) {
-                                returnMessage = "绑定客户贴纸成功";
+                                returnMessage = "CC4U客户贴纸成功";
                             }
                         }
                     } else {
@@ -166,14 +211,14 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                             } else {
                                 int n3 = bindStockMapper.insertBoxInventory(boxInventory);
                                 if (n3 > 0) {
-                                    returnMessage = "绑定客户贴纸成功";
+                                    returnMessage = "CC4U客户贴纸成功";
                                 }
                             }
                         }
                     }
 
                 } else {
-                    returnMessage = "不存在箱号或该箱号PN、PO与成品单PN、PO不一致！";
+                    returnMessage = "不存在箱号或该箱号PN、PO、包装时间与成品单PN、PO、日期不一致！";
                 }
 
             } else {
@@ -442,6 +487,11 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
             //BeanUtils是org.springframework.beans.BeanUtils，a拷贝到b
             //BeanUtils是org.apache.commons.beanutils.BeanUtils，b拷贝到a
             BeanUtil.copyProperties(checkList, inventory, true);
+            // 上架的是650，把库存表partmunber设置为660，方便产生TO单
+            if (checkList.getPn().toString().substring(0, 3).equals("650")) {
+                inventory.setPn(checkList.getPn660().toString());
+                inventory.setPn650(checkList.getPn().toString());
+            }
             System.out.println(checkList);
             System.out.println(inventory);
             inventory.setStock(stock);

@@ -27,6 +27,20 @@ public class FgTolistController extends BaseController {
     @Autowired
     private FgTolistService fgTolistService;
 
+    @PostMapping("/reday")
+    public AjaxResult reday()
+    {
+        long readySum = fgTolistService.getReadyBH();
+        return AjaxResult.success(readySum);
+    }
+
+    @PostMapping("/ing")
+    public AjaxResult ing()
+    {
+        long ingSum = fgTolistService.getBHing();
+        return AjaxResult.success(ingSum);
+    }
+
     /**
      * 查询TO明细列表
      */

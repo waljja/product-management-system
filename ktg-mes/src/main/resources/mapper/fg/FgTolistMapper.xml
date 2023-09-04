@@ -92,6 +92,15 @@
         where id = #{id}
     </update>
 
+    <!-- 统计待拣货数量 -->
+    <select id="getReadyBH" resultType="java.lang.Long">
+        select count(*) from fg_tos where status = 0
+    </select>
+    <!-- 统计拣货中数量 -->
+    <select id="getBHing" resultType="java.lang.Long">
+        select count(*) from fg_tos where status = 1
+    </select>
+
     <delete id="deleteFgTolistById" parameterType="Long">
         delete from fg_tolist where id = #{id}
     </delete>
@@ -102,4 +111,12 @@
             #{id}
         </foreach>
     </delete>
+
+    <!-- 查询绑定待走货区 -->
+    <select id="getAreaStockInfo" resultType="com.ktg.mes.fg.domain.FgToList">
+        select tl.id id, tl.to_no To_No, tl.uid uid, tl.replace_uid replace_uid, tl.pn pn, tl.quantity Quantity, tl.batch_qty sap_qty, tl.po po, tl.batch batch, tl.stock stock, ts.stock areaStock
+        from fg_tos ts left join fg_tolist tl on ts.to_no = tl.to_no
+        where ts.stock is not null
+    </select>
+
 </mapper>

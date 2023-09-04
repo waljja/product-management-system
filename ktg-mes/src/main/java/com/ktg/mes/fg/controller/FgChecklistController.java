@@ -17,6 +17,7 @@ import com.ktg.mes.fg.mapper.FgInventoryMapper;
 import com.ktg.mes.fg.mapper.FgTosMapper;
 import com.ktg.mes.fg.service.FgInventoryService;
 import com.ktg.mes.fg.utils.SAPUtil;
+import org.apache.commons.compress.utils.Lists;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -288,6 +289,11 @@ public class FgChecklistController extends BaseController {
     @PostMapping("/selectpo")
     public AjaxResult checkPo(@RequestBody FgChecklist fgChecklist) {
         SAPUtil sapUtil = new SAPUtil();
+        List<String[]> list1 = new ArrayList<>();
+        List<String> listPN1 = new ArrayList<>();
+        List<String> listPN2 = new ArrayList<>();
+        listPN1.addAll(Arrays.asList("660-V830008-00R0", "660-V830007-00R0", "660-V850003-00R0", "660-V850004-00R0", "660-V700009-00R0", "660-V700017-00R1", "660-V900010-00R1", "660-V110003-00R1", "660-V110007-00R1", "660-V110008-00R1"));
+        listPN2.addAll(Arrays.asList("660-V600003-00R0", "660-V10E011-00R0", "660-V10E020-00R1", "660-V10E014-00R1", "660-V10E016-00R1", "660-V10A011-00R1", "660-V10A013-00R1", "660-V10B008-00R1", "660-V10B009-00R1", "660-V10E022-00R1"));
         String pn_660 = "";
         // uid为空即 第一次打印（非重打印）
         if (fgChecklist.getUid() == null || fgChecklist.getUid() == "") {
@@ -301,14 +307,40 @@ public class FgChecklistController extends BaseController {
                 }
                 fgChecklist.setPn660(pn_660);
                 // 检查po，并插入数据
-                return checkPo1(fgChecklist, pn_660);
+                return checkPo2(fgChecklist, pn_660);
             } else {
                 // 设置旧UID
-                fgChecklist.setOldUid(fgChecklist.getId().toString());
+                // fgChecklist.setOldUid(fgChecklist.getId().toString());
                 // 660开头PN直接查PO并插入数据
                 return checkPo2(fgChecklist, pn_660);
             }
         } else {
+            int a = 0;
+            if (listPN1.contains(fgChecklist.getPn().toString()) && fgChecklist.getPo().toString().equals("551050260")) {
+                a = 1;
+            } else if (listPN2.contains(fgChecklist.getPn().toString()) && fgChecklist.getPo().toString().equals("550853038")) {
+                a = 1;
+            } else if (fgChecklist.getPn660() == null || fgChecklist.getPn660().equals("")) {
+                list1 = sapUtil.getPoInfo(fgChecklist.getPn().toString());
+            } else {
+                list1 = sapUtil.getPoInfo(fgChecklist.getPn660().toString());
+            }
+            int nn = list1.size();
+            int i = 0;
+            if (list1.size() > 0) {
+                for (String[] arr : list1) {
+                    if (Arrays.asList(arr).contains(fgChecklist.getPo().toString())) {
+                        break;
+                    }
+                    i += 1;
+                }
+            }
+            if (a == 1) {
+                int aa = 0;
+            } else if (nn == i) {
+                return AjaxResult.error("PO未查询到");
+            }
+
             // UID不为空则 重打印 -- 检查QA检验结果
             FgChecklist fgChecklist1 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
             if (fgChecklist1.getQaResult() == null) {
@@ -326,8 +358,8 @@ public class FgChecklistController extends BaseController {
                     // 直接输出是带有[]框
                     String batch = Arrays.asList(arr[0]).toString();
                     String Mvt = Arrays.asList(arr[1]).toString();
-                    System.out.println("ceshi:" + batch.substring(1, batch.length() -1) + "---" + fgChecklist1.getBatch().toString());
-                    if (batch.substring(1, batch.length() -1).equals(fgChecklist1.getBatch().toString())) {
+                    System.out.println("ceshi:" + batch.substring(1, batch.length() - 1) + "---" + fgChecklist1.getBatch().toString());
+                    if (batch.substring(1, batch.length() - 1).equals(fgChecklist1.getBatch().toString())) {
                         System.out.println("测试：" + Mvt.substring(1, Mvt.length() - 1) + "---");
                         if (Mvt.substring(1, Mvt.length() - 1).equals("321")) {
                             qaresult = 1;
@@ -441,8 +473,8 @@ public class FgChecklistController extends BaseController {
         SAPUtil sapUtil = new SAPUtil();
 
         FgChecklist fgChecklist1 = fgChecklistService.getQAresult(fgChecklist.getUid().toString());
-        if (fgChecklist1 == null || fgChecklist1.getQaResult() != 1)
-            return AjaxResult.error("没有QA检验结果或QA检验结果为fail，请执行重打印更新QA检验结果！");
+        if (fgChecklist1.getQaResult() != null && fgChecklist1.getQaResult() == 0)
+            return AjaxResult.error("QA检验结果为fail,不允许拆分！");
 
         if (!fgChecklist1.getPo().toString().equals(fgChecklist.getPo().toString())) {
             return AjaxResult.error("拆分成品单PO不能改变");
@@ -1360,6 +1392,10 @@ public class FgChecklistController extends BaseController {
     public AjaxResult checkPo2(FgChecklist fgChecklist, String pn_660) {
         SAPUtil sapUtil = new SAPUtil();
         List<String[]> list = new ArrayList<>();
+        List<String> listPN1 = new ArrayList<>();
+        List<String> listPN2 = new ArrayList<>();
+        listPN1.addAll(Arrays.asList("660-V830008-00R0", "660-V830007-00R0", "660-V850003-00R0", "660-V850004-00R0", "660-V700009-00R0", "660-V700017-00R1", "660-V900010-00R1", "660-V110003-00R1", "660-V110007-00R1", "660-V110008-00R1"));
+        listPN2.addAll(Arrays.asList("660-V600003-00R0", "660-V10E011-00R0", "660-V10E020-00R1", "660-V10E014-00R1", "660-V10E016-00R1", "660-V10A011-00R1", "660-V10A013-00R1", "660-V10B008-00R1", "660-V10B009-00R1", "660-V10E022-00R1"));
         Date date = new Date();
         // 查询SAP中是否有该PO
         if (!pn_660.equals("")) {
@@ -1367,6 +1403,9 @@ public class FgChecklistController extends BaseController {
         } else {
             list = sapUtil.getPoInfo(fgChecklist.getPn().toString());
         }
+        if (fgChecklist.getPo() == null)
+            return AjaxResult.error("请输入PO号，无PO则输入NA");
+
         if (fgChecklist.getPo().toString().equals("NA")) {
 
             // 卡控打印数量总和 与 批量
@@ -1381,8 +1420,8 @@ public class FgChecklistController extends BaseController {
             fgChecklist.setBarcodeUrl(path);
             FgChecklist fgChecklist1 = new FgChecklist();
             fgChecklist1 = fgChecklistMapper.getIdInfo(fgChecklist);
-            fgChecklist.setCreatedate(date);
-            fgChecklist1.setCreatedate(date);
+            fgChecklist.setUpdateDate(date);
+            fgChecklist1.setUpdateDate(date);
             System.out.println(fgChecklist);
             System.out.println(fgChecklist1);
             if (sum == 0) {
@@ -1397,6 +1436,7 @@ public class FgChecklistController extends BaseController {
                     fgChecklist1.setPo(fgChecklist.getPo().toString());
                     fgChecklist1.setPalletNo(fgChecklist.getPalletNo());
                     fgChecklist1.setPalletItems(fgChecklist.getPalletItems());
+                    fgChecklist1.setCreateUser(fgChecklist.getCreateUser());
                     int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
                     if (n2 > 0) {
                         return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist1.getUid().toString()));
@@ -1448,13 +1488,20 @@ public class FgChecklistController extends BaseController {
         } else {
             int n = list.size();
             int i = 0;
-            for (String[] arr : list) {
-                if (Arrays.asList(arr).contains(fgChecklist.getPo().toString())) {
-                    break;
+            int a = 0;
+            if (listPN1.contains(fgChecklist.getPn().toString()) && fgChecklist.getPo().toString().equals("551050260")) {
+                a = 1;
+            } else if (listPN2.contains(fgChecklist.getPn().toString()) && fgChecklist.getPo().toString().equals("550853038")) {
+                a = 1;
+            } else {
+                for (String[] arr : list) {
+                    if (Arrays.asList(arr).contains(fgChecklist.getPo().toString())) {
+                        break;
+                    }
+                    i += 1;
                 }
-                i += 1;
             }
-            if (n == i) {
+            if (n == i && a != 1) {
                 return AjaxResult.error("PO未查询到");
             } else {
                 // 卡控打印数量总和 与 批量
@@ -1468,8 +1515,8 @@ public class FgChecklistController extends BaseController {
                 fgChecklist.setBarcodeUrl(path);
                 FgChecklist fgChecklist1 = new FgChecklist();
                 fgChecklist1 = fgChecklistMapper.getIdInfo(fgChecklist);
-                fgChecklist.setCreatedate(date);
-                fgChecklist1.setCreatedate(date);
+                fgChecklist.setUpdateDate(date);
+                fgChecklist1.setUpdateDate(date);
                 System.out.println(fgChecklist);
                 System.out.println(fgChecklist1);
 
@@ -1485,6 +1532,7 @@ public class FgChecklistController extends BaseController {
                         fgChecklist1.setPo(fgChecklist.getPo().toString());
                         fgChecklist1.setPalletNo(fgChecklist.getPalletNo());
                         fgChecklist1.setPalletItems(fgChecklist.getPalletItems());
+                        fgChecklist1.setCreateUser(fgChecklist.getCreateUser());
                         int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
                         if (n2 > 0) {
                             return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist1.getUid().toString()));
@@ -1726,6 +1774,8 @@ public class FgChecklistController extends BaseController {
             String startDate1 = sdf.format(startdate);
             String endDate1 = sdf.format(enddate);
             SAPUtil sap = new SAPUtil();
+            System.out.println("1212" + startDate1);
+//            List<FgChecklist> fgChecklistList = new ArrayList<>();
 
             // 查询SAP过账接口1100工厂
             List<FgChecklist> list1 = sap.Z_HTMES_YMMR04("1100", "660*", startDate1, endDate1, "101");
@@ -1743,6 +1793,11 @@ public class FgChecklistController extends BaseController {
             List<FgChecklist> list4 = sap.Z_HTMES_YMMR04("5000", "650*", startDate1, endDate1, "101");
             logger.info("5000工厂获取650*数量：" + list4.size());
             insertInto(list4);
+//            fgChecklistList.addAll(list1);
+//            fgChecklistList.addAll(list2);
+//            fgChecklistList.addAll(list3);
+//            fgChecklistList.addAll(list4);
+//            insertInto(fgChecklistList);
 
             returnMessage = "导入成功";
             System.out.println("The end...." + new Date());
@@ -1771,27 +1826,24 @@ public class FgChecklistController extends BaseController {
             String qasign = "";
             FgChecklist fgChecklist1 = new FgChecklist();
             // 判断该数据是否已在数据库
-//            List<FgChecklist> list1 = fgChecklistMapper.checkinfo(sap101, pn);
             int n = fgChecklistMapper.checkinfo(sap101, pn);
-            //System.out.println(list1.size());
             if (n == 0) {
                 // 获取拉别 (建立索引，否则很慢)
-//                line = fgChecklistMapper.checkLine(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-//                if (line == null || line.equals("")) {
-//                    line = fgChecklistMapper.checkLine2(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-//                }
-                // 获取检验员
+                // 获取检验员 51
                 fgChecklist1 = fgChecklistMapper.checkQasign(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
                 System.out.println("测试" + fgChecklist1);
                 if (fgChecklist1 == null) {
+                    // 72
                     fgChecklist1 = fgChecklistMapper.checkQasign2(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
-                    if (fgChecklist1 != null) {
-                        qasign = fgChecklist1.getQaSign() == null ? "" : fgChecklist1.getQaSign().toString();
-                        line = fgChecklist1.getLine() == null ? "" : fgChecklist1.getLine().toString();
+                    if (fgChecklist1 == null) {
+                        // 75
+                        fgChecklist1 = fgChecklistMapper.checkQasign3(fgChecklist.getWo() == null ? "" : fgChecklist.getWo().toString().toString());
                     }
+                    qasign = fgChecklist1 == null ? "" : fgChecklist1.getQaSign().toString();
+                    line = fgChecklist1 == null ? "" : fgChecklist1.getLine().toString();
                 } else {
-                    qasign = fgChecklist1.getQaSign() == null ? "" : fgChecklist1.getQaSign().toString();
-                    line = fgChecklist1.getLine() == null ? "" : fgChecklist1.getLine().toString();
+                    qasign = fgChecklist1 == null ? "" : fgChecklist1.getQaSign().toString();
+                    line = fgChecklist1 == null ? "" : fgChecklist1.getLine().toString();
                 }
                 System.out.println("测试2" + fgChecklist1);
 

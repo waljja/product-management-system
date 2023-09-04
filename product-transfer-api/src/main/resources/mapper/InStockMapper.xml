@@ -20,6 +20,7 @@
         <result property="qa_sign" column="qa_sign"/>
         <result property="qa_result" column="qa_result"/>
         <result property="customer_result" column="customer_result"/>
+        <result property="pn660" column="pn660"/>
     </resultMap>
 
     <!-- 统一查询结果 -->
@@ -40,7 +41,8 @@
                remark,
                qa_sign,
                qa_result,
-               customer_result
+               customer_result,
+               pn660
         from fg_checklist
     </sql>
 

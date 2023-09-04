@@ -11,6 +11,7 @@
         <result property="batch"    column="batch"    />
         <result property="uid"    column="uid"    />
         <result property="quantity"    column="quantity"    />
+        <result property="tagsQuantity"    column="tags_quantity"    />
         <result property="stock"    column="stock"    />
         <result property="status"    column="status"    />
         <result property="wo"    column="wo"    />
@@ -23,7 +24,7 @@
     </resultMap>
 
     <sql id="selectFgInventoryVo">
-        select id, partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason from fg_inventory
+        select id, partnumber, po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason from fg_inventory
     </sql>
 
     <!-- 注意日期类型不能判空字符 and createTime != ''，只能判空   2023-08-17 00:00:00.0 date_format(#{createTime}, '%Y-%m-%d')  -->
@@ -35,6 +36,7 @@
             <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
             <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
             <if test="quantity != null "> and quantity = #{quantity}</if>
+            <if test="tagsQuantity != null "> and quantity = #{tagsQuantity}</if>
             <if test="stock != null  and stock != ''"> and stock = #{stock}</if>
             <if test="status != null "> and status = #{status}</if>
             <if test="wo != null "> and wo like concat('%', #{wo}, '%')</if>
@@ -60,6 +62,7 @@
             <if test="batch != null">batch,</if>
             <if test="uid != null">uid,</if>
             <if test="quantity != null">quantity,</if>
+            <if test="tagsQuantity != null">tags_quantity,</if>
             <if test="stock != null">stock,</if>
             <if test="status != null">status,</if>
             <if test="wo != null">wo,</if>
@@ -75,6 +78,7 @@
             <if test="batch != null">#{batch},</if>
             <if test="uid != null">#{uid},</if>
             <if test="quantity != null">#{quantity},</if>
+            <if test="tagsQuantity != null">#{tagsQuantity},</if>
             <if test="stock != null">#{stock},</if>
             <if test="status != null">#{status},</if>
             <if test="wo != null">#{wo},</if>
@@ -94,6 +98,7 @@
             <if test="batch != null">batch = #{batch},</if>
             <if test="uid != null">uid = #{uid},</if>
             <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="tagsQuantity != null">quantity = #{tagsQuantity},</if>
             <if test="stock != null">stock = #{stock},</if>
             <if test="status != null">status = #{status},</if>
             <if test="wo != null">wo = #{wo},</if>

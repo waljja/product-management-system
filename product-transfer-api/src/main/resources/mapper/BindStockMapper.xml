@@ -76,11 +76,17 @@
     <!-- 没有贴纸情况 -->
 
     <insert id="toinsert" useGeneratedKeys="true" keyProperty="id">
-        insert into fg_inventory (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user,
+        insert into fg_inventory (partnumber, pn650, po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, create_user,
                                   create_time, uid_id, rollback_reason)
-        values (#{pn}, #{po}, #{batch}, #{uid}, #{uid_no}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{qa_sign},
+        values (#{pn}, #{pn650}, #{po}, #{batch}, #{uid}, #{uid_no}, #{tagsQuantity}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{qa_sign},
                 now(), #{uid_id}, #{rollbackReason})
     </insert>
+
+    <update id="updateInventory">
+        update fg_inventory
+        set tags_quantity = #{tagsQuantity}
+        where uid = #{uid}
+    </update>
 
     <!-- 有贴纸情况 -->
     <!-- 贴纸关联成品单ID -->
@@ -105,11 +111,20 @@
     <include refid="selectFgInventoryVo"></include>
         where uid = #{uid}
     </select>
+    <!-- 查询绑定贴纸数量 -->
+    <select id="checktagsSum" parameterType="java.lang.String" resultType="java.lang.Long">
+        select ifnull(sum(quantity), 0) from fg_tags_inventory where uid = #{uid}
+    </select>
+
+    <!-- 是否贴纸已绑过 -->
+    <select id="checkTags" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tags_inventory where client_batch = #{clientBatch}
+    </select>
 
     <!-- 保存贴纸信息（珠飞） -->
     <insert id="insertTagsInventory">
-        insert into (uid, client_pn, quantity, stauts, client_batch, production_date, pn, stock, po, createtime)
-        values(#{uid}, #{khpn}, #{qty}, 0, #{clientBatch}, #{rectime}, #{pn}, #{stock}, #{po}, now())
+        insert into fg_tags_inventory (uid, client_pn, quantity, status, client_batch, production_date, pn, stock, po, createtime)
+        values(#{uid}, #{clientPn}, #{quantity}, 0, #{clientBatch}, #{productionDate}, #{pn}, #{stock}, #{po}, now())
     </insert>
 
     <select id="getBoxInfo" parameterType="java.lang.String" resultType="com.honortone.api.entity.BoxInventory">
@@ -123,7 +138,7 @@
         C.CartonNOQty cartonQty,
         B.LotSN AS '镭雕码',
         BCS.LotSN AS 'Pcba SN',
-        C.Createdate AS '包装时间',
+        C.Createdate AS productionDate,
         CASE WHEN ISNULL(C.LotId,'') ='' AND B.SNState = 1 THEN '已镭雕未包装'
         WHEN ISNULL(C.LotId,'') <![CDATA[ <> ]]> '' THEN '已包装'
         WHEN ISNULL(C.LotId,'') ='' AND ISNULL(B.SNState,'') =''
@@ -147,7 +162,7 @@
     <!-- 保存贴纸信息（） -->
     <insert id="insertBoxInventory">
         insert into fg_box_inventory (uid, carton_no, wo, pn, carton_qty, status, batch, production_date, stock, po, createtime)
-        values(#{uid}, #{cartonNo}, #{wo}, #{pn}, #{cartonQty}, 0, #{Batch}, #{production_date}, #{stock}, #{po}, now())
+        values(#{uid}, #{cartonNo}, #{wo}, #{pn}, #{cartonQty}, 0, #{Batch}, #{productionDate}, #{stock}, #{po}, now())
     </insert>
 
     <!-- 根据UID查询绑定的箱号数量 -->

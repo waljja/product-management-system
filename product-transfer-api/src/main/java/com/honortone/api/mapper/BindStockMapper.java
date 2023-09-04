@@ -25,6 +25,9 @@ public interface BindStockMapper extends BaseMapper<Inventory> {
     int toinsert(Inventory inventory);
 
     @DS("slave_2")
+    int updateInventory(Inventory inventory);
+
+    @DS("slave_2")
     int updateStock(Inventory inventory);
 
     @DS("slave_2")
@@ -35,6 +38,12 @@ public interface BindStockMapper extends BaseMapper<Inventory> {
 
     @DS("slave_2")
     Inventory checkInventory(String uid);
+
+    @DS("slave_2")
+    long checktagsSum(String uid);
+
+    @DS("slave_2")
+    int checkTags(String clientBatch);
 
     @DS("slave_2")
     int insertTagsInventory(TagsInventory tagsInventory);

@@ -102,7 +102,7 @@
 
     <!-- 根据车牌号下载走货单号 -->
     <select id="downloadShipmentno" resultType="java.lang.String">
-        select shipment_number from fg_shipmentinfo where carno = #{carno} and shipment_date = #{date} order by shipment_date desc
+        select shipment_number from fg_shipmentinfo where carno = #{carno} and shipment_date = #{date} and last_comfirm in ('货仓', '船务') order by shipment_date desc
     </select>
 
     <!-- 根据走货编号下载TO单 -->
@@ -146,11 +146,11 @@
     <!-- 无车情况 -->
     <!-- 下载走货单 （排除有车号的走货单） -->
     <select id="downloadShipmentNo2" resultType="java.lang.String">
-        select shipment_number from fg_shipmentinfo where (carno is null or carno = '') and shipment_date = #{date}
+        select shipment_number from fg_shipmentinfo where (carno is null or carno = '') and shipment_date = #{date} and last_comfirm in ('货仓', '船务')
     </select>
     <!-- 根据走货编号下载TO单（无车） -->
     <select id="downloadTos2" parameterType="java.lang.String" resultType="java.lang.String">
-        select to_no from fg_tos where shipment_no = #{shipmentno} and car_no is null or car_no = '' and to_no like 'BH%'
+        select to_no from fg_tos where shipment_no = #{shipmentno} and (car_no is null or car_no = '') and to_no like 'BH%'
     </select>
     <!-- 下载备货单（排除有车号的备货单） -->
 <!--    <select id="downloadOrder" resultType="com.honortone.api.entity.ToList">-->
@@ -172,13 +172,13 @@
     </select>
 
     <!-- 在TO明细表检查该数据是否存在 -->
-    <select id="checkTolistByUid" parameterType="java.lang.String" resultType="java.lang.Integer">
-        select count(*) from fg_tolist where uid = #{uid} and replace_uid is null
+    <select id="checkTolistByUid" parameterType="java.lang.String" resultType="java.lang.String">
+        select to_no from fg_tolist where uid = #{uid} and replace_uid is null
     </select>
 
-    <!-- 在TO明细表检查该数据是否可以替换拣料 -->
+    <!-- 在TO明细表检查该数据是否可以替换拣料  and batch = #{batch}  -->
     <select id="checkTolistInfo" parameterType="com.honortone.api.entity.Inventory" resultType="java.lang.String">
-        select uid from fg_tolist where pn = #{pn} and batch = #{batch} and po = #{po} and quantity = #{uid_no} and status = 0 and uid is not null order by batch
+        select uid from fg_tolist where pn = #{pn} and po = #{po} and quantity = #{uid_no} and status = 0 and uid is not null order by batch asc limit 1
     </select>
 
     <!-- 查询原UID日期与替换UID日期 -->
@@ -227,20 +227,26 @@
     </update>
 
     <!-- 查询即存在已拣货和未拣货备货单（TO明细表） -->
-    <select id="checkStauts" resultType="java.lang.Integer">
-        select count(*) from (select a.status status from fg_tolist a, fg_tolist b where a.to_no = b.to_no and b.status = 1) c where status = 0
+<!--    <select id="checkStauts" resultType="java.lang.Integer">-->
+<!--        select count(*) from (select a.status status from fg_tolist a, fg_tolist b where a.to_no = b.to_no and b.status = 1) c where status = 0-->
+<!--    </select>-->
+    <select id="checkStauts" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tolist where to_no = (select to_no from fg_tolist where uid = #{uid} and status = 1) and status = 0
     </select>
     <!-- 更新To管理表的备货单状态 -->
     <update id="updateTosBHStatus">
         update fg_tos
         set status = #{Status}
-        where to_no = (select to_no from fg_tolist where uid = #{uid}) and status in (0,1))
+        where to_no = (select to_no from fg_tolist where uid = #{uid}) and status in (0,1)
     </update>
+    <select id="checkStauts2" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tolist where to_no = (select to_no from fg_tolist where replace_uid = #{replaceUid} and status = 1) and status = 0
+    </select>
     <!-- 更新To管理表的备货单状态(替换拣料） -->
     <update id="updateTosBHStatus2">
         update fg_tos
         set status = #{Status}
-        where to_no = (select to_no from fg_tolist where replace_uid = #{replaceUid}) and status in (0,1))
+        where to_no = (select to_no from fg_tolist where replace_uid = #{replaceUid}) and status in (0,1)
     </update>
     <!-- 成品下架 -->
 
@@ -417,6 +423,10 @@
         </foreach>
     </insert>
 
+    <!-- 查询箱号信息(下架) -->
+<!--    <select id="checkBoxInfo" parameterType="java.lang.String" resultType="com.honortone.api.entity.BoxInventory">-->
+<!--        select -->
+<!--    </select>-->
 
 
 

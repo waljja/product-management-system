@@ -19,6 +19,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FgChecklistMapper
 {
+
     /**
      * 查询成品送检单
      *
@@ -131,6 +132,9 @@ public interface FgChecklistMapper
 
     @DataSource(value = DataSourceType.SLAVE1)
     FgChecklist checkQasign2(String wo);
+
+    @DataSource(value = DataSourceType.SLAVE2)
+    FgChecklist checkQasign3(String wo);
 
     /**
      * 查询QA结果

@@ -52,6 +52,10 @@ public class InStockServiceImpl extends ServiceImpl<InStockMapper, Inventory> im
         //session.getAttribute("username");
         // 根据扫描UID查询批次、物料、工厂
         CheckList checkList = inStockMapper.ifSuccess(uid);
+        if (checkList == null) {
+            materialTransationsDto.setMsg("未找到该UID信息，请检查是否输入错误!");
+            return materialTransationsDto;
+        }
         System.out.println(checkList);
         // System.out.println("qa:" + checkList.getQa_result());
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");

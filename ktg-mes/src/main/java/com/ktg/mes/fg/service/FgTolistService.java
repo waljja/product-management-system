@@ -11,6 +11,11 @@ import java.util.List;
  */
 
 public interface FgTolistService {
+
+    long getReadyBH();
+
+    long getBHing();
+
     /**
      * 查询TO明细
      *

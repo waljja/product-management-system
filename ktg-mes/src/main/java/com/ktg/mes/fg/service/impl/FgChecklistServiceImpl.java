@@ -49,7 +49,7 @@ import javax.mail.internet.MimeUtility;
  * @date 2023-03-18
  */
 @Service
-public class FgChecklistServiceImpl implements IFgChecklistService 
+public class FgChecklistServiceImpl implements IFgChecklistService
 {
     @Autowired
     private FgChecklistMapper fgChecklistMapper;
@@ -504,11 +504,12 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                     fgToList = setFgToList(fgToList, QH, list1.get(i).getBatchsum(), 2);
                     fgToList.setPn(list1.get(i).getPn().toString());
                     fgToList.setPo(list1.get(i).getPo().toString());
-                    fgToList.setSap_qty(shipment_qty);
+                    fgToList.setSap_qty(list1.get(i).getBatchsum());
                     fgTosMapper.insertFgTolist(fgToList);
                     // 在TO明细表查询欠货总数赋值到TO管理表
                     long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
                     fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
+                    fgTosMapper.updateQuantity2(sumqty, QH);
                     // 用于邮件提醒欠货 欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量，
                     String[] s = new String[6];
                     s[0] = QH;
@@ -641,6 +642,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 fgTosMapper.insertFgTolist(fgToList);
                                 long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
                                 fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
+                                fgTosMapper.updateQuantity2(sumqty, QH);
                                 // 用于邮件提醒欠货 欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量
                                 String[] s = new String[6];
                                 s[0] = QH;

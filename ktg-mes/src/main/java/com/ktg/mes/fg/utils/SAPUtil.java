@@ -506,7 +506,139 @@ public class SAPUtil {
                 }
                  // 走货日期
                 dateTime = DateUtil.parse(rs.getString("MOVE_DATE"));
-                System.out.println("测试获取时间" +rs.getString("MOVE_DATE") + dateTime);
+                fgShipmentInfo.setShipmentDate(dateTime);
+                // 车牌号
+                if (rs.getString("CPHM") != null && !"".equals(rs.getString("CPHM"))) {
+                    fgShipmentInfo.setCarNo(rs.getString("CPHM").toString());
+                }
+                // 走货类型
+                if (rs.getString("BEZEI") != null && !"".equals(rs.getString("BEZEI"))) {
+                    fgShipmentInfo.setShipmentType(rs.getString("BEZEI").toString());
+                }
+                // 车辆预计到达时间
+                dateTime = DateUtil.parse(rs.getString("INDICATE_TIME1"));
+                fgShipmentInfo.setArriveDate(dateTime);
+                // 走货车辆
+                if (rs.getString("CAR_TEXT") != null && !"".equals(rs.getString("CAR_TEXT"))) {
+                    fgShipmentInfo.setCar(rs.getString("CAR_TEXT").toString());
+                }
+                // remark
+                if (rs.getString("REMARK2") != null && !"".equals(rs.getString("REMARK2"))) {
+                    fgShipmentInfo.setRemark(rs.getString("REMARK2").toString());
+                }
+                // remark
+                if (rs.getString("STATUS") != null && !"".equals(rs.getString("STATUS"))) {
+                    fgShipmentInfo.setLastComfirm(rs.getString("STATUS").toString());
+                }
+                // 客户代码
+                if (rs.getString("KUNNR") != null && !"".equals(rs.getString("KUNNR"))) {
+                    fgShipmentInfo.setClientCode(rs.getString("KUNNR").toString());
+                }
+                // 客户PN
+                if (rs.getString("KDMAT") != null && !"".equals(rs.getString("KDMAT"))) {
+                    fgShipmentInfo.setClientPN(rs.getString("KDMAT").toString());
+                }
+                // 走货地点
+                if (rs.getString("VSTEL") != null && !"".equals(rs.getString("VSTEL"))) {
+                    fgShipmentInfo.setShipmentPlace(rs.getString("VSTEL").toString());
+                }
+                // 变动日期
+                String updateDate = "";
+                if (rs.getString("ERSDA") != null && !"".equals(rs.getString("ERSDA"))) {
+                    updateDate= rs.getString("ERSDA").toString();
+                }
+                String updateTime = "";
+                // 变动时间
+                if (rs.getString("ERZET") != null && !"".equals(rs.getString("ERZET"))) {
+                    updateTime = rs.getString("ERZET").toString();
+                }
+                fgShipmentInfo.setUpdateDatetime(updateDate + " " + updateTime);
+                // 状态
+                fgShipmentInfo.setStatus(0);
+
+                list.add(fgShipmentInfo);
+                rs.nextRow();
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+
+        }
+        return list;
+    }
+
+    public List<FgShipmentInfo> Z_HTMES_ZSDSHIPLS_2(String ShipmentNo) {
+
+        List<FgShipmentInfo> list = new ArrayList();
+        SimpleDateFormat sf = new SimpleDateFormat("yyyyMMdd");
+        try {
+            // 获取连接池（连接池连了一次后就默认作为下次的连接地址，需要重新定义连接池变量【在配置文件更换地址没用】）
+            JCoDestination destination = JCoDestinationManager.getDestination(ABAP_MS);
+            // 可查看连接地址
+            System.out.println(destination);
+            destination.ping();
+            // 获取功能函数
+            JCoFunction function = destination.getRepository().getFunction("Z_HTMES_ZSDSHIPLS");
+            if (function == null)
+                throw new RuntimeException("Z_HTMES_ZSDSHIPLS not found in SAP.");
+
+            // 给功能函数输入参数
+            JCoParameterList input = function.getImportParameterList();
+
+            input.setValue("I_SHIP_NO", ShipmentNo);
+
+            try {
+                // 函数执行
+                function.execute(destination);
+            } catch (AbapException e) {
+                e.printStackTrace();
+                System.out.println(e.toString());
+            }
+            // 获取输出
+            JCoTable rs = function.getTableParameterList().getTable("ET_RESULT");
+
+            DateTime dateTime = new DateTime();
+            // 注：目前获取的所有数据字段都没有进行非空判断
+            for (int j = 0; j < rs.getNumRows(); j++) {
+                FgShipmentInfo fgShipmentInfo = new FgShipmentInfo();
+                // 工厂
+                if (rs.getString("WERKS") != null && !"".equals(rs.getString("WERKS"))) {
+                    fgShipmentInfo.setPlant(rs.getString("WERKS").toString());
+                }
+                // SAP型号（PN）
+                if (rs.getString("MATNR") != null && !"".equals(rs.getString("MATNR"))) {
+                    fgShipmentInfo.setSapPn(rs.getString("MATNR").toString());
+                }
+                // 走货单
+                if (rs.getString("SHIP_NO") != null && !"".equals(rs.getString("SHIP_NO"))) {
+                    fgShipmentInfo.setShipmentNO(rs.getString("SHIP_NO").toString());
+                }
+                // 数量
+                if (rs.getString("NTGEW") != null && !"".equals(rs.getString("NTGEW"))) {
+                    fgShipmentInfo.setQuantity(rs.getLong("NTGEW"));
+                } else {
+                    fgShipmentInfo.setQuantity(0l);
+                }
+                // 卡板数
+                if (rs.getString("PELLET") != null && !"".equals(rs.getString("PELLET"))) {
+                    fgShipmentInfo.setPelletQty(rs.getLong("PELLET"));
+                } else {
+                    fgShipmentInfo.setPelletQty(0l);
+                }
+                // 箱数
+                if (rs.getString("BOX") != null && !"".equals(rs.getString("BOX"))) {
+                    fgShipmentInfo.setBoxQty(Double.parseDouble(rs.getString("BOX")));
+                }
+                // PCS/箱
+                if (rs.getString("ZZBOX01") != null && !"".equals(rs.getString("ZZBOX01"))) {
+                    fgShipmentInfo.setPcsQty(rs.getLong("ZZBOX01"));
+                }
+                // PO
+                if (rs.getString("BSTNK") != null && !"".equals(rs.getString("BSTNK"))) {
+                    fgShipmentInfo.setPo(rs.getString("BSTNK").toString());
+                }
+                // 走货日期
+                dateTime = DateUtil.parse(rs.getString("MOVE_DATE"));
                 fgShipmentInfo.setShipmentDate(dateTime);
                 // 车牌号
                 if (rs.getString("CPHM") != null && !"".equals(rs.getString("CPHM"))) {

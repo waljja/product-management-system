@@ -20,6 +20,7 @@ import java.util.List;
 @Repository
 public interface FgTosMapper
 {
+
     /**
      * 查询从SAP导入的走货资料
      * @return
@@ -126,6 +127,8 @@ public interface FgTosMapper
      */
     int updateQuantity(@Param("sumqty") long sumqty, @Param("shipmentNO") String shipmentNO);
 
+    int updateQuantity2(@Param("sumqty") long sumqty, @Param("toNo") String toNo);
+
     /**
      * 获取欠货单集合
      * */
@@ -141,7 +144,7 @@ public interface FgTosMapper
 
     FgTos checkBHstatus(String shipmentNo);
 
-    int sumBH(@Param("quantity") long quantity, @Param("shipmentNo") String shipmentNo);
+    int sumBH(@Param("quantity") long quantity, @Param("toNo") String toNo);
 
     int updatebatchSum(@Param("quantity") long quantity, @Param("toNo") String toNo);
 
@@ -156,5 +159,14 @@ public interface FgTosMapper
     FgToList getTolistInfo(String uid);
 
 
+    /**
+     * 查询当天起到后两天的走货编号
+     * */
+    List<FgShipmentInfo> getShipmentInfo(@Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    /**
+     * 批量更新走货日期
+     * */
+    int updateShipmentDate(List<FgShipmentInfo> list);
 
 }

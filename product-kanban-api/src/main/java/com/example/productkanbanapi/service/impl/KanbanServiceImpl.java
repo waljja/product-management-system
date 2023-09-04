@@ -11,7 +11,6 @@ import com.example.productkanbanapi.service.KanbanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,13 +53,13 @@ public class KanbanServiceImpl implements KanbanService {
                     .eq("TransactionType", "315")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
-                    .orderByAsc("TransactionTime");
+                    .orderByDesc("TransactionTime");
         } else {
             transQueryWrapper2
                     .likeRight("UID", "FG")
                     .notIn("UID", warehousedUid)
                     .eq("TransactionType", "315")
-                    .orderByAsc("TransactionTime");
+                    .orderByDesc("TransactionTime");
         }
         productNotInStoragePage = kanbanMapper.findNotInStock(inventoryPage, transQueryWrapper2);
         return productNotInStoragePage;
@@ -92,9 +91,9 @@ public class KanbanServiceImpl implements KanbanService {
                     .and(i -> i.eq("tos.status", 0)
                             .or(i1 -> i1.eq("tos.status", 1))
                             .or(i2 -> i2.eq("tos.status", 2)))
-                    .apply("CONVERT(VARCHAR(20), shipment_date, 21) >= '" + startDate + "'")
-                    .apply("CONVERT(VARCHAR(20), shipment_date, 21) <= '" + endDate + "'")
-                    .orderByAsc("shipment_date");
+                    .apply("shipment_date >= str_to_date('" + startDate + "', '%Y-%m-%d %H:%i:%s')")
+                    .apply("shipment_date <= str_to_date('" + endDate + "', '%Y-%m-%d %H:%i:%s')")
+                    .orderByDesc("shipment_date");
         } else {
             queryWrapper1
                     .eq("ship.status", 1)
@@ -103,7 +102,7 @@ public class KanbanServiceImpl implements KanbanService {
                     .and(i -> i.eq("tos.status", 0)
                             .or(i1 -> i1.eq("tos.status", 1))
                             .or(i2 -> i2.eq("tos.status", 2)))
-                    .orderByAsc("shipment_date");
+                    .orderByDesc("shipment_date");
         }
         shipmentPage = kanbanMapper.findShipment(page, queryWrapper1);
         // 获取每张出货单的所有零部件号

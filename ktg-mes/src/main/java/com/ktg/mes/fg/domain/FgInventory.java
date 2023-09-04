@@ -39,6 +39,9 @@ public class FgInventory extends BaseEntity {
     @Excel(name = "数量")
     private Long quantity;
 
+    @Excel(name = "贴纸数量")
+    private Long tagsQuantity;
+
     /** 库位号 */
     @Excel(name = "库位号")
     private String stock;
@@ -222,6 +225,14 @@ public class FgInventory extends BaseEntity {
         this.rollbackReason = rollbackReason;
     }
 
+    public Long getTagsQuantity() {
+        return tagsQuantity;
+    }
+
+    public void setTagsQuantity(Long tagsQuantity) {
+        this.tagsQuantity = tagsQuantity;
+    }
+
     @Override
     public String toString() {
         return "FgInventory{" +
@@ -231,6 +242,7 @@ public class FgInventory extends BaseEntity {
                 ", batch='" + batch + '\'' +
                 ", uid='" + uid + '\'' +
                 ", quantity=" + quantity +
+                ", tagsQuantity=" + tagsQuantity +
                 ", stock='" + stock + '\'' +
                 ", status=" + status +
                 ", wo='" + wo + '\'' +
