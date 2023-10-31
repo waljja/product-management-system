@@ -69,7 +69,7 @@
                Quantity,
                ToStock,
                TransactionTime,
-               Plant,
+               Plant,   
                '待上架'                                     as Status
         from xTend_MaterialTransactions
         ${ew.customSqlSegment}
