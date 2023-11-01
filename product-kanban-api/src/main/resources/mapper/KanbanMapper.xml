@@ -120,10 +120,6 @@
         ${ew.customSqlSegment}
     </select>
 
-
-    <!--    (select sum(quantity) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as shipment_quantity,-->
-    <!--    (select sum(boxcount) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as box_quantity,-->
-    <!--    (select sum(pellet_qty) from fg_shipmentinfo shipi where shipi.shipment_number = ship.shipment_number group by ship.shipment_number) as pallet_quantity-->
     <select id="findShipment" resultMap="ShipmentMap">
         select shipment_date,
                shipment_number,
@@ -132,7 +128,7 @@
                (case
                     when tos.status = 0 then '待拣货'
                     when tos.status = 1 then '备货中'
-                    when tos.status = 2 then '待装车'
+                    when tos.status = 2 and tos.stock is not null and tos.is_loading_truck = '待装车' then '待装车'
                    end) as state,
                ship.quantity as shipment_quantity,
                boxcount as box_quantity,

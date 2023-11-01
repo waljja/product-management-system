@@ -32,13 +32,8 @@ public class KanbanServiceImpl implements KanbanService {
         // 结束日期非空
         boolean eNoTNull = endDate != null;
         Page<NotInStorage> productNotInStoragePage;
-//        List<String> warehousedUid;
-        // current -> 当前页码，每页 20 条数据
         Page inventoryPage = new Page(current, 20);
-//        QueryWrapper<XtendMaterialtransactions> transQueryWrapper1 = new QueryWrapper<>();
         QueryWrapper<XtendMaterialtransactions> transQueryWrapper = new QueryWrapper<>();
-        // 已入库UID
-        // warehousedUid = kanbanMapper.findWarehousedUid(transQueryWrapper1);
         /*
          * 日期都不为空 -> 按时间范围查询
          * 有一个为空 -> 不按时间条件查询
@@ -49,7 +44,7 @@ public class KanbanServiceImpl implements KanbanService {
             // 根据日期范围查询，SQL Server 分页必须有 order 排序
             transQueryWrapper
                     .likeRight("UID", "FG")
-                    .ne("TransactionReason", "99")
+                    .eq("TransactionReason", "99")
                     .eq("TransactionType", "315")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
@@ -57,7 +52,7 @@ public class KanbanServiceImpl implements KanbanService {
         } else {
             transQueryWrapper
                     .likeRight("UID", "FG")
-                    .ne("TransactionReason", "99")
+                    .eq("TransactionReason", "99")
                     .eq("TransactionType", "315")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2023-09-01 00:00:00.000'")
                     .orderByDesc("TransactionTime");
