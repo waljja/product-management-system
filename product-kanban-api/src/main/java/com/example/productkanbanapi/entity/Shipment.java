@@ -19,7 +19,7 @@ public class Shipment {
     /**
      * 出货日期
      */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date shipmentDate;
 
@@ -32,11 +32,6 @@ public class Shipment {
      * 客户编号
      */
     private String clientCode;
-
-    /**
-     * 订单号
-     */
-    private String po;
 
     /**
      * 状态

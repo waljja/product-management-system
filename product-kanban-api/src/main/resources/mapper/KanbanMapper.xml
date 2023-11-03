@@ -124,7 +124,6 @@
         select shipment_date,
                shipment_number,
                client_code,
-               ship.po,
                (case
                     when tos.status = 0 then '待拣货'
                     when tos.status = 1 then '备货中'
