@@ -32,7 +32,7 @@ public class KanbanServiceImpl implements KanbanService {
         // 结束日期非空
         boolean eNoTNull = endDate != null;
         Page<NotInStorage> productNotInStoragePage;
-        Page inventoryPage = new Page(current, 20);
+        Page<NotInStorage> inventoryPage = new Page<>(current, 20);
         QueryWrapper<XtendMaterialtransactions> transQueryWrapper = new QueryWrapper<>();
         /*
          * 日期都不为空 -> 按时间范围查询
@@ -54,7 +54,7 @@ public class KanbanServiceImpl implements KanbanService {
                     .likeRight("UID", "FG")
                     .eq("TransactionReason", "99")
                     .eq("TransactionType", "315")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2023-09-01 00:00:00.000'")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2023-11-01 00:00:00.000'")
                     .orderByDesc("TransactionTime");
         }
         productNotInStoragePage = kanbanMapper.findNotInStock(inventoryPage, transQueryWrapper);
@@ -65,7 +65,7 @@ public class KanbanServiceImpl implements KanbanService {
     public Page<Shipment> getShipmentList(int current, String startDate, String endDate) {
         Page<Shipment> shipmentPage;
         // current -> 当前页码，每页 20 条数据
-        Page page = new Page(current, 20);
+        Page<Shipment> page = new Page<>(current, 20);
         QueryWrapper<TosShipInfo> queryWrapper1 = new QueryWrapper<>();
         QueryWrapper<TosShipInfo> queryWrapper2 = new QueryWrapper<>();
         // 开始日期非空

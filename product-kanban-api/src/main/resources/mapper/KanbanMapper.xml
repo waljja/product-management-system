@@ -122,17 +122,20 @@
 
     <select id="findShipment" resultMap="ShipmentMap">
         select shipment_date,
+               shipment_car,
                shipment_number,
+               to_no,
                client_code,
                (case
                     when tos.status = 0 then '待拣货'
                     when tos.status = 1 then '备货中'
                     when tos.status = 2 and tos.stock is not null and tos.is_loading_truck = '待装车' then '待装车'
                     when tos.status = 2 and tos.stock is null then '待绑定出货区'
-                   end) as state,
+                   end)      as state,
+               tos.quantity  as to_quantity,
                ship.quantity as shipment_quantity,
-               boxcount as box_quantity,
-               pellet_qty as pallet_quantity
+               boxcount      as box_quantity,
+               pellet_qty    as pallet_quantity
         from fg_tos tos
                  left join fg_shipmentinfo ship on tos.shipment_no = ship.shipment_number
         ${ew.customSqlSegment}
