@@ -24,9 +24,19 @@ public class Shipment {
     private Date shipmentDate;
 
     /**
+     * 走货车型
+     */
+    private String shipmentCar;
+
+    /**
      * 出货单号
      */
     private String shipmentNo;
+
+    /**
+     * TO单号
+     */
+    private String toNo;
 
     /**
      * 客户编号
@@ -37,6 +47,11 @@ public class Shipment {
      * 状态
      */
     private String state;
+
+    /**
+     * TO数量
+     */
+    private Float toQty;
 
     /**
      * 出货数量

@@ -49,9 +49,11 @@
 
     <resultMap id="ShipmentMap" type="com.example.productkanbanapi.entity.Shipment">
         <result property="shipmentNo" column="shipment_number" jdbcType="VARCHAR"/>
-        <result property="po" column="po" jdbcType="VARCHAR"/>
         <result property="shipmentDate" column="shipment_date" jdbcType="TIMESTAMP"/>
+        <result property="shipmentCar" column="shipment_car" jdbcType="VARCHAR"/>
+        <result property="toNo" column="to_no" jdbcType="VARCHAR"/>
         <result property="state" column="state" jdbcType="VARCHAR"/>
+        <result property="toQty" column="to_quantity" jdbcType="FLOAT"/>
         <result property="shipmentQty" column="shipment_quantity" jdbcType="FLOAT"/>
         <result property="palletQty" column="pallet_quantity" jdbcType="FLOAT"/>
         <result property="boxQty" column="box_quantity" jdbcType="FLOAT"/>
@@ -127,17 +129,17 @@
                to_no,
                client_code,
                (case
-                    when tos.status = 0 then '待拣货'
-                    when tos.status = 1 then '备货中'
-                    when tos.status = 2 and tos.stock is not null and tos.is_loading_truck = '待装车' then '待装车'
-                    when tos.status = 2 and tos.stock is null then '待绑定出货区'
+                    when tos1.status = 0 then '待拣货'
+                    when tos1.status = 1 then '备货中'
+                    when tos1.status = 2 and tos1.stock is not null and tos1.is_loading_truck = '待装车' then '待装车'
+                    when tos1.status = 2 and tos1.stock is null then '待绑定出货区'
                    end)      as state,
-               tos.quantity  as to_quantity,
-               ship.quantity as shipment_quantity,
+               tos1.quantity  as to_quantity,
+               ship1.quantity as shipment_quantity,
                boxcount      as box_quantity,
                pellet_qty    as pallet_quantity
-        from fg_tos tos
-                 left join fg_shipmentinfo ship on tos.shipment_no = ship.shipment_number
+        from fg_tos tos1
+                 left join fg_shipmentinfo ship1 on tos1.shipment_no = ship1.shipment_number
         ${ew.customSqlSegment}
     </select>
 

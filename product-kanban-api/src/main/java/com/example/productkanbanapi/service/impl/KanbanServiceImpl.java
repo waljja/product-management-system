@@ -81,23 +81,34 @@ public class KanbanServiceImpl implements KanbanService {
             endDate += " 23:59:59.999";
             // 根据日期范围查询，SQL Server 分页必须有 order 排序
             queryWrapper1
-                    .eq("ship.status", 1)
+                    .eq("ship1.status", 1)
                     .and(i -> i.eq("last_comfirm", "货仓")
                             .or(i1 -> i1.eq("last_comfirm", "船务")))
-                    .and(i -> i.eq("tos.status", 0)
-                            .or(i1 -> i1.eq("tos.status", 1))
-                            .or(i2 -> i2.eq("tos.status", 2)))
+                    .and(i -> i.eq("tos1.status", 0)
+                            .or(i1 -> i1.eq("tos1.status", 1))
+                            .or(i2 -> i2.eq("tos1.status", 2)))
+                    .and(i -> i.notExists("select shipment_no\n" +
+                            "               from fg_tos tos2\n" +
+                            "                        left join fg_shipmentinfo ship2 on tos2.shipment_no = ship2.shipment_number\n" +
+                            "               where is_loading_truck = '已装车'\n" +
+                            "                 and tos2.shipment_no = tos1.shipment_no"))
                     .apply("shipment_date >= str_to_date('" + startDate + "', '%Y-%m-%d %H:%i:%s')")
                     .apply("shipment_date <= str_to_date('" + endDate + "', '%Y-%m-%d %H:%i:%s')")
                     .orderByDesc("shipment_date");
         } else {
             queryWrapper1
-                    .eq("ship.status", 1)
+                    .eq("ship1.status", 1)
                     .and(i -> i.eq("last_comfirm", "货仓")
                             .or(i1 -> i1.eq("last_comfirm", "船务")))
-                    .and(i -> i.eq("tos.status", 0)
-                            .or(i1 -> i1.eq("tos.status", 1))
-                            .or(i2 -> i2.eq("tos.status", 2)))
+                    .and(i -> i.eq("tos1.status", 0)
+                            .or(i1 -> i1.eq("tos1.status", 1))
+                            .or(i2 -> i2.eq("tos1.status", 2)))
+                    .and(i -> i.notExists("select shipment_no\n" +
+                            "               from fg_tos tos2\n" +
+                            "                        left join fg_shipmentinfo ship2 on tos2.shipment_no = ship2.shipment_number\n" +
+                            "               where is_loading_truck = '已装车'\n" +
+                            "                 and tos2.shipment_no = tos1.shipment_no"))
+                    .apply("createdate >= '2023-10-25'")
                     .orderByDesc("shipment_date");
         }
         shipmentPage = kanbanMapper.findShipment(page, queryWrapper1);
