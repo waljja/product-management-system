@@ -53,6 +53,9 @@ public class OutStockServiceImpl extends ServiceImpl<OutStockMapper, Inventory> 
         InventoryOut inventoryOut = new InventoryOut();
         System.out.println(cpno);
         Inventory inventory = outStockMapper.checkCreateTime(cpno);
+        if (inventory == null) {
+            return "该UID未上架，或已被预留(预留的请拣货下架)";
+        }
         System.out.println(inventory.getUid().toString());
         BeanUtil.copyProperties(inventory, inventoryOut, true);
         System.out.println(inventoryOut.toString());

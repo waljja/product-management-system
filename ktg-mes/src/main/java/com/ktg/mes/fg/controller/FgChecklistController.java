@@ -266,12 +266,25 @@ public class FgChecklistController extends BaseController {
      */
 
     @Log(title = "导入船务确认走货信息")
-    @Scheduled(cron = "0 */10 * * * ?")
+    // @Scheduled(cron = "0 0 8,14 * * ?")
     @ResponseBody
-    @PostMapping("/downloadcw")
-    public AjaxResult downloadpcw() throws Exception {
+    @PostMapping("/downloadcw/{date}")
+    public AjaxResult downloadpcw(@PathVariable("date") Date date) throws Exception {
+       // System.out.println(date);
 //        String isok = generateTO_NO();
-        String isok = fgChecklistService.generateTO_NO();
+        String isok = fgChecklistService.generateTO_NO(date);
+        if ("OK".equals(isok)) {
+            return AjaxResult.success(isok);
+        } else {
+            return AjaxResult.success(isok);
+        }
+    }
+    @Log(title = "自动导入船务确认走货信息")
+    @Scheduled(cron = "0 0 8,14 * * ?")
+    public AjaxResult downloadpcw2() throws Exception {
+        // System.out.println(date);
+//        String isok = generateTO_NO();
+        String isok = fgChecklistService.generateTO_NO(new Date());
         if ("OK".equals(isok)) {
             return AjaxResult.success(isok);
         } else {
@@ -288,6 +301,9 @@ public class FgChecklistController extends BaseController {
     @Log(title = "检查PO、打印、重打印（销毁/不销毁）")
     @PostMapping("/selectpo")
     public AjaxResult checkPo(@RequestBody FgChecklist fgChecklist) {
+        /*if (fgChecklist.getQaSign() == null || fgChecklist.getQaSign().equals(""))
+            return AjaxResult.error("请输入打印人");*/
+
         SAPUtil sapUtil = new SAPUtil();
         List<String[]> list1 = new ArrayList<>();
         List<String> listPN1 = new ArrayList<>();
@@ -297,6 +313,7 @@ public class FgChecklistController extends BaseController {
         String pn_660 = "";
         // uid为空即 第一次打印（非重打印）
         if (fgChecklist.getUid() == null || fgChecklist.getUid() == "") {
+            System.out.println("==-=-2" + fgChecklist.getPn().toString().substring(0, 3));
             if (fgChecklist.getPn().toString().substring(0, 3).equals("650")) {
 
                 System.out.println("ok");
@@ -305,6 +322,7 @@ public class FgChecklistController extends BaseController {
                 if (pn_660.equals("")) {
                     return AjaxResult.error("该650型号没有找到相关连的660型号");
                 }
+                System.out.println("==-=-" + pn_660);
                 fgChecklist.setPn660(pn_660);
                 // 检查po，并插入数据
                 return checkPo2(fgChecklist, pn_660);
@@ -479,6 +497,14 @@ public class FgChecklistController extends BaseController {
         if (!fgChecklist1.getPo().toString().equals(fgChecklist.getPo().toString())) {
             return AjaxResult.error("拆分成品单PO不能改变");
         }
+
+        // 下架/出库（拣货）的成品不能拆分
+        if (fgChecklistMapper.checkOut(fgChecklist.getUid().toString()) > 0)
+            return AjaxResult.error("该成品已下架");
+
+        // 绑定贴纸不能拆分
+        if (fgChecklistMapper.checkTags(fgChecklist.getUid().toString()) > 0)
+            return AjaxResult.error("绑定贴纸不能拆分");
 
         FgToList toList = fgTosMapper.getTolistInfo(fgChecklist.getUid().toString());
         if (toList != null) {
@@ -1437,6 +1463,8 @@ public class FgChecklistController extends BaseController {
                     fgChecklist1.setPalletNo(fgChecklist.getPalletNo());
                     fgChecklist1.setPalletItems(fgChecklist.getPalletItems());
                     fgChecklist1.setCreateUser(fgChecklist.getCreateUser());
+                    // 条码类型
+                    fgChecklist1.setBarcodeFormart(fgChecklist.getBarcodeFormart().toString());
                     int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
                     if (n2 > 0) {
                         return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist1.getUid().toString()));
@@ -1517,6 +1545,7 @@ public class FgChecklistController extends BaseController {
                 fgChecklist1 = fgChecklistMapper.getIdInfo(fgChecklist);
                 fgChecklist.setUpdateDate(date);
                 fgChecklist1.setUpdateDate(date);
+                fgChecklist1.setPn660(fgChecklist.getPn660());
                 System.out.println(fgChecklist);
                 System.out.println(fgChecklist1);
 
@@ -1533,6 +1562,8 @@ public class FgChecklistController extends BaseController {
                         fgChecklist1.setPalletNo(fgChecklist.getPalletNo());
                         fgChecklist1.setPalletItems(fgChecklist.getPalletItems());
                         fgChecklist1.setCreateUser(fgChecklist.getCreateUser());
+                        // 条码类型
+                        fgChecklist1.setBarcodeFormart(fgChecklist.getBarcodeFormart().toString());
                         int n2 = fgChecklistService.updateFgChecklist(fgChecklist1);
                         if (n2 > 0) {
                             return AjaxResult.success(fgChecklistService.getPrintInfo(fgChecklist1.getUid().toString()));

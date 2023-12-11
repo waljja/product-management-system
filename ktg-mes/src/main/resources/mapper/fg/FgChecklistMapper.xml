@@ -27,6 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="oldUid"    column="old_uid"    />
         <result property="pn660"    column="pn660"    />
         <result property="status"    column="status"    />
+        <result property="clientCode"    column="client_code"    />
         <result property="createUser"    column="create_user"    />
         <result property="updateUser"    column="update_user"    />
         <result property="updateDate"    column="update_date"    />
@@ -37,7 +38,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 统一查询结果 -->
     <sql id="selectFgChecklistVo">
-        select id, plant, pn, uid, line, wo, po, fromstock, pallet_no, batch_qty, uid_no, sap101, production_date, batch, remark, qa_sign, qa_result, customer_result, createdate, old_uid, pn660, status, create_user, update_user, update_date, barcode_url, barcode_formart, pallet_Items from fg_checklist
+        select id, plant, pn, uid, line, wo, po, fromstock, pallet_no, batch_qty, uid_no, sap101, production_date, batch, remark, qa_sign, qa_result, customer_result, createdate, old_uid, pn660, status, client_code, create_user, update_user, update_date, barcode_url, barcode_formart, pallet_Items from fg_checklist
     </sql>
 
     <select id="selectFgChecklistList" parameterType="FgChecklist" resultMap="FgChecklistResult">
@@ -63,6 +64,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="oldUid != null  and oldUid != ''"> and old_uid = #{oldUid}</if>
             <if test="pn660 != null  and pn660 != ''"> and pn660 = #{pn660}</if>
             <if test="status != null "> and status = #{status}</if>
+            <if test="clientCode != null "> and client_code = #{clientCode}</if>
             <if test="createUser != null  and createUser != ''"> and create_user = #{createUser}</if>
             <if test="updateUser != null  and updateUser != ''"> and update_user = #{updateUser}</if>
             <if test="updateDate != null "> and update_date = #{updateDate}</if>
@@ -145,6 +147,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="oldUid != null">old_uid,</if>
             <if test="pn660 != null">pn660,</if>
             <if test="status != null">status,</if>
+            <if test="clientCode != null">client_code,</if>
             <if test="createUser != null">create_user,</if>
             <if test="updateUser != null">update_user,</if>
             <if test="updateDate != null">update_date,</if>
@@ -174,6 +177,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="oldUid != null">#{oldUid},</if>
             <if test="pn660 != null">#{pn660},</if>
             <if test="status != null">#{status},</if>
+            <if test="clientCode != null">#{clientCode},</if>
             <if test="createUser != null">#{createUser},</if>
             <if test="updateUser != null">#{updateUser},</if>
             <if test="updateDate != null">#{updateDate},</if>
@@ -208,6 +212,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="oldUid != null">old_uid = #{oldUid},</if>
             <if test="pn660 != null">pn660 = #{pn660},</if>
             <if test="status != null">status = #{status},</if>
+            <if test="clientCode != null">client_code = #{clientCode},</if>
             <if test="createUser != null">create_user = #{createUser},</if>
             <if test="updateUser != null">update_user = #{updateUser},</if>
             <if test="updateDate != null">update_date = #{updateDate},</if>
@@ -256,7 +261,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select D.WorkcenterName as Pull
         from OrBitX.dbo.MO A
                  inner Join OrBitX.dbo.ProductRoot B
-                            on A.ProductId=B.DefaultProductId
+                 on A.ProductId=B.DefaultProductId
                  left Join OrBitX.dbo.PreProductionVerifyCheck C on C.MOId=A.MOId
                  left join OrBitX.dbo.Workcenter D on C.WorkcenterId=D.WorkcenterId
         where A.MOName = #{wo}
@@ -264,7 +269,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- B2 51数据库 QA签署人、拉别（可能有多个【拼接】） -->
     <select id="checkQasign" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
-        select top 1 qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
+        select top 1 qaSign = stuff((select distinct '、' + workerNo
+        from OrBitX.dbo.DataChainBonding090
+        where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
         line = stuff((select distinct '、' + WorkcenterName from OrBitX.dbo.DataChainBonding090
         where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
         from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
@@ -272,7 +279,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     <!-- B1 72数据库 QA签署人、拉别（可能有多个【拼接】） -->
     <select id="checkQasign2" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
-        select top 1 qaSign = stuff((select distinct '、' + workerNo from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
+        select top 1 qaSign = stuff((select distinct '、' + workerNo
+        from OrBitX.dbo.DataChainBonding090
+        where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
         line = stuff((select distinct '、' + WorkcenterName from OrBitX.dbo.DataChainBonding090
         where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
         from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
@@ -280,7 +289,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
     <!-- B1 75数据库 QA签署人、拉别（可能有多个【拼接】） -->
     <select id="checkQasign3" parameterType="String" resultType="com.ktg.mes.fg.domain.FgChecklist">
-        select top 1 qaSign = stuff((select distinct '、' + OrBitUserName from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
+        select top 1 qaSign = stuff((select distinct '、' + OrBitUserName
+        from OrBitX.dbo.DataChainBonding090
+        where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,''),
         line = stuff((select distinct '、' + WorkcenterName from OrBitX.dbo.DataChainBonding090
         where WorkflowstepName LIKE '%OQA%' and MOName = #{wo} for xml path('')),1,1,'')
         from OrBitX.dbo.DataChainBonding090 where WorkflowstepName LIKE '%OQA%' and MOName = #{wo}
@@ -336,5 +347,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where uid = #{uid} and status = 1
     </update>
 
+    <!-- 查询是否已经下架，下架了不能拆分(可能存在下架了又上架，所以下架表和库存表同时存在则允许拆分) -->
+    <select id="checkOut" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_inventory_out a left join fg_inventory fi on a.uid = fi.uid where a.uid = #{uid} and (fi.uid is null or fi.uid = '')
+    </select>
+
+    <!-- 是否绑定贴纸 -->
+    <select id="checkTags" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_tags_inventory where uid = #{uid}
+    </select>
 
 </mapper>

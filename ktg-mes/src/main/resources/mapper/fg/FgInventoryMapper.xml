@@ -7,7 +7,9 @@
     <resultMap type="FgInventory" id="FgInventoryResult">
         <result property="id"    column="id"    />
         <result property="partnumber"    column="partnumber"    />
+        <result property="pn650"    column="pn650"    />
         <result property="po"    column="po"    />
+        <result property="clientPO"    column="client_po"    />
         <result property="batch"    column="batch"    />
         <result property="uid"    column="uid"    />
         <result property="quantity"    column="quantity"    />
@@ -21,18 +23,26 @@
         <result property="createTime"    column="create_time"    />
         <result property="uidId"    column="uid_id"    />
         <result property="rollbackReason"    column="rollback_reason"    />
+        <result property="proPO"    column="pro_po"    />
     </resultMap>
 
     <sql id="selectFgInventoryVo">
-        select id, partnumber, po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason from fg_inventory
+        select id, partnumber, pn650, po, client_po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason, pro_po from fg_inventory
+    </sql>
+
+    <sql id="selectFgInventoryVo2">
+        select id, partnumber, pn650, po, client_po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason, pro_po from fg_inventory_out
     </sql>
 
     <!-- 注意日期类型不能判空字符 and createTime != ''，只能判空   2023-08-17 00:00:00.0 date_format(#{createTime}, '%Y-%m-%d')  -->
     <select id="selectFgInventoryList" parameterType="FgInventory" resultMap="FgInventoryResult">
         <include refid="selectFgInventoryVo"/>
         <where>
-            <if test="partnumber != null  and partnumber != ''"> and partnumber like concat(#{partnumber}, '%')</if>
+            <if test="id != null and id != ''"> and id in (#{id})</if>
+            <if test="partnumber != null and partnumber != ''"> and partnumber like concat(#{partnumber}, '%')</if>
+            <if test="pn650 != null  and pn650 != ''"> and pn650 like concat(#{pn650}, '%')</if>
             <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="clientPO != null  and clientPO != ''"> and client_po = #{clientPO}</if>
             <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
             <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
             <if test="quantity != null "> and quantity = #{quantity}</if>
@@ -45,6 +55,32 @@
             <if test="createUser != null "> and create_user = #{createUser}</if>
             <if test="uidId != null "> and uid_id = #{uidId}</if>
             <if test="createTime != null "> and create_time like concat(date_format(#{createTime}, '%Y-%m-%d'), '%') </if>
+            <if test="proPO != null "> and pro_po = #{proPO}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <select id="selectFgInventoryList2" parameterType="FgInventory" resultMap="FgInventoryResult">
+        <include refid="selectFgInventoryVo2"/>
+        <where>
+            <if test="id != null and id != ''"> and id in (#{id})</if>
+            <if test="partnumber != null and partnumber != ''"> and partnumber like concat(#{partnumber}, '%')</if>
+            <if test="pn650 != null  and pn650 != ''"> and pn650 like concat(#{pn650}, '%')</if>
+            <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="clientPO != null  and clientPO != ''"> and client_po = #{clientPO}</if>
+            <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="quantity != null "> and quantity = #{quantity}</if>
+            <if test="tagsQuantity != null "> and quantity = #{tagsQuantity}</if>
+            <if test="stock != null  and stock != ''"> and stock = #{stock}</if>
+            <if test="status != null "> and status in (0, 1)</if>
+            <if test="wo != null "> and wo like concat('%', #{wo}, '%')</if>
+            <if test="recTime != null and recTime != ''"> and rec_time = #{recTime}</if>
+            <if test="plant != null "> and plant = #{plant}</if>
+            <if test="createUser != null "> and create_user = #{createUser}</if>
+            <if test="uidId != null "> and uid_id = #{uidId}</if>
+            <if test="createTime != null "> and create_time like concat(date_format(#{createTime}, '%Y-%m-%d'), '%') </if>
+            <if test="proPO != null "> and pro_po = #{proPO}</if>
         </where>
         order by create_time desc
     </select>
@@ -71,6 +107,7 @@
             <if test="createUser != null">create_user,</if>
             <if test="createTime != null">create_time,</if>
             <if test="uidId != null">uid_id,</if>
+            <if test="proPO != null">pro_po,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="partnumber != null">#{partnumber},</if>
@@ -87,6 +124,7 @@
             <if test="createUser != null">#{createUser},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="uidId != null">#{uidId},</if>
+            <if test="proPO != null">#{proPO},</if>
         </trim>
     </insert>
 
@@ -94,11 +132,11 @@
         update fg_inventory
         <trim prefix="SET" suffixOverrides=",">
             <if test="partnumber != null">partnumber = #{partnumber},</if>
-            <if test="po != null">partnumber = #{po},</if>
+            <if test="po != null">po = #{po},</if>
             <if test="batch != null">batch = #{batch},</if>
             <if test="uid != null">uid = #{uid},</if>
             <if test="quantity != null">quantity = #{quantity},</if>
-            <if test="tagsQuantity != null">quantity = #{tagsQuantity},</if>
+            <if test="tagsQuantity != null">tags_quantity = #{tagsQuantity},</if>
             <if test="stock != null">stock = #{stock},</if>
             <if test="status != null">status = #{status},</if>
             <if test="wo != null">wo = #{wo},</if>
@@ -107,6 +145,7 @@
             <if test="createUser != null">create_user = #{createUser},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="uidId != null">uid_id = #{uidId},</if>
+            <if test="proPO != null">pro_po = #{proPO},</if>
         </trim>
         where id = #{id}
     </update>
@@ -147,4 +186,121 @@
         where uid = #{uid} and status = 0
     </select>
 
+    <resultMap type="FgTagsInventory" id="FgTagsInventoryResult">
+        <result property="id"    column="id"    />
+        <result property="uid"    column="uid"    />
+        <result property="clientPn"    column="client_pn"    />
+        <result property="quantity"    column="quantity"    />
+        <result property="status"    column="status"    />
+        <result property="clientBatch"    column="client_batch"    />
+        <result property="productionDate"    column="production_date"    />
+        <result property="pn"    column="pn"    />
+        <result property="stock"    column="stock"    />
+        <result property="po"    column="po"    />
+        <result property="createTime"    column="createtime"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectFgTagsInventoryVo">
+        select id, uid, client_pn, quantity, status, client_batch, production_date, pn, stock, po, createtime, update_time from fg_tags_inventory
+    </sql>
+
+    <!-- 注意日期类型不能判空字符 and createTime != ''，只能判空   2023-08-17 00:00:00.0 date_format(#{createTime}, '%Y-%m-%d')  -->
+    <select id="selectFgTagsInventoryList" parameterType="FgTagsInventory" resultMap="FgTagsInventoryResult">
+        <include refid="selectFgTagsInventoryVo"/>
+        <where>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="clientPn != null  and clientPn != ''"> and client_pn = #{clientPn}</if>
+            <if test="quantity != null "> and quantity = #{quantity}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="clientBatch != null  and clientBatch != ''"> and client_batch = #{clientBatch}</if>
+            <if test="productionDate != null "> and production_date = #{productionDate}</if>
+            <if test="pn != null  and pn != ''"> and pn = #{pn}</if>
+            <if test="stock != null  and stock != ''"> and stock = #{stock}</if>
+            <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="createTime != null "> and createtime = #{createTime}</if>
+            <if test="updateTime != null "> and update_time = #{updateTime}</if>
+        </where>
+    </select>
+
+    <insert id="insertFgTagsInventory" parameterType="FgTagsInventory" useGeneratedKeys="true" keyProperty="id">
+        insert into fg_tags_inventory
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="uid != null">uid,</if>
+            <if test="clientPn != null">client_pn,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="status != null">status,</if>
+            <if test="clientBatch != null">client_batch,</if>
+            <if test="productionDate != null">production_date,</if>
+            <if test="pn != null">pn,</if>
+            <if test="stock != null">stock,</if>
+            <if test="po != null">po,</if>
+            <if test="createtime != null">createtime,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="uid != null">#{uid},</if>
+            <if test="clientPn != null">#{clientPn},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="status != null">#{status},</if>
+            <if test="clientBatch != null">#{clientBatch},</if>
+            <if test="productionDate != null">#{productionDate},</if>
+            <if test="pn != null">#{pn},</if>
+            <if test="stock != null">#{stock},</if>
+            <if test="po != null">#{po},</if>
+            <if test="createtime != null">#{createtime},</if>
+        </trim>
+    </insert>
+
+    <!--     查询是否绑定贴纸 -->
+    <select id="getTagsInventoryInfo" parameterType="java.lang.String" resultMap="FgTagsInventoryResult">
+        <include refid="selectFgTagsInventoryVo"></include>
+        where uid = #{uid} and status = 0
+    </select>
+
+<!--  650绑定660  -->
+    <select id="getInfoByID" parameterType="java.lang.String" resultMap="FgInventoryResult" >
+        <include refid="selectFgInventoryVo"></include>
+        where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    <!-- 有批量设置650对应660栏位为空，批次为660批次 -->
+    <update id="updatePNAndBacth" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            update fg_inventory
+            set partnumber = #{item.partnumber}, batch = #{item.batch}
+            where uid = #{item.uid} and pn650 = #{item.pn650} and status = 1
+        </foreach>
+    </update>
+    <update id="updatePNByUID" parameterType="java.lang.String" >
+        update fg_inventory
+        set pn650 = '650'
+        where uid = #{uid} and status = 1
+    </update>
+
+    <!-- CK00产生TO单(手动上传) -->
+    <select id="getCK00Info" parameterType="java.lang.String" resultMap="FgInventoryResult">
+        <include refid="selectFgInventoryVo"></include>
+        where batch = #{batch} and (partnumber is null or partnumber = '') and status = 1
+    </select>
+    <!-- 是否存在650对应660PN欠货 -->
+    <select id="checkPN" resultType="java.lang.Integer">
+        select count(*) from fg_tolist where pn = #{pn} and to_no = #{toNo} and status = 2 and po = #{po}
+    </select>
+    <update id="updateQHQuantity">
+        update fg_tolist
+        set quantity = quantity - #{Quantity}
+        where to_no = #{toNo} and status = 2 and pn = #{pn} and po = #{po}
+    </update>
+    <select id="checkQHQuantity" resultType="java.lang.Long">
+        select quantity from fg_tolist where to_no = #{toNo} and status = 2 and pn = #{pn} and po = #{po}
+    </select>
+    <!-- 修改欠货明细状态为已补货 -->
+    <update id="updateQHStatus">
+        update fg_tolist
+        set status = 3
+        where to_no = #{toNo} and status = 2 and pn = #{pn} and po = #{po}
+    </update>
+    
 </mapper>

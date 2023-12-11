@@ -36,6 +36,9 @@ public class ShipmentPart {
     @Excel(name = "工厂")
     private String plant;
 
+    @Excel(name = "工厂")
+    private String clientCode;
+
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "走货时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date shipmentDate;
@@ -96,6 +99,14 @@ public class ShipmentPart {
         this.shipmentDate = shipmentDate;
     }
 
+    public String getClientCode() {
+        return clientCode;
+    }
+
+    public void setClientCode(String clientCode) {
+        this.clientCode = clientCode;
+    }
+
     @Override
     public String toString() {
         return "ShipmentPart{" +
@@ -105,6 +116,7 @@ public class ShipmentPart {
                 ", batchsum=" + batchsum +
                 ", carno='" + carno + '\'' +
                 ", plant='" + plant + '\'' +
+                ", clientCode='" + clientCode + '\'' +
                 ", shipmentDate=" + shipmentDate +
                 '}';
     }

@@ -5,6 +5,7 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.honortone.api.entity.*;
 import com.honortone.api.mapper.BindStockMapper;
+import com.honortone.api.mapper.ChangeTOQuantity;
 import com.honortone.api.mapper.GMterialsMapper;
 import com.honortone.api.service.GMaterialsService;
 import com.honortone.api.utils.SAPUtil;
@@ -15,6 +16,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.simpleframework.xml.Attribute;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -28,10 +30,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventory> implements GMaterialsService {
@@ -43,6 +43,9 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
     private BindStockMapper bindStockMapper;
     @Autowired
     private JavaMailSender javaMailSender;
+
+    @Autowired
+    private ChangeTOQuantity changeTOQuantity;
 
     @Value("${spring.mail.username}")
     private String from;
@@ -69,13 +72,28 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
 
     @Override
     public List<ToList> downloadTono(String tono) {
-        return gMterialsMapper.downloadTono(tono);
+
+        // 查找是否是CK00
+        String ck00 = gMterialsMapper.checkCk00(tono);
+        if ("CK00".equals(ck00)) {
+            return gMterialsMapper.downloadTonoCK00(tono);
+        } else {
+            return gMterialsMapper.downloadTono(tono);
+        }
+
     }
 
     @Override
-    public List<TagsInventory> selectClientTag(String clientPn) {
+    public List<TagsInventory> selectClientTag(String clientPn, String clientBatch) {
 
-        List<TagsInventory> tagsInventories = gMterialsMapper.selectClientTag(clientPn);
+        List<TagsInventory> tagsInventories = gMterialsMapper.selectClientTag(clientPn, clientBatch);
+        return tagsInventories;
+    }
+
+    @Override
+    public List<TagsInventory> selectClientTag2(String clientPn, String clientBatch) {
+
+        List<TagsInventory> tagsInventories = gMterialsMapper.selectClientTag2(clientPn, clientBatch);
         return tagsInventories;
     }
 
@@ -94,9 +112,9 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
     }
 
     @Override
-    public int updateTagsStauts(String clientPn, long quantity) {
+    public int updateTagsStauts(String clientPn, String clientBatch, long quantity) {
 
-        int n = gMterialsMapper.updateTagsStauts(clientPn, quantity);
+        int n = gMterialsMapper.updateTagsStauts(clientPn, clientBatch, quantity);
         return n;
     }
 
@@ -111,12 +129,15 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
         Inventory inventory = gMterialsMapper.getInventoryInfo(uid);
         Float quantity = gMterialsMapper.checkQuantityByUid(uid) == null ? 0 : gMterialsMapper.checkQuantityByUid(uid);
         float quantity2 = quantity;
+        // System.out.println("测试" + quantity2 + "====" + inventory.getUid_no());
         if (inventory == null) {
-            return "NA";
+            return "UID不存在库存";
         } else if (quantity2 == inventory.getUid_no()) {
             return "Y";
+        } else if (quantity2 != 0 && quantity2 != inventory.getUid_no()) {
+            return "库存与备货数量不等";
         } else {
-            return "N";
+            return "UID未被预留，考虑做替换";
         }
     }
 
@@ -126,7 +147,7 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         String returnMessage = "成品出库成功";
         Inventory inventory = gMterialsMapper.getInventoryInfo(cpno);
-        // 多重if嵌套可拆分为多个单if  （卫语句）
+        // 多重if嵌套可拆分为多个单if （卫语句）
         // UID不在库存直接停止执行
         if (inventory == null) {
             return returnMessage = "库存表未查询到相关成品信息";
@@ -134,10 +155,15 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
         // 判断UID是否在TO明细表（是否是备货单），不是则 执行替换拣料功能
         String toNo1 = gMterialsMapper.checkTolistByUid(inventory.getUid().toString()) == null ? "" : gMterialsMapper.checkTolistByUid(inventory.getUid().toString());
         if ("".equals(toNo1)) {
+            // 查找是否是CK00
+            String ck00 = gMterialsMapper.checkCk00(toNo);
+            if ("CK00".equals(ck00))
+                return returnMessage = "该650未预留";
+
             // 根据PN、PO、批次、数量、状态 判是否允许替换拣料 并获取被替换的备货单的UID
             String uid = gMterialsMapper.checkTolistInfo(inventory);
             if (uid == null || uid.equals(""))
-                return returnMessage = "PO或PN或数量不符合要求，不能替换拣料";
+                return returnMessage = "PO或PN或数量不符合要求，不能替换拣料，请检查是否拿错成品";
 
             String recTime = gMterialsMapper.checkDate(uid);
             if (!recTime.substring(0, 10).equals(sdf.format(inventory.getProduction_date()).toString())) {
@@ -147,7 +173,7 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
             // System.out.println(recTime.substring(0,10) + sdf.format(inventory.getProduction_date()).toString());
 
             // 在原数据replace_uid字段添加替换的UID并更新状态为已拣货
-            if (gMterialsMapper.insertAndUpdate(uid, inventory.getUid().toString()) <= 0)
+            if (gMterialsMapper.insertAndUpdate(uid, inventory) <= 0)
                 return returnMessage = "替换拣料后，TO明细表更新失败！";
 
             // 更新被替换的库存数据状态为未预留
@@ -166,17 +192,17 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
                 return returnMessage = "替换拣料成品下架失败2(库存表删除失败)";
 
             // 查询即存在已拣货和未拣货备货单（TO明细表）
-            int n3 = gMterialsMapper.checkStauts2(cpno);
+            int n3 = gMterialsMapper.checkStauts2(uid);
             if (n3 > 0) {
                 // 更新TO管理表对应备货单为拣货中
-                gMterialsMapper.updateTosBHStatus2(cpno, 1);
+                gMterialsMapper.updateTosBHStatus2(uid, 1);
             } else {
-                gMterialsMapper.updateTosBHStatus2(cpno, 2);
+                gMterialsMapper.updateTosBHStatus2(uid, 2);
             }
             return returnMessage = "替换拣料成功！";
 
         } else {
-            if (toNo.equals(toNo1))
+            if (!toNo.equals(toNo1))
                 return "该UID已被其它备货单预留";
 
             // 将扫描的下架数据存到成品下架表
@@ -231,7 +257,14 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
 
     @Override
     public List<Map<Integer, Integer>> getQty(String tono) {
-        return gMterialsMapper.getQty(tono);
+
+        // 查找是否是CK00
+        String ck00 = gMterialsMapper.checkCk00(tono);
+        if ("CK00".equals(ck00)) {
+            return gMterialsMapper.getQtyCK00(tono);
+        } else {
+            return gMterialsMapper.getQty(tono);
+        }
     }
 
     @Override
@@ -743,6 +776,64 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
 //        return null;
 //    }
 
+    public void updateToNoQuantity() {
+
+        try {
+
+            System.out.println("starting..  check start....." + new Date());
+
+            Date date = new Date();
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            // 获取当天和后2天的走货编号（共三天的数据）
+            calendar.add(Calendar.DAY_OF_MONTH, 2);
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+            String startDate = simpleDateFormat.format(date);
+            String endDate = simpleDateFormat.format(calendar.getTime());
+
+            // 原走货信息表日期范围内的走货信息
+            List<FgShipmentInfo> fgShipmentInfos = changeTOQuantity.getShipmentInfo(startDate, endDate);
+
+            SAPUtil sapUtil = new SAPUtil();
+            for (int i = 0;i < fgShipmentInfos.size();i++) {
+                // 根据走货单获取新的走货信息(新)
+                List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS_2(fgShipmentInfos.get(i).getShipmentNO().toString());
+                // 统计当前走货单对应信息(原)
+                List<FgShipmentInfo> list1 = ListByShipmentNo(fgShipmentInfos, fgShipmentInfos.get(i).getShipmentNO().toString());
+                // 获取新走货信息对应的走货总数
+                List<FgShipmentInfo> list2 = ListByPNAndPO(list);
+                // 走货单总数（新）
+                long after_sum = list.stream().mapToLong(FgShipmentInfo::getQuantity).sum();
+                // 走货单总数（原）
+                long ago_sum = list1.stream().mapToLong(FgShipmentInfo::getQuantity).sum();
+
+                // 对比新旧走货信息数量（是否有变更）
+                for (int j = 0;j < list1.size();j++) {
+
+                }
+
+                // 从SAP导入走货资料（判空、查重、船务/货仓）
+//                for (int j = 0; j < list.size(); j++) {
+//                    FgShipmentInfo fgShipmentInfo = list.get(j);
+//                    if (fgShipmentInfo.getSapPn() != null && fgShipmentInfo.getLastComfirm() != null && (fgShipmentInfo.getLastComfirm().toString().equals("船务") || fgShipmentInfo.getLastComfirm().toString().equals("货仓")) &&
+//                            changeTOQuantity.checkInfoFs(fgShipmentInfo) == 0) {
+//
+//                        int n = changeTOQuantity.insertFgShipmentInfo(fgShipmentInfo);
+//
+//                    } else if (changeTOQuantity.checkInfoFs3(fgShipmentInfo) > 0) {
+//                        changeTOQuantity.updateShipmentQuantity(fgShipmentInfo);
+//                    }
+//                }
+            }
+
+
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public String updateToNo(String date, String shipmintNO) throws javax.mail.MessagingException, IOException {
 
@@ -1236,6 +1327,18 @@ public class GMaterialsServiceImpl extends ServiceImpl<GMterialsMapper, Inventor
 
 
         return null;
+    }
+
+    @Override
+    public BoxInventory selectBox(String cartonNo) {
+        BoxInventory boxInventory = gMterialsMapper.selectBox(cartonNo);
+        return boxInventory;
+    }
+
+    @Override
+    public int updateBoxStauts(String cartonNo) {
+        int n =  gMterialsMapper.updateBoxStauts(cartonNo);
+        return n;
     }
 
     /**

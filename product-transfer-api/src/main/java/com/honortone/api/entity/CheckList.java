@@ -79,4 +79,8 @@ public class CheckList {
     @ApiModelProperty("660成品型号")
     private String pn660;
 
+    /** 客户编号 */
+    @ApiModelProperty("客户编号")
+    private String client_code;
+
 }

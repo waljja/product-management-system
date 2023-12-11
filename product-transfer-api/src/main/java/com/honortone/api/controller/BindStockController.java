@@ -58,10 +58,14 @@ public class BindStockController {
         String stock = nodes.getStr("kw");
         String username = nodes.getStr("username");
 
-        // 不允许重复绑库上架（未拣货之前都可以重复扫描上架，只改变库位【移库功能】），拣货了不能再上架，只能回仓
+        // 不允许重复绑库上架（未拣货之前都可以重复扫描上架，只改变库位【移库功能】），拣货了不能再上架，只能回仓   (拣货了才不再库存，所以没拣货即在库且已预留，不用再上架，因此不用判是否在下架表)
         int n = bindStockService.checkUID(uid);
         if (n > 0)
             return Result.error("600", "该成品已拣货出库，不允许再上架，请检查是否需要做回仓");
+
+//        int n1 = bindStockService.checkUID2(uid);
+//        if (n1 > 0)
+//            return Result.error("600", "该成品已拣货出库，不允许再上架，请检查是否需要做回仓");
 
         String returnMessage = bindStockService.bindStock_1(uid, stock, username);
 
@@ -106,6 +110,10 @@ public class BindStockController {
         String tz = nodes.getStr("tz");
         String username = nodes.getStr("username");
 
+        int n = bindStockService.checkUID(uid);
+        if (n > 0)
+            return Result.error("600", "该成品已拣货出库，不允许再上架，请检查是否需要做回仓");
+
         String htpn = "";
         String khpn = "";
         String rectime = "";
@@ -126,7 +134,7 @@ public class BindStockController {
         // String s = FirstBind_1(uid);
         System.out.println("测试" + tz);
         String returnMessage = bindStockService.bindStock_2(uid, tz, stock, htpn, khpn, rectime, qty, clientBatch, username);
-        if (returnMessage.equals("HT贴纸绑库成功") || returnMessage.equals("珠飞客户贴纸成功") || returnMessage.equals("CC4U客户贴纸成功")) {
+        if (returnMessage.equals("HT贴纸绑库成功") || returnMessage.contains("珠飞客户贴纸成功") || returnMessage.contains("CC4U客户贴纸成功")) {
             return Result.success(returnMessage);
         } else {
             return Result.error("600",returnMessage);

@@ -46,6 +46,10 @@ public interface InStockMapper extends BaseMapper<Inventory> {
     float selectQuantity(MaterialTransationsDto materialTransationsDto);
 //    @Select("select ISNULL(SUM(quantity), 0) FROM [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]\n" +
 //            " where PartNumber = #{pn} and Plant = #{plant} and batch = #{batch} and TransactionType = #{transactiontype} and RecordStatus = 0")
+
+    @DS("slave_3")
+    float selectQuantity2(MaterialTransationsDto materialTransationsDto);
+
     /**
      * 一并提交功能
      *
@@ -54,9 +58,16 @@ public interface InStockMapper extends BaseMapper<Inventory> {
     int updateRecordStatus(MaterialTransationsDto materialTransationsDto);
     // int updateRecordStatus(MaterialTransationsDto materialTransationsDto);
 
+    @DS("slave_3")
+    int updateRecordStatus2(MaterialTransationsDto materialTransationsDto);
+
     @DS("slave_2")
     int updateQAresult(@Param("pn") String pn, @Param("qaresult") int qaresult, @Param("plant") String plant, @Param("batch") String batch);
 
     @DS("slave_3")
     int checkInfoAlreadyTransfer(MaterialTransationsDto materialTransationsDto);
+
+    @DS("slave_3")
+    int checkInfoAlreadyTransfer2(MaterialTransationsDto materialTransationsDto);
+
 }

@@ -1,9 +1,12 @@
 package com.honortone.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ktg.common.annotation.Excel;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.io.Serializable;
+import java.util.Date;
 
 public class ToList implements Serializable {
 
@@ -21,6 +24,9 @@ public class ToList implements Serializable {
     @ApiModelProperty("批次")
     private String batch;
 
+    @ApiModelProperty("客户批次")
+    private String clientBatch;
+
     @ApiModelProperty("UID")
     private String uid;
 
@@ -36,11 +42,22 @@ public class ToList implements Serializable {
     @ApiModelProperty("数量")
     private long quantity;
 
+    @ApiModelProperty("客户批次数量")
+    private long clientQty;
+
     @ApiModelProperty("批量")
     private long batchQty;
 
     @ApiModelProperty("状态")
     private Integer status;
+
+    @ApiModelProperty("客户贴纸状态")
+    private Integer status2;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "拣货日期", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date updateTime;
+
 
     public Long getId() {
         return id;
@@ -138,6 +155,38 @@ public class ToList implements Serializable {
         this.wo = wo;
     }
 
+    public String getClientBatch() {
+        return clientBatch;
+    }
+
+    public void setClientBatch(String clientBatch) {
+        this.clientBatch = clientBatch;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public long getClientQty() {
+        return clientQty;
+    }
+
+    public void setClientQty(long clientQty) {
+        this.clientQty = clientQty;
+    }
+
+    public Integer getStatus2() {
+        return status2;
+    }
+
+    public void setStatus2(Integer status2) {
+        this.status2 = status2;
+    }
+
     @Override
     public String toString() {
         return "ToList{" +
@@ -146,13 +195,17 @@ public class ToList implements Serializable {
                 ", pn='" + pn + '\'' +
                 ", po='" + po + '\'' +
                 ", batch='" + batch + '\'' +
+                ", clientBatch='" + clientBatch + '\'' +
                 ", uid='" + uid + '\'' +
                 ", stock='" + stock + '\'' +
                 ", plant='" + plant + '\'' +
                 ", wo='" + wo + '\'' +
                 ", quantity=" + quantity +
+                ", clientQty=" + clientQty +
                 ", batchQty=" + batchQty +
                 ", status=" + status +
+                ", status2=" + status2 +
+                ", updateTime=" + updateTime +
                 '}';
     }
 }

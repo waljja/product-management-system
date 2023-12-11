@@ -108,6 +108,10 @@ public class FgChecklist extends BaseEntity
     @Excel(name = "打印人")
     private String createUser;
 
+    /** 客户编号 */
+    @Excel(name = "客户编号")
+    private String clientCode;
+
     /** 修改人 */
     @Excel(name = "修改人")
     private String updateUser;
@@ -366,6 +370,14 @@ public class FgChecklist extends BaseEntity
         this.barcodeFormart = barcodeFormart;
     }
 
+    public String getClientCode() {
+        return clientCode;
+    }
+
+    public void setClientCode(String clientCode) {
+        this.clientCode = clientCode;
+    }
+
     @Override
     public String toString() {
         return "FgChecklist{" +
@@ -378,7 +390,7 @@ public class FgChecklist extends BaseEntity
                 ", po='" + po + '\'' +
                 ", fromStock='" + fromStock + '\'' +
                 ", palletNo='" + palletNo + '\'' +
-                ", palletItems=" + palletItems +
+                ", palletItems='" + palletItems + '\'' +
                 ", batchQty=" + batchQty +
                 ", uidNo=" + uidNo +
                 ", sap101='" + sap101 + '\'' +
@@ -392,6 +404,7 @@ public class FgChecklist extends BaseEntity
                 ", pn660='" + pn660 + '\'' +
                 ", status=" + status +
                 ", createUser='" + createUser + '\'' +
+                ", clientCode='" + clientCode + '\'' +
                 ", updateUser='" + updateUser + '\'' +
                 ", barcodeFormart='" + barcodeFormart + '\'' +
                 ", barcodeUrl='" + barcodeUrl + '\'' +

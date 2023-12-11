@@ -171,11 +171,13 @@ public class SaveInfoController {
 
         System.out.println("测试");
 
-        if (saveInfoService.checkSealNo(sealNoInfo.getSealNo().toString()) <= 0)
-            return Result.error("600", "不存在该鸿通封条号！或该封条已被使用");
+        if (!sealNoInfo.getSealNo().toString().equals("NA")) {
+            if (saveInfoService.checkSealNo(sealNoInfo.getSealNo().toString()) <= 0)
+                return Result.error("600", "不存在该鸿通封条号！或该封条已被使用");
 
-        if (saveInfoService.checkSealNoAndCar(sealNoInfo.getSealNo().toString(), sealNoInfo.getCarNo().toString()) > 0)
-            return Result.error("600", "该封条已被其它车号使用");
+            if (saveInfoService.checkSealNoAndCar(sealNoInfo.getSealNo().toString(), sealNoInfo.getCarNo().toString()) > 0)
+                return Result.error("600", "该封条已被其它车号使用");
+        }
 
         if (saveInfoService.checkTosStatus(sealNoInfo.getShipmentNo().toString()) > 0)
             return Result.error("600", "变更的走货清单未做回仓操作");

@@ -27,6 +27,8 @@ public interface FgInventoryService {
      */
      List<FgInventory> selectFgInventoryList(FgInventory fgInventory);
 
+    List<FgInventory> selectFgInventoryList2(FgInventory fgInventory);
+
     /**
      * 新增成品库存
      *
@@ -64,6 +66,9 @@ public interface FgInventoryService {
      int updateQuantity(String uid, long qty);
 
     FgInventory getInventoryInfo(String uid);
+
+    /******************************************** 650 绑定 660 *********************************************/
+    String bindInventory(Long[] ids);
 
 
 }

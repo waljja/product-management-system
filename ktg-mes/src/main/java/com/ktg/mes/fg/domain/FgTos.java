@@ -48,9 +48,20 @@ public class FgTos {
 
 
     /** 创建时间 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "创建时间", width = 30, dateFormat = "yyyy-MM-dd")
+
+    @Excel(name = "创建时间")
     private Date CreateTime;
+
+    /** 客户编号 */
+    @Excel(name = "客户编号")
+    private String clientCode;
+
+    /**
+     * 车辆预计到达时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "车辆预计到达时间", width = 30, dateFormat = "yyyy-MM-dd")
+    private Date arriveDate;
 
 //    public String getSapPn() {
 //        return SapPn;
@@ -132,6 +143,22 @@ public class FgTos {
         CreateTime = createTime;
     }
 
+    public String getClientCode() {
+        return clientCode;
+    }
+
+    public void setClientCode(String clientCode) {
+        this.clientCode = clientCode;
+    }
+
+    public Date getArriveDate() {
+        return arriveDate;
+    }
+
+    public void setArriveDate(Date arriveDate) {
+        this.arriveDate = arriveDate;
+    }
+
     @Override
     public String toString() {
         return "FgTos{" +
@@ -143,6 +170,8 @@ public class FgTos {
                 ", plant='" + plant + '\'' +
                 ", CarNo='" + CarNo + '\'' +
                 ", CreateTime=" + CreateTime +
+                ", clientCode='" + clientCode + '\'' +
+                ", arriveDate=" + arriveDate +
                 '}';
     }
 }

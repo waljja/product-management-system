@@ -17,8 +17,14 @@ public class InventoryOut implements Serializable {
     @ApiModelProperty("型号")
     private String pn;
 
+    @ApiModelProperty("650型号")
+    private String pn650;
+
     @ApiModelProperty("po")
     private String po;
+
+    @ApiModelProperty("clientPO")
+    private String clientPO;
 
     @ApiModelProperty("批次")
     private String batch;
@@ -28,6 +34,9 @@ public class InventoryOut implements Serializable {
 
     @ApiModelProperty("数量")
     private Integer uid_no;
+
+    @ApiModelProperty("数量")
+    private long tagsQuantity;
 
     @ApiModelProperty("库位号")
     private String stock;
@@ -44,6 +53,9 @@ public class InventoryOut implements Serializable {
     @ApiModelProperty("工厂")
     private String plant;
 
+    @ApiModelProperty("客户编号")
+    private String client_code;
+
     @ApiModelProperty("创建人")
     private String qa_sign;
 
@@ -55,6 +67,9 @@ public class InventoryOut implements Serializable {
 
     @ApiModelProperty("回仓原因")
     private String rollbackReason;
+
+    @ApiModelProperty("生产PO")
+    private String proPO;
 
     public String getRollbackReason() {
         return rollbackReason;
@@ -172,24 +187,69 @@ public class InventoryOut implements Serializable {
         this.po = po;
     }
 
+    public String getPn650() {
+        return pn650;
+    }
+
+    public void setPn650(String pn650) {
+        this.pn650 = pn650;
+    }
+
+    public long getTagsQuantity() {
+        return tagsQuantity;
+    }
+
+    public void setTagsQuantity(long tagsQuantity) {
+        this.tagsQuantity = tagsQuantity;
+    }
+
+    public String getClientPO() {
+        return clientPO;
+    }
+
+    public void setClientPO(String clientPO) {
+        this.clientPO = clientPO;
+    }
+
+    public String getClient_code() {
+        return client_code;
+    }
+
+    public void setClient_code(String client_code) {
+        this.client_code = client_code;
+    }
+
+    public String getProPO() {
+        return proPO;
+    }
+
+    public void setProPO(String proPO) {
+        this.proPO = proPO;
+    }
+
     @Override
     public String toString() {
         return "InventoryOut{" +
                 "id=" + id +
                 ", pn='" + pn + '\'' +
+                ", pn650='" + pn650 + '\'' +
                 ", po='" + po + '\'' +
+                ", clientPO='" + clientPO + '\'' +
                 ", batch='" + batch + '\'' +
                 ", uid='" + uid + '\'' +
                 ", uid_no=" + uid_no +
+                ", tagsQuantity=" + tagsQuantity +
                 ", stock='" + stock + '\'' +
                 ", status=" + status +
                 ", wo='" + wo + '\'' +
                 ", production_date=" + production_date +
                 ", plant='" + plant + '\'' +
+                ", client_code='" + client_code + '\'' +
                 ", qa_sign='" + qa_sign + '\'' +
                 ", create_date=" + create_date +
                 ", uid_id='" + uid_id + '\'' +
                 ", rollbackReason='" + rollbackReason + '\'' +
+                ", proPO='" + proPO + '\'' +
                 '}';
     }
 }

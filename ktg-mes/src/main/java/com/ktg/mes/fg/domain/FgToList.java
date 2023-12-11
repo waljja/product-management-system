@@ -54,6 +54,15 @@ public class FgToList {
     @Excel(name = "批次")
     private String batch;
 
+    /** 客户批次 */
+    @Excel(name = "客户批次")
+    private String clientBatch;
+
+    /** 客户【批次数量(库存） */
+    @JsonProperty("clientQty")
+    @Excel(name = "数量")
+    private Long clientQty;
+
     /** 走货区 */
     @Excel(name = "走货区")
     private String areaStock;
@@ -61,6 +70,20 @@ public class FgToList {
     /** 库位 */
     @Excel(name = "库位")
     private String stock;
+
+    /** 走货编号 */
+    @Excel(name = "走货编号")
+    private String ShipmentNO;
+
+    /** 创建时间 */
+    @JsonProperty("createTime")
+    @Excel(name = "创建时间")
+    private Date createTime;
+
+    /** 拣货时间 */
+    @JsonProperty("updateTime")
+    @Excel(name = "拣货时间")
+    private Date updateTime;
 
     public Long getId() {
         return id;
@@ -158,6 +181,46 @@ public class FgToList {
         this.areaStock = areaStock;
     }
 
+    public String getShipmentNO() {
+        return ShipmentNO;
+    }
+
+    public void setShipmentNO(String shipmentNO) {
+        ShipmentNO = shipmentNO;
+    }
+
+    public String getClientBatch() {
+        return clientBatch;
+    }
+
+    public void setClientBatch(String clientBatch) {
+        this.clientBatch = clientBatch;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public Long getClientQty() {
+        return clientQty;
+    }
+
+    public void setClientQty(Long clientQty) {
+        this.clientQty = clientQty;
+    }
+
     @Override
     public String toString() {
         return "FgToList{" +
@@ -171,8 +234,13 @@ public class FgToList {
                 ", sap_qty=" + sap_qty +
                 ", po='" + po + '\'' +
                 ", batch='" + batch + '\'' +
+                ", clientBatch='" + clientBatch + '\'' +
+                ", clientQty=" + clientQty +
                 ", areaStock='" + areaStock + '\'' +
                 ", stock='" + stock + '\'' +
+                ", ShipmentNO='" + ShipmentNO + '\'' +
+                ", createTime=" + createTime +
+                ", updateTime=" + updateTime +
                 '}';
     }
 }

@@ -111,22 +111,24 @@
     <!-- 判断是否重复导入(已经产生过TO单的走货单将不再导入，在变更走货信息那里执行更新)   and status = 1 pn = #{SapPn} and po = #{po} and quantity = #{Quantity} and       #{LastComfirm}-->
     <select id="checkInfoFs" resultType="java.lang.Integer">
         select count(id) from fg_shipmentinfo
-        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and po = #{po} and pn = #{SapPn}
+        where shipment_number = #{ShipmentNO}
+        and last_comfirm in ('船务','货仓') and po = #{po} and pn = #{SapPn}
     </select>
     <!-- PMC -->
     <select id="checkInfoFs2" resultType="java.lang.Integer">
         select count(id) from fg_shipmentinfo
         where shipment_number = #{ShipmentNO} and last_comfirm = #{LastComfirm} and pn = #{SapPn} and po = #{po} and quantity = #{Quantity}
     </select>
-    <!-- 相同PN、PO、数量不同 状态为0且数量不等表示有两条数量，需累加，状态为1则表示已经产生备货单，不管数量相不相等都不能累加 -->
+    <!-- 相同PN、PO、数量不同 状态为0且数量不等表示有两条数量，需累加，状态为1则表示已经产生备货单，不管数量相不相等都不能累加  and quantity <![CDATA[ <> ]]> #{Quantity} 有可能数量也一样 -->
     <select id="checkInfoFs3" resultType="java.lang.Integer">
         select count(id) from fg_shipmentinfo
-        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and pn = #{SapPn} and po = #{po} and quantity <![CDATA[ <> ]]> #{Quantity} and status = 0
+        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and pn = #{SapPn} and po = #{po} and status = 0
     </select>
+    <!-- and quantity <![CDATA[ <> ]]> #{Quantity} -->
     <update id="updateShipmentQuantity">
         update fg_shipmentinfo
-        set quantity = (quantity + #{Quantity})
-        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and pn = #{SapPn} and po = #{po} and quantity <![CDATA[ <> ]]> #{Quantity} and status = 0
+        set quantity = quantity + #{Quantity}
+        where shipment_number = #{ShipmentNO} and last_comfirm in ('船务','货仓') and pn = #{SapPn} and po = #{po} and status = 0
     </update>
 
     <!--  To管理  -->
@@ -161,7 +163,7 @@
             <if test="ShipmentNO != null">shipment_no,</if>
             <if test="plant != null">plant,</if>
             <if test="CarNo != null">car_no,</if>
-            <if test="CreateTime == null">createdate,</if>
+            <if test="CreateTime != null">createdate,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="To_No != null and To_No != ''">#{To_No},</if>
@@ -170,7 +172,7 @@
             <if test="ShipmentNO != null">#{ShipmentNO},</if>
             <if test="plant != null">#{plant},</if>
             <if test="CarNo != null">#{CarNo},</if>
-            <if test="CreateTime == null">now(),</if>
+            <if test="CreateTime != null">#{CreateTime},</if>
         </trim>
     </insert>
     <select id="checkInfoTos" resultType="java.lang.Integer">
@@ -227,6 +229,7 @@
             <if test="po != null">po,</if>
             <if test="batch != null">batch,</if>
             <if test="stock != null">stock,</if>
+            <if test="createTime != null">create_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="To_No != null">#{To_No},</if>
@@ -239,6 +242,7 @@
             <if test="po != null">#{po},</if>
             <if test="batch != null">#{batch},</if>
             <if test="stock != null">#{stock},</if>
+            <if test="createTime != null">#{createTime},</if>
         </trim>
     </insert>
     <!--  TO明细  -->
@@ -250,17 +254,26 @@
     </select>
 
 <!--  公共处理  -->
-    <!-- 用于拆箱\产生备货/欠货单 #{lastcomfirm} -->
+    <!-- 用于拆箱\产生备货/欠货单 #{lastcomfirm}   and client_code <![CDATA[ <> ]]> 'CK00' -->
     <select id="selectShipmentPart" parameterType="java.lang.String" resultType="com.ktg.mes.fg.domain.Dto.ShipmentPart">
         select sum(quantity) batchsum, shipment_number ShipmentNO, pn, po,carno, plant, shipment_date shipmentDate
         from fg_shipmentinfo
-        where last_comfirm in ('船务','货仓') and status = 0
+        where last_comfirm in ('船务','货仓') and status = 0 and client_code <![CDATA[ <> ]]> 'CK00'
         group by shipment_number, pn, po,carno, plant, shipment_date
     </select>
+<!--    <select id="selectShipmentPart" parameterType="java.lang.String" resultType="com.ktg.mes.fg.domain.Dto.ShipmentPart">-->
+<!--        select sum(quantity) batchsum, shipment_number ShipmentNO, pn, po,carno, plant, shipment_date shipmentDate-->
+<!--        from fg_shipmentinfo-->
+<!--        where last_comfirm in ('船务','货仓') and status = 0 and client_code <![CDATA[ <> ]]> 'CK00'-->
+<!--        group by shipment_number, pn, po,carno, plant, shipment_date-->
+<!--    </select>-->
+
+
 
     <!-- 根据走货编号获取走货数量 -->
     <select id="getQuantityByshipmentno" parameterType="java.lang.String" resultType="java.lang.Long">
-        select sum(quantity) from fg_shipmentinfo where last_comfirm in ('船务','货仓') and status = 0 and shipment_number = #{ShipmentNO}
+        select sum(quantity) from fg_shipmentinfo
+        where last_comfirm in ('船务','货仓') and status = 0 and shipment_number = #{ShipmentNO}
     </select>
 
     <!-- 根据走货编号查询是否已产生备货单 -->
@@ -289,19 +302,51 @@
         where to_no = #{toNo} and status = 2
     </update>
 
-    <!-- 关联查询【用于拆箱提醒】 同一个PN、PO会有不同走货单的情况 条件暂时加上根据走货单关联（PN、PO、shipment_number）-->
+    <!-- 关联查询【用于拆箱提醒】 同一个PN、PO会有不同走货单的情况 条件暂时加上根据走货单关联（PN、PO、shipment_number）  打印数量等于贴纸数量才能预留 （fi.tags_quantity = 0 表示没绑定贴纸情况）  -->
+<!--    <select id="getTosAndTOListInfo" resultType="com.ktg.mes.fg.domain.Dto.FgTosAndTosListDto">-->
+<!--        select fi.uid             uid,-->
+<!--               (select sum(quantity) from fg_inventory where partnumber = #{pn}-->
+<!--                                                         and (po = #{po} or client_po = #{po})-->
+<!--                                                         and (tags_quantity = 0 or quantity = tags_quantity)-->
+<!--                                                         and status = 1) sum_uidno,-->
+<!--               fi.quantity        Quantity,-->
+<!--               fs.batch_sum        sap_qty,-->
+<!--               fs.ShipmentNO ShipmentNO,-->
+<!--               fi.plant           plant,-->
+<!--               fs.carno           CarNo,-->
+<!--               fi.partnumber      pn,-->
+<!--               fs.po              po,-->
+<!--               fi.batch           batch,-->
+<!--               fi.stock           stock,-->
+<!--               fi.create_time     CreateTime-->
+<!--        from fg_inventory fi-->
+<!--                 inner join (select sum(quantity) batch_sum, shipment_number ShipmentNO, pn, po,carno-->
+<!--                             from fg_shipmentinfo-->
+<!--                             where last_comfirm in ('船务','货仓') and status = 0-->
+<!--                             group by shipment_number, pn, po,carno) fs on fi.partnumber = fs.pn and (fi.po = fs.po or fi.client_po = fs.po)-->
+<!--        where fs.pn = #{pn}-->
+<!--          and fs.po = #{po}-->
+<!--          and fs.ShipmentNO = #{ShipmentNO}-->
+<!--          and fi.status = 1-->
+<!--          and (fi.tags_quantity = 0 or fi.quantity = fi.tags_quantity)-->
+<!--        group by uid,Quantity,sap_qty,ShipmentNO, plant,CarNo,pn,po,batch,stock,CreateTime-->
+<!--        order by batch asc;-->
+<!--    </select>-->
+<!-- 660的采购人PO在SAP是空的，所以不需要判断两个PO (现 660也有可能有两个PO) and fi.client_code <![CDATA[ <> ]]> 'CK00'   and client_code <![CDATA[ <> ]]> 'CK00'  -->
     <select id="getTosAndTOListInfo" resultType="com.ktg.mes.fg.domain.Dto.FgTosAndTosListDto">
         select fi.uid             uid,
                (select sum(quantity) from fg_inventory where partnumber = #{pn}
-                                                         and po = #{po}
-                                                         and status = 1) sum_uidno,
+                                                         and (po = #{po} or client_po = #{po})
+                                                         and (tags_quantity = 0 or quantity = tags_quantity)
+                                                         and status = 1
+                                                         ) sum_uidno,
                fi.quantity        Quantity,
                fs.batch_sum        sap_qty,
                fs.ShipmentNO ShipmentNO,
                fi.plant           plant,
                fs.carno           CarNo,
                fi.partnumber      pn,
-               fi.po              po,
+               fs.po              po,
                fi.batch           batch,
                fi.stock           stock,
                fi.create_time     CreateTime
@@ -309,11 +354,12 @@
                  inner join (select sum(quantity) batch_sum, shipment_number ShipmentNO, pn, po,carno
                              from fg_shipmentinfo
                              where last_comfirm in ('船务','货仓') and status = 0
-                             group by shipment_number, pn, po,carno) fs on fi.partnumber = fs.pn and fi.po = fs.po
+                             group by shipment_number, pn, po,carno) fs on fi.partnumber = fs.pn and (fi.po = fs.po or fi.client_po = fs.po)
         where fs.pn = #{pn}
           and fs.po = #{po}
           and fs.ShipmentNO = #{ShipmentNO}
           and fi.status = 1
+          and (fi.tags_quantity = 0 or fi.quantity = fi.tags_quantity)
         group by uid,Quantity,sap_qty,ShipmentNO, plant,CarNo,pn,po,batch,stock,CreateTime
         order by batch asc;
     </select>
@@ -366,11 +412,39 @@
 
 
 
-    <!-- 定时更新欠货单状态（是否已补货/拆箱） -->
+    <!-- 定时更新欠货单状态（是否已补货/拆箱） <include refid="selectFgTosInfoVo2"/> -->
     <!-- 查询欠货单 -->
-    <select id="getQHList" resultMap="FgTosInfoResult">
-        <include refid="selectFgTosInfoVo2"/>
-        where status = 3
+    <select id="getQHList" resultType="com.ktg.mes.fg.domain.FgTos" >
+        select distinct a.shipment_no ShipmentNO,
+                        a.id,
+                        a.to_no To_No,
+                        a.status,
+                        a.quantity sap_qty,
+                        a.plant,
+                        a.car_no CarNo,
+                        a.createdate CreateTime,
+                        b.client_code clientCode
+        from fg_tos a left join fg_shipmentinfo b on a.shipment_no = b.shipment_number
+        where a.status = 3 and b.last_comfirm in ('船务','货仓')
+    </select>
+<!--    <select id="getQHList" resultMap="FgTosInfoResult">-->
+<!--        <include refid="selectFgTosInfoVo2"/>-->
+<!--        where a.status = 3 -->
+<!--    </select>-->
+    <!-- 查询欠货单并获取车辆到达时间 -->
+    <select id="getQHList2" resultType="com.ktg.mes.fg.domain.FgTos">
+        select distinct a.shipment_no ShipmentNO,
+                        a.id,
+                        a.to_no To_No,
+                        a.status,
+                        a.quantity sap_qty,
+                        a.plant,
+                        a.car_no CarNo,
+                        a.createdate CreateTime,
+                        b.client_code clientCode,
+                        b.careta arriveDate
+        from fg_tos a left join fg_shipmentinfo b on a.shipment_no = b.shipment_number
+        where a.status = 3 and b.last_comfirm in ('船务','货仓')
     </select>
 
     <!-- 根据欠货单找欠货明细 -->
@@ -382,21 +456,31 @@
     <!-- 若找不到欠货明细，说明已补完或，更新TO管理的欠货单状态 -->
     <update id="updateTosQH">
         update fg_tos
-        set status = 4
+        set status = 4, quantity = 0
         where to_no = #{toNo} and shipment_no = #{shipmentNo} and status = 3
     </update>
 
-    <!-- 查询库存是否已补货(相同数量) -->
+    <!-- 查询库存是否已补货(相同数量) select uid, stock, batch, quantity from fg_inventory where partnumber = #{pn} and quantity = #{Quantity} and status = 1 and po = #{po} order by batch asc limit 1 -->
     <select id="checkInventory" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgInventory">
-        select uid, stock, batch from fg_inventory where partnumber = #{pn} and quantity = #{Quantity} and status = 1 and po = #{po}
+        select uid, stock, batch, quantity from fg_inventory where partnumber = #{pn} and quantity = #{Quantity} and status = 1 and po in (#{po},'NA') and (tags_quantity = 0 or quantity = tags_quantity) order by batch asc limit 1
     </select>
+<!--    <select id="checkInventory" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgInventory">-->
+<!--        select uid, stock, batch, quantity from fg_inventory where partnumber = #{pn} and quantity = #{Quantity} and status = 1 and (po in (#{po},'NA') or client_po = #{po}) order by batch asc limit 1-->
+<!--    </select>-->
     <!-- 查询库存是否已补货（不同数量） -->
     <select id="checkInventory2" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgInventory">
-        select uid, stock, batch, quantity, (select sum(quantity) from fg_inventory where partnumber = #{pn} and status = 1 and po = #{po}) sumQuantity
-        from fg_inventory where partnumber = #{pn} and status = 1 and po = #{po}
+        select uid, stock, batch, quantity, (select sum(quantity) from fg_inventory where partnumber = #{pn} and status = 1 and po in (#{po},'NA') and (tags_quantity = 0 or quantity = tags_quantity)) sumQuantity
+        from fg_inventory where partnumber = #{pn} and status = 1 and po in (#{po},'NA') and (tags_quantity = 0 or quantity = tags_quantity)
         group by uid, stock, batch, quantity
         order by batch asc
     </select>
+
+<!--    <select id="checkInventory2" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgInventory">-->
+<!--        select uid, stock, batch, quantity, (select sum(quantity) from fg_inventory where partnumber = #{pn} and status = 1 and (po in (#{po},'NA') or client_po = #{po})) sumQuantity-->
+<!--        from fg_inventory where partnumber = #{pn} and status = 1 and (po in (#{po},'NA') or client_po = #{po})-->
+<!--        group by uid, stock, batch, quantity-->
+<!--        order by batch asc-->
+<!--    </select>-->
 
 
     <!-- 根据走货单查看备货单是否未拣货 -->
@@ -415,7 +499,7 @@
     <!-- 修改明细表中原有备货单的批次总数  and status = 0 -->
     <update id="updatebatchSum">
         update fg_tolist
-        set batch_qty = batch_qty + #{quantity}
+        set batch_qty = #{quantity}
         where to_no = #{toNo}
     </update>
 
@@ -429,7 +513,7 @@
     <update id="updateQHQuantuty">
         update fg_tolist
         set quantity = #{Quantity2}, batch_qty = #{fgToList.sap_qty}
-        where to_no = #{fgToList.to_No} and status = 2 and pn = #{fgToList.pn} and quantity = #{fgToList.Quantity} and po = #{fgToList.po}
+        where to_no = #{fgToList.To_No} and status = 2 and pn = #{fgToList.pn} and po = #{fgToList.po}
     </update>
     <!-- 修改欠货明细补货一部分货后的数量 -->
     <update id="updateTosQHQuantuty">
@@ -437,6 +521,20 @@
         set quantity = #{Quantity}
         where to_no = #{toNo} and status = 3
     </update>
+    <!-- 统计剩余欠货数量 -->
+    <select id="getQHlastQuantity" parameterType="java.lang.String" resultType="java.lang.Long">
+        select ifnull(sum(quantity), 0) from fg_tolist where to_no = #{toNo} and status = 2
+    </select>
+    <!-- 更新剩余未补货TO的欠货总数 -->
+    <update id="updateQHlastQuantuty">
+        update fg_tolist
+        set batch_qty = #{Quantity}
+        where to_no = #{toNo} and status = 2
+    </update>
+    <!-- 统计备货数量 -->
+    <select id="getBHlastQuantity" parameterType="java.lang.String" resultType="java.lang.Long">
+        select ifnull(sum(quantity), 0) from fg_tolist where to_no = #{toNo} and status = 0
+    </select>
 
     <!-- 将补货明细存到明细表 -->
 
@@ -452,7 +550,7 @@
     <!-- 更新走货日期（定时） -->
     <!-- 查询当天起到后两天的走货单 -->
     <select id="getShipmentInfo" resultType="com.ktg.mes.fg.domain.FgShipmentInfo">
-        select distinct shipment_number ShipmentNO, shipment_date ShipmentDate from fg_shipmentinfo where shipment_date >= #{startDate} and shipment_date <![CDATA[ <= ]]> #{endDate} and last_comfirm in ('货场', '船务')
+        select distinct shipment_number ShipmentNO, shipment_date ShipmentDate from fg_shipmentinfo where shipment_date >= #{startDate} and shipment_date <![CDATA[ <= ]]> #{endDate} and last_comfirm in ('货仓', '船务') and status = 1
     </select>
     <!-- 有变更则批量更新日期 -->
     <update id="updateShipmentDate" parameterType="java.util.List">
@@ -462,5 +560,80 @@
             where shipment_number = #{item.ShipmentNO} and last_comfirm in ('船务', '货仓')
         </foreach>
     </update>
+    <!-- 查询取消走货的走货单是被存在未拣货备货单 -->
+    <select id="getTOUID" parameterType="java.lang.String" resultType="java.lang.String">
+        select uid from fg_inventory where uid in (select uid from fg_tolist where to_no in (select b.to_no from fg_shipmentinfo a left join fg_tos b on a.shipment_number = b.shipment_no where a.shipment_number = #{shipmentNO} and a.status = 1 and b.to_no like 'BH%') and status = 0)
+    </select>
+    <!-- 设置已预留的为在库状态 -->
+    <update id="updateInventoryBYuid" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            update fg_inventory
+            set status = 1
+            where uid = #{item} and status = 0
+        </foreach>
+    </update>
+    <!-- 删除对应走货单的TO信息 -->
+    <delete id="deleteTOinfo">
+        delete fg_tolist where to_no in (select distinct b.to_no from fg_tos a left join fg_tolist b on a.to_no = b.to_no where a.shipment_no = #{shipmentNO})
+    </delete>
+    <delete id="deleteTOinfo2">
+        delete fg_tos where shipment_no = #{shipmentNO}
+    </delete>
+    <!-- 更新对应走货单在走货信息表的状态 -->
+    <update id="updateShipmentInfoStatus" parameterType="java.lang.String">
+        update fg_shipmentinfo set status = 2 where shipment_number = #{shipmentNO} and last_comfirm in ('船务','货仓') and status = 1
+    </update>
+    <update id="updateTOlistBYuid">
+        update fg_tolist set status = 999 where to_no in (select to_no from fg_tos where shipment_no = #{shipmentNO})
+    </update>
+    <update id="updateTOSBYshipmentNO">
+        update fg_tos set status = 999 where shipment_no = #{shipmentNO}
+    </update>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--  CK00 产生TO单(自动)  -->
+    <!-- 获取650对应的660 -->
+    <select id="selectShipmentPartCK00" parameterType="java.lang.String" resultType="com.ktg.mes.fg.domain.Dto.ShipmentPart">
+        select sum(quantity) batchsum, shipment_number ShipmentNO, pn, po,carno, plant, shipment_date shipmentDate, client_code clientCode
+        from fg_shipmentinfo
+        where last_comfirm in ('船务','货仓') and status = 0 and client_code = 'CK00'
+        group by shipment_number, pn, po,carno, plant, shipment_date, client_code
+    </select>
+    <!-- 查询660对应是否都对应4个650 -->
+    <select id="checkCount" parameterType="com.ktg.mes.fg.domain.Dto.ShipmentPart" resultType="java.lang.String">
+        select distinct pn650 from fg_inventory where partnumber = #{pn} and status = 1 and (po = #{po} or client_po = #{po}) and pn650 is not null
+    </select>
+    <!-- 查询每个650对应工单数量累加是否都等于走货数量 -->
+    <select id="checkSumByWO" resultType="com.ktg.mes.fg.domain.Dto.ReturnResult">
+        SELECT if((select sum(quantity) from fg_inventory where pn650 = #{pn6501} and partnumber = #{pn}
+                and (po = #{po} or client_po = #{po}) group by wo) = #{ShipmentSum}, (select wo from fg_inventory where pn650 = #{pn6501} and partnumber = #{pn}
+                                          and (po = #{po} or client_po = #{po}) group by wo), 'false') as flag1,
+               if((select sum(quantity) from fg_inventory where pn650 = #{pn6502} and partnumber = #{pn}
+                and (po = #{po} or client_po = #{po}) group by wo) = #{ShipmentSum}, (select wo from fg_inventory where pn650 = #{pn6502} and partnumber = #{pn}
+                                          and (po = #{po} or client_po = #{po}) group by wo), 'false') as flag2,
+               if((select sum(quantity) from fg_inventory where pn650 = #{pn6503} and partnumber = #{pn}
+                and (po = #{po} or client_po = #{po}) group by wo) = #{ShipmentSum}, (select wo from fg_inventory where pn650 = #{pn6503} and partnumber = #{pn}
+                                          and (po = #{po} or client_po = #{po}) group by wo), 'false') as flag3,
+               if((select sum(quantity) from fg_inventory where pn650 = #{pn6504} and partnumber = #{pn}
+                and (po = #{po} or client_po = #{po}) group by wo) = #{ShipmentSum}, (select wo from fg_inventory where pn650 = #{pn6504} and partnumber = #{pn}
+                                          and (po = #{po} or client_po = #{po}) group by wo), 'false') as flag4
+    </select>
+    <!-- 扫650下架需预留每个650    and quantity = #{quantity} （数量有可能是累加后的，所以不一定相等） -->
+    <select id="getInfo650" resultType="com.ktg.mes.fg.domain.Dto.ReturnResult">
+        select uid, pn650 pn, po, quantity, stock from fg_inventory where pn650 = #{pn650} and partnumber = #{pn} and (po = #{po} or client_po = #{po}) and wo = #{wo} and status = 1
+    </select>
+    <!-- 检查是否是CK00 -->
+
 
 </mapper>

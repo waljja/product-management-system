@@ -51,6 +51,11 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
     }
 
     @Override
+    public int checkUID2(String uid) {
+        return bindStockMapper.checkUID2(uid);
+    }
+
+    @Override
     public String bindStock_1(String uid, String stock, String username) {
 
         String returnMessage = "";
@@ -124,7 +129,8 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                     Date date = sdf1.parse(rectime1);
                     tagsInventory.setProductionDate(date);
 
-                    if (rectime.equals(sdf.format(inventory.getProduction_date()))) {
+                    // 过账编号50开头的不管控 过账日期
+                    if (checkList.getSap101().substring(0, 2).equals("50")) {
                         // 是否存在该uid
                         Inventory inventory1 = bindStockMapper.checkInventory(inventory.getUid().toString());
                         long tagsSum = bindStockMapper.checktagsSum(inventory.getUid().toString());
@@ -141,16 +147,41 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                                     if (n1 > 0) {
                                         inventory1.setTagsQuantity(tagsSum + tagsInventory.getQuantity());
                                         bindStockMapper.updateInventory(inventory1);
-                                        returnMessage = "珠飞客户贴纸成功";
+                                        if (inventory1.getUid_no() - (tagsSum + tagsInventory.getQuantity()) == 0 || inventory1.getUid_no() - (tagsSum + tagsInventory.getQuantity()) == 0.0) {
+                                            returnMessage = "该贴纸完成绑定";
+                                        } else {
+                                            returnMessage = "珠飞客户贴纸成功，还剩" + (inventory1.getUid_no() - (tagsSum + tagsInventory.getQuantity())) + "数量需要绑定";
+                                        }
                                     }
                                 }
                             }
                         } else {
+                            // 第一次绑库，设置两个PO
+                            List<String[]> list = new ArrayList<>();
+                            list = sapUtil.getPoInfo(inventory.getPn());
+                            String s = "";
+                            // 获取上架PO对应的采购人PO
+                            for (String[] arr : list) {
+                                if (Arrays.asList(arr).contains(checkList.getPo().toString())) {
+                                    if (arr[2] != null && !"".equals(arr[2])) {
+                                        // 如果上架是“收货人採購單號碼”则赋值“客戶採購單號碼 ”给clientPO，反之 一样
+                                        if (arr[2].equals(inventory.getPo())) {
+                                            s = arr[1];
+                                        } else {
+                                            s = arr[2];
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            System.out.println("65000" + s);
+                            // 设置客户PO （该PO为收货人采购单号）
+                            inventory.setClientPO(s);
                             // inventory.setUid_no(qty);
                             // inventory.setUid_id(uid_id);
-                            long uidNo = (long)inventory.getUid_no();
-                            if (tagsInventory.getQuantity() < uidNo) {
-                                System.out.println(tagsInventory.getQuantity() + "===" + uidNo);
+                            long uidNo = (long) inventory.getUid_no();
+                            if (tagsInventory.getQuantity() <= uidNo) {
+                                System.out.println(tagsInventory.getQuantity() + "<=" + uidNo);
                                 inventory.setTagsQuantity(tagsInventory.getQuantity());
                                 // 保存绑库UID
                                 int n2 = bindStockMapper.toinsert(inventory);
@@ -161,17 +192,96 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                                         // 保存贴纸信息
                                         int n3 = bindStockMapper.insertTagsInventory(tagsInventory);
                                         if (n3 > 0) {
-                                            returnMessage = "珠飞客户贴纸成功";
+                                            if (uidNo - tagsInventory.getQuantity() == 0) {
+                                                returnMessage = "该贴纸完成绑定";
+                                            } else {
+                                                returnMessage = "珠飞客户贴纸成功,还剩" + (uidNo - tagsInventory.getQuantity()) + "数量需要绑定";
+                                            }
                                         }
                                     }
                                 }
                             } else {
-                                System.out.println(tagsInventory.getQuantity() + "===" + uidNo);
+                                System.out.println(tagsInventory.getQuantity() + ">" + uidNo);
+                                return "贴纸数量大于成品单打印数量";
+                            }
+                        }
+                    } else if (rectime.equals(sdf.format(inventory.getProduction_date()))) {
+                        // 是否存在该uid
+                        Inventory inventory1 = bindStockMapper.checkInventory(inventory.getUid().toString());
+                        long tagsSum = bindStockMapper.checktagsSum(inventory.getUid().toString());
+                        if (inventory1 != null) {
+                            if ((tagsSum + tagsInventory.getQuantity()) > inventory1.getUid_no()) {
+                                System.out.println();
+                                return "绑定贴纸总数大于成品单打印数量，不允许打印";
+                            } else {
+                                if (bindStockMapper.checkTags(clientBatch) > 0) {
+                                    returnMessage = "该贴纸 批次已绑定过";
+                                } else {
+                                    // 保存贴纸信息
+                                    int n1 = bindStockMapper.insertTagsInventory(tagsInventory);
+                                    if (n1 > 0) {
+                                        inventory1.setTagsQuantity(tagsSum + tagsInventory.getQuantity());
+                                        bindStockMapper.updateInventory(inventory1);
+                                        if (inventory1.getUid_no() - (tagsSum + tagsInventory.getQuantity()) == 0 || inventory1.getUid_no() - (tagsSum + tagsInventory.getQuantity()) == 0.0) {
+                                            returnMessage = "该贴纸完成绑定";
+                                        } else {
+                                            returnMessage = "珠飞客户贴纸成功，还剩" + (inventory1.getUid_no() - (tagsSum + tagsInventory.getQuantity())) + "数量需要绑定";
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // 第一次绑库，设置两个PO
+                            List<String[]> list = new ArrayList<>();
+                            list = sapUtil.getPoInfo(inventory.getPn());
+                            String s = "";
+                            // 获取上架PO对应的采购人PO
+                            for (String[] arr : list) {
+                                if (Arrays.asList(arr).contains(checkList.getPo().toString())) {
+                                    if (arr[2] != null && !"".equals(arr[2])) {
+                                        // 如果上架是“收货人採購單號碼”则赋值“客戶採購單號碼 ”给clientPO，反之 一样
+                                        if (arr[2].equals(inventory.getPo())) {
+                                            s = arr[1];
+                                        } else {
+                                            s = arr[2];
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            System.out.println("65000" + s);
+                            // 设置客户PO （该PO为收货人采购单号）
+                            inventory.setClientPO(s);
+                            // inventory.setUid_no(qty);
+                            // inventory.setUid_id(uid_id);
+                            long uidNo = (long) inventory.getUid_no();
+                            if (tagsInventory.getQuantity() <= uidNo) {
+                                System.out.println(tagsInventory.getQuantity() + "<=" + uidNo);
+                                inventory.setTagsQuantity(tagsInventory.getQuantity());
+                                // 保存绑库UID
+                                int n2 = bindStockMapper.toinsert(inventory);
+                                if (n2 > 0) {
+                                    if (bindStockMapper.checkTags(clientBatch) > 0) {
+                                        returnMessage = "该贴纸 批次已绑定过";
+                                    } else {
+                                        // 保存贴纸信息
+                                        int n3 = bindStockMapper.insertTagsInventory(tagsInventory);
+                                        if (n3 > 0) {
+                                            if (uidNo - tagsInventory.getQuantity() == 0) {
+                                                returnMessage = "该贴纸完成绑定";
+                                            } else {
+                                                returnMessage = "珠飞客户贴纸成功,还剩" + (uidNo - tagsInventory.getQuantity()) + "数量需要绑定";
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                System.out.println(tagsInventory.getQuantity() + ">" + uidNo);
                                 return "贴纸数量大于成品单打印数量";
                             }
                         }
                     } else {
-                        return "珠飞贴纸日期与成品单101过账日期不相等，不允许绑定";
+                        return "珠飞贴纸日期与成品单101过账日期不相等，且过账编号非50开头，不允许绑定";
                     }
                 }
             } else if (!tz.contains("/") && !tz.contains("@")) {
@@ -179,10 +289,79 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                 System.out.println(tz);
                 BoxInventory boxInventory = bindStockMapper.getBoxInfo(tz);
                 date_checklist = sdf.format(checkList.getProduction_date());
-                System.out.println(boxInventory.getCreateTime());
-                System.out.println(boxInventory.getProductionDate());
+//                System.out.println(boxInventory.getCreateTime());
+//                System.out.println(boxInventory.getProductionDate());
                 date_box = sdf.format(boxInventory.getProductionDate());
-                if (boxInventory != null && boxInventory.getPn().toString().equals(checkList.getPn().toString()) && boxInventory.getPo().toString().equals(checkList.getPo().toString()) && date_checklist.equals(date_box)) {
+                if (checkList.getSap101().substring(0, 2).equals("50") && boxInventory != null && boxInventory.getPn().toString().equals(checkList.getPn().toString()) && boxInventory.getPo().toString().equals(checkList.getPo().toString())) {
+                    BeanUtil.copyProperties(checkList, inventory, true);
+                    inventory.setStock(stock);
+                    BeanUtil.copyProperties(inventory, boxInventory, true);
+                    // 是否存在该uid
+                    Inventory inventory1 = bindStockMapper.checkInventory(inventory.getUid().toString());
+                    if (inventory1 != null) {
+                        long sumqty = bindStockMapper.checkBoxQuantity(inventory1.getUid().toString());
+                        if (sumqty >= inventory1.getUid_no() || (sumqty + boxInventory.getCartonQty()) > inventory1.getUid_no()) {
+                            returnMessage = "绑定箱子数量大于成品单数量";
+                        } else {
+                            // 保存贴纸信息
+                            int n3 = bindStockMapper.insertBoxInventory(boxInventory);
+                            if (n3 > 0) {
+                                inventory1.setTagsQuantity(sumqty + boxInventory.getCartonQty());
+                                bindStockMapper.updateInventory(inventory1);
+                                if (inventory1.getUid_no() - (sumqty + boxInventory.getCartonQty()) == 0 || inventory1.getUid_no() - (sumqty + boxInventory.getCartonQty()) == 0.0) {
+                                    returnMessage = "该贴纸完成绑定";
+                                } else {
+                                    returnMessage = "CC4U客户贴纸成功,还剩" + (inventory1.getUid_no() - (sumqty + boxInventory.getCartonQty())) + "数量需绑定";
+                                }
+                            }
+                        }
+                    } else {
+                        // 第一次绑库，设置两个PO
+                        List<String[]> list = new ArrayList<>();
+                        list = sapUtil.getPoInfo(inventory.getPn());
+                        String s = "";
+                        // 获取上架PO对应的采购人PO
+                        for (String[] arr : list) {
+                            if (Arrays.asList(arr).contains(checkList.getPo().toString())) {
+                                if (arr[2] != null && !"".equals(arr[2])) {
+                                    // 如果上架是“收货人採購單號碼”则赋值“客戶採購單號碼 ”给clientPO，反之 一样
+                                    if (arr[2].equals(inventory.getPo())) {
+                                        s = arr[1];
+                                    } else {
+                                        s = arr[2];
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        System.out.println("65000" + s);
+                        // 设置客户PO （该PO为收货人采购单号）
+                        inventory.setClientPO(s);
+                        if (boxInventory.getCartonQty() > inventory.getUid_no()) {
+                            System.out.println(boxInventory.getCartonQty() + ">" + inventory.getUid_no());
+                            returnMessage = "绑定箱子数量大于成品单数量";
+                        } else {
+                            System.out.println(boxInventory.getCartonQty() + "<=" + inventory.getUid_no());
+                            // 保存绑库UID
+                            inventory.setTagsQuantity(boxInventory.getCartonQty());
+                            int n2 = bindStockMapper.toinsert(inventory);
+                            if (n2 > 0) {
+                                if (bindStockMapper.checkBox(boxInventory.getCartonNo().toString()) > 0) {
+                                    returnMessage = "该箱号已绑定过";
+                                } else {
+                                    int n3 = bindStockMapper.insertBoxInventory(boxInventory);
+                                    if (n3 > 0) {
+                                        if (inventory.getUid_no() - boxInventory.getCartonQty() == 0) {
+                                            returnMessage = "该贴纸完成绑定";
+                                        } else {
+                                            returnMessage = "CC4U客户贴纸成功，还剩" + (inventory.getUid_no() - boxInventory.getCartonQty()) + "数量需绑定";
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (boxInventory != null && boxInventory.getPn().toString().equals(checkList.getPn().toString()) && boxInventory.getPo().toString().equals(checkList.getPo().toString()) && date_checklist.equals(date_box)) {
 
                     BeanUtil.copyProperties(checkList, inventory, true);
                     inventory.setStock(stock);
@@ -197,30 +376,64 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
                             // 保存贴纸信息
                             int n3 = bindStockMapper.insertBoxInventory(boxInventory);
                             if (n3 > 0) {
-                                returnMessage = "CC4U客户贴纸成功";
+                                inventory1.setTagsQuantity(sumqty + boxInventory.getCartonQty());
+                                bindStockMapper.updateInventory(inventory1);
+                                if (inventory1.getUid_no() - (sumqty + boxInventory.getCartonQty()) == 0 || inventory1.getUid_no() - (sumqty + boxInventory.getCartonQty()) == 0.0) {
+                                    returnMessage = "该贴纸完成绑定";
+                                } else {
+                                    returnMessage = "CC4U客户贴纸成功,还剩" + (inventory1.getUid_no() - (sumqty + boxInventory.getCartonQty())) + "数量需绑定";
+                                }
                             }
                         }
                     } else {
-                        // 保存绑库UID
-                        int n2 = bindStockMapper.toinsert(inventory);
-                        if (n2 > 0) {
-                            System.out.println(boxInventory + "===" + inventory);
-                            // 保存贴纸信息
-                            if (boxInventory.getCartonQty() > inventory.getUid_no()) {
-                                returnMessage = "绑定箱子数量大于成品单数量";
-                            } else {
-                                int n3 = bindStockMapper.insertBoxInventory(boxInventory);
-                                if (n3 > 0) {
-                                    returnMessage = "CC4U客户贴纸成功";
+                        // 第一次绑库，设置两个PO
+                        List<String[]> list = new ArrayList<>();
+                        list = sapUtil.getPoInfo(inventory.getPn());
+                        String s = "";
+                        // 获取上架PO对应的采购人PO
+                        for (String[] arr : list) {
+                            if (Arrays.asList(arr).contains(checkList.getPo().toString())) {
+                                if (arr[2] != null && !"".equals(arr[2])) {
+                                    // 如果上架是“收货人採購單號碼”则赋值“客戶採購單號碼 ”给clientPO，反之 一样
+                                    if (arr[2].equals(inventory.getPo())) {
+                                        s = arr[1];
+                                    } else {
+                                        s = arr[2];
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        System.out.println("65000" + s);
+                        // 设置客户PO （该PO为收货人采购单号）
+                        inventory.setClientPO(s);
+                        if (boxInventory.getCartonQty() > inventory.getUid_no()) {
+                            System.out.println(boxInventory.getCartonQty() + ">" + inventory.getUid_no());
+                            returnMessage = "绑定箱子数量大于成品单数量";
+                        } else {
+                            System.out.println(boxInventory.getCartonQty() + "<=" + inventory.getUid_no());
+                            // 保存绑库UID
+                            inventory.setTagsQuantity(boxInventory.getCartonQty());
+                            int n2 = bindStockMapper.toinsert(inventory);
+                            if (n2 > 0) {
+                                if (bindStockMapper.checkBox(boxInventory.getCartonNo().toString()) > 0) {
+                                    returnMessage = "该箱号已绑定过";
+                                } else {
+                                    int n3 = bindStockMapper.insertBoxInventory(boxInventory);
+                                    if (n3 > 0) {
+                                        if (inventory.getUid_no() - boxInventory.getCartonQty() == 0) {
+                                            returnMessage = "该贴纸完成绑定";
+                                        } else {
+                                            returnMessage = "CC4U客户贴纸成功，还剩" + (inventory.getUid_no() - boxInventory.getCartonQty()) + "数量需绑定";
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-
                 } else {
                     returnMessage = "不存在箱号或该箱号PN、PO、包装时间与成品单PN、PO、日期不一致！";
                 }
-
             } else {
                 returnMessage = "送检单型号与客户贴纸型号不一致或客户贴纸为空";
             }
@@ -474,24 +687,120 @@ public class BindStockServiceImpl extends ServiceImpl<BindStockMapper, Inventory
         return bindStockMapper.checkStatusTosQH(toNo);
     }
 
+//    public String checkInstockAndBindstock(CheckList checkList, String stock, String username) {
+//        String returnMessage = "";
+//        // 已收货即313转数成功
+//        System.out.println("sasasasas" + bindStockMapper.checkInstock(checkList));
+//        int index = 0;
+//        if (checkList.getPn().toString().substring(0,3).equals("650")) {
+//            index = bindStockMapper.checkInstock2(checkList);
+//        } else {
+//            index = bindStockMapper.checkInstock(checkList);
+//        }
+//        if (index > 0) {
+//            // 多个赋值可用BeanUtil中copyProperties方法优化
+//            Inventory inventory = new Inventory();
+//            System.out.println(checkList);
+//            //a,b为对象
+//            //BeanUtils.copyProperties(a, b);
+//            //BeanUtils是org.springframework.beans.BeanUtils，a拷贝到b
+//            //BeanUtils是org.apache.commons.beanutils.BeanUtils，b拷贝到a
+//            BeanUtil.copyProperties(checkList, inventory, true);
+//            // 上架的是650，把库存表partmunber设置为660，方便产生TO单
+//            if (checkList.getPn().toString().substring(0, 3).equals("650")) {
+//                inventory.setPn(checkList.getPn660().toString());
+//                inventory.setPn650(checkList.getPn().toString());
+//            }
+//            System.out.println(checkList);
+//            System.out.println(inventory);
+//            inventory.setStock(stock);
+//            inventory.setQa_sign(username);
+//            List<Inventory> list1 = bindStockMapper.checkInfoByUid_1(inventory.getUid().toString());
+//            if (list1.size() > 0) {
+//                int n = bindStockMapper.updateStock(inventory);
+//                if (n > 0)
+//                    System.out.println("送检单绑库成功！");
+//
+//                returnMessage = "送检单移库成功";
+//            } else {
+//                int n = bindStockMapper.toinsert(inventory);
+//                if (n > 0) {
+//                    System.out.println("送检单绑库成功！");
+//                    returnMessage = "送检单绑库成功";
+//                } else {
+//                    System.out.println("送检单绑库失败！");
+//                    returnMessage = "送检单绑库失败！";
+//                }
+//            }
+//        } else {
+//            System.out.println("该成品单未收货");
+//            returnMessage = "该成品单未收货";
+//        }
+//        return returnMessage;
+//    }
+
     public String checkInstockAndBindstock(CheckList checkList, String stock, String username) {
+
+        SAPUtil sapUtil = new SAPUtil();
+        List<String[]> list = new ArrayList<>();
         String returnMessage = "";
+        // 多个赋值可用BeanUtil中copyProperties方法优化
+        Inventory inventory = new Inventory();
+        System.out.println(checkList);
+        //a,b为对象
+        //BeanUtils.copyProperties(a, b);
+        //BeanUtils是org.springframework.beans.BeanUtils，a拷贝到b
+        //BeanUtils是org.apache.commons.beanutils.BeanUtils，b拷贝到a
+        BeanUtil.copyProperties(checkList, inventory, true);
         // 已收货即313转数成功
         System.out.println("sasasasas" + bindStockMapper.checkInstock(checkList));
-        if (bindStockMapper.checkInstock(checkList) > 0) {
-            // 多个赋值可用BeanUtil中copyProperties方法优化
-            Inventory inventory = new Inventory();
-            System.out.println(checkList);
-            //a,b为对象
-            //BeanUtils.copyProperties(a, b);
-            //BeanUtils是org.springframework.beans.BeanUtils，a拷贝到b
-            //BeanUtils是org.apache.commons.beanutils.BeanUtils，b拷贝到a
-            BeanUtil.copyProperties(checkList, inventory, true);
+        int index = 0;
+        if (checkList.getPn().toString().substring(0,3).equals("650")) {
+
+            // 检查是否收货
+            index = bindStockMapper.checkInstock2(checkList);
             // 上架的是650，把库存表partmunber设置为660，方便产生TO单
-            if (checkList.getPn().toString().substring(0, 3).equals("650")) {
-                inventory.setPn(checkList.getPn660().toString());
-                inventory.setPn650(checkList.getPn().toString());
+            inventory.setPn(checkList.getPn660().toString());
+            inventory.setPn650(checkList.getPn().toString());
+            list = sapUtil.getPoInfo(inventory.getPn());
+            String s = "";
+            // 获取上架PO对应的客户PO  （基于 上架一定上“收货人採購單號碼 ”PO，否则写法参考下面660）
+            for (String[] arr : list) {
+                if (Arrays.asList(arr).contains(checkList.getPo().toString())) {
+                    s = arr[1];
+                    break;
+                }
             }
+            System.out.println("65000" + s);
+            // 设置客户PO  （该PO为客户采购单号）
+            inventory.setClientPO(s);
+
+        } else {
+
+            /**  目前只有650/650对应的660 输入的PO是采购人订单号（SAP右边的），其余正常的660都是客户订单号（SAP左边）  */
+            index = bindStockMapper.checkInstock(checkList);
+            list = sapUtil.getPoInfo(inventory.getPn());
+            String s = "";
+            // 获取上架PO对应的采购人PO
+            for (String[] arr : list) {
+                if (Arrays.asList(arr).contains(checkList.getPo().toString())) {
+                    if (arr[2] != null && !"".equals(arr[2])) {
+                        // 如果上架是“收货人採購單號碼”则赋值“客戶採購單號碼 ”给clientPO，反之 一样
+                        if (arr[2].equals(inventory.getPo())) {
+                            s = arr[1];
+                        } else {
+                            s = arr[2];
+                        }
+                    }
+                    break;
+                }
+            }
+            System.out.println("65000" + s);
+            // 设置客户PO （该PO为收货人采购单号）
+            inventory.setClientPO(s);
+        }
+        if (index > 0) {
+
             System.out.println(checkList);
             System.out.println(inventory);
             inventory.setStock(stock);

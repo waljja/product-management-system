@@ -3,6 +3,7 @@ package com.ktg.mes.fg.mapper;
 import cn.hutool.core.map.TolerantMap;
 import com.ktg.mes.fg.domain.*;
 import com.ktg.mes.fg.domain.Dto.FgTosAndTosListDto;
+import com.ktg.mes.fg.domain.Dto.ReturnResult;
 import com.ktg.mes.fg.domain.Dto.ShipmentPart;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -102,6 +103,8 @@ public interface FgTosMapper
      */
     List<ShipmentPart> selectShipmentPart(String lastcomfirm);
 
+    List<ShipmentPart> selectShipmentPartCK00(String lastcomfirm);
+
     /**
      * 根据走货编号获取走货数量
      */
@@ -134,6 +137,8 @@ public interface FgTosMapper
      * */
     List<FgTos> getQHList();
 
+    List<FgTos> getQHList2();
+
     List<FgToList> getToListByQH(String toNo);
 
     int updateTosQH(@Param("toNo") String toNo, @Param("shipmentNo") String shipemntNo);
@@ -154,6 +159,12 @@ public interface FgTosMapper
 
     int updateTosQHQuantuty(@Param("Quantity") long Quantity, @Param("toNo") String toNo);
 
+    long getQHlastQuantity(String toNo);
+
+    long getBHlastQuantity(String toNo);
+
+    int updateQHlastQuantuty(@Param("Quantity") long Quantity, @Param("toNo") String toNo);
+
     int updateInventoryStatus(String uid);
 
     FgToList getTolistInfo(String uid);
@@ -168,5 +179,27 @@ public interface FgTosMapper
      * 批量更新走货日期
      * */
     int updateShipmentDate(List<FgShipmentInfo> list);
+
+    List<String> getTOUID(String shipmentNO);
+
+    int updateInventoryBYuid(List<String> list);
+
+    int deleteTOinfo(String shipmentNO);
+
+    int deleteTOinfo2(String shipmentNO);
+
+    int updateShipmentInfoStatus(String shipmentNO);
+
+    int updateTOlistBYuid(String shipemntNO);
+
+    int updateTOSBYshipmentNO(String shipmentNO);
+
+    /*********************************************   CK00 TO    ****************************************************/
+    /** 查询660对应是否都对应4个650 */
+    List<String> checkCount(ShipmentPart shipmentPart);
+
+    ReturnResult checkSumByWO(@Param("pn6501") String pn6501, @Param("pn6502") String pn6502, @Param("pn6503") String pn6503, @Param("pn6504") String pn6504, @Param("pn") String pn, @Param("po") String po, @Param("ShipmentSum") long ShipmentSum);
+
+    List<ReturnResult> getInfo650(@Param("pn650") String pn650, @Param("pn") String pn, @Param("po") String po, @Param("quantity") long quantity, @Param("wo") String wo);
 
 }

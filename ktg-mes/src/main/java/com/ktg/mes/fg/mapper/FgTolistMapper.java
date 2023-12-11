@@ -69,5 +69,5 @@ public interface FgTolistMapper {
      */
      int deleteFgTolistByIds(Long[] ids);
 
-     List<FgToList> getAreaStockInfo();
+     List<FgToList> getAreaStockInfo(FgToList fgToList);
 }

@@ -16,10 +16,12 @@
         <result property="po"    column="po"    />
         <result property="batch"    column="batch"    />
         <result property="stock"    column="stock"    />
+        <result property="clientBatch"    column="client_batch"    />
+        <result property="clientQty"    column="client_qty"    />
     </resultMap>
 
     <sql id="selectFgTolistVo">
-        select id, to_no, uid, replace_uid, pn, quantity, batch_qty, status, po, batch, stock from fg_tolist
+        select id, to_no, uid, replace_uid, pn, quantity, batch_qty, status, po, batch, stock, client_batch, client_qty from fg_tolist
     </sql>
 <!--<if test="status != null and status != '' "> and status = #{status}</if>-->
     <select id="selectFgTolistList" parameterType="FgToList" resultMap="FgTolistResult">
@@ -36,6 +38,8 @@
             <if test="po != null  and po != ''"> and po = #{po}</if>
             <if test="batch != null  and batch != ''"> and batch like concat('%', #{batch}, '%')</if>
             <if test="stock != null  and stock != ''"> and stock like concat('%', #{stock}, '%')</if>
+            <if test="clientBatch != null  and clientBatch != ''"> and client_batch = #{clientBatch}</if>
+            <if test="clientQty != null  and clientQty != ''"> and client_qty = #{clientQty} </if>
         </where>
     </select>
     <select id="selectFgTolistList2" parameterType="FgToList" resultType="com.ktg.mes.fg.domain.FgToList">
@@ -59,7 +63,10 @@
             <if test="status != null">status,</if>
             <if test="po != null">po,</if>
             <if test="batch != null">batch,</if>
+            <if test="clientBatch != null">client_batch,</if>
+            <if test="clientQty != null">client_qty,</if>
             <if test="stock != null">stock,</if>
+            <if test="createTime != null">create_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="To_No != null">#{To_No},</if>
@@ -71,7 +78,10 @@
             <if test="status != null">#{status},</if>
             <if test="po != null">#{po},</if>
             <if test="batch != null">#{batch},</if>
+            <if test="clientBatch != null">#{clientBatch},</if>
+            <if test="clientQty != null">#{clientQty},</if>
             <if test="stock != null">#{stock},</if>
+            <if test="createTime != null">#{createTime},</if>
         </trim>
     </insert>
 
@@ -113,10 +123,24 @@
     </delete>
 
     <!-- 查询绑定待走货区 -->
-    <select id="getAreaStockInfo" resultType="com.ktg.mes.fg.domain.FgToList">
-        select tl.id id, tl.to_no To_No, tl.uid uid, tl.replace_uid replace_uid, tl.pn pn, tl.quantity Quantity, tl.batch_qty sap_qty, tl.po po, tl.batch batch, tl.stock stock, ts.stock areaStock
+    <select id="getAreaStockInfo" parameterType="com.ktg.mes.fg.domain.FgToList" resultType="com.ktg.mes.fg.domain.FgToList">
+        select tl.id id, tl.to_no To_No, tl.uid uid, tl.replace_uid replace_uid, tl.pn pn, tl.quantity Quantity,
+               tl.batch_qty sap_qty, tl.po po, tl.batch batch, tl.stock stock, ts.stock areaStock
         from fg_tos ts left join fg_tolist tl on ts.to_no = tl.to_no
-        where ts.stock is not null
+        <where>
+            <if test="To_No != null  and To_No != ''"> and tl.to_no like concat(#{To_No}, '%')</if>
+            <if test="uid != null  and uid != ''"> and tl.uid = #{uid}</if>
+            <if test="pn != null  and pn != ''"> and tl.pn like concat(#{pn}, '%')</if>
+            and ts.status = 2
+            and tl.status = 1
+            and ts.stock is not null
+            <if test="ShipmentNO != null  and ShipmentNO != ''"> and ts.shipment_no = #{ShipmentNO} </if>
+            <if test="po != null  and po != ''"> and tl.po = #{po}</if>
+            <if test="batch != null  and batch != ''"> and tl.batch like concat('%', #{batch}, '%')</if>
+        </where>
     </select>
+<!--    where ts.stock is not null -->
+
+
 
 </mapper>

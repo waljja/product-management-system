@@ -125,36 +125,66 @@ public class SAPUtil {
             for (int j = 0; j < rs.getNumRows(); j++) {
                 // 650开头的PN，客户为CK00的才需要写入数据库
                 if (rs.getString("MATNR").toString().substring(0, 3).equals("650") && rs.getString("KUNNR").toString().equals("CK00")) {
-                    // 获取”物料描述“包含TAOKIT或LCDKIT的信息
-                    if (rs.getString("MAKTX").toString().contains("TAOKIT") || rs.getString("MAKTX").toString().contains("LCDKIT")) {
-                        FgChecklist fgChecklist = new FgChecklist();
-                        // 工厂
-                        fgChecklist.setPlant(rs.getString("WERKS"));
-                        // PN
-                        fgChecklist.setPn(rs.getString("MATNR"));
-                        // fromstock
-                        fgChecklist.setFromStock(rs.getString("LGORT"));
-                        // 生产日期
-                        dateTime = DateUtil.parse(rs.getString("BUDAT"));
-                        fgChecklist.setProductionDate(dateTime);
-                        // 批次/批号
-                        fgChecklist.setBatch(rs.getString("CHARG"));
-                        // 工单（订单号）
-                        fgChecklist.setWo(rs.getString("AUFNR"));
-                        // 批量
-                        fgChecklist.setBatchQty(rs.getLong("MENGE"));
-                        // 物料文件（过账编号）
-                        fgChecklist.setSap101(rs.getString("MBLNR"));
-                        // 设置uid_no默认值
-                        fgChecklist.setUidNo(0l);
-                        // 设置默认status
-                        fgChecklist.setStatus(0);
 
-                        list.add(fgChecklist);
-                        rs.nextRow();
-                    } else {
-                        rs.nextRow();
-                    }
+                    FgChecklist fgChecklist = new FgChecklist();
+                    // 工厂
+                    fgChecklist.setPlant(rs.getString("WERKS"));
+                    // PN
+                    fgChecklist.setPn(rs.getString("MATNR"));
+                    // fromstock
+                    fgChecklist.setFromStock(rs.getString("LGORT"));
+                    // 生产日期
+                    dateTime = DateUtil.parse(rs.getString("BUDAT"));
+                    fgChecklist.setProductionDate(dateTime);
+                    // 批次/批号
+                    fgChecklist.setBatch(rs.getString("CHARG") == null ? "" : rs.getString("CHARG"));
+                    // 工单（订单号）
+                    fgChecklist.setWo(rs.getString("AUFNR"));
+                    // 批量
+                    fgChecklist.setBatchQty(rs.getLong("MENGE"));
+                    // 物料文件（过账编号）
+                    fgChecklist.setSap101(rs.getString("MBLNR"));
+                    // 设置uid_no默认值
+                    fgChecklist.setUidNo(0l);
+                    // 设置默认status
+                    fgChecklist.setStatus(0);
+                    // 设置客户编号
+                    fgChecklist.setClientCode(rs.getString("KUNNR"));
+
+                    list.add(fgChecklist);
+                    rs.nextRow();
+//                    // 获取”物料描述“包含TAOKIT或LCDKIT的信息
+//                    if (rs.getString("MAKTX").toString().contains("TAOKIT") || rs.getString("MAKTX").toString().contains("LCDKIT")) {
+//                        FgChecklist fgChecklist = new FgChecklist();
+//                        // 工厂
+//                        fgChecklist.setPlant(rs.getString("WERKS"));
+//                        // PN
+//                        fgChecklist.setPn(rs.getString("MATNR"));
+//                        // fromstock
+//                        fgChecklist.setFromStock(rs.getString("LGORT"));
+//                        // 生产日期
+//                        dateTime = DateUtil.parse(rs.getString("BUDAT"));
+//                        fgChecklist.setProductionDate(dateTime);
+//                        // 批次/批号
+//                        fgChecklist.setBatch(rs.getString("CHARG") == null ? "" : rs.getString("CHARG"));
+//                        // 工单（订单号）
+//                        fgChecklist.setWo(rs.getString("AUFNR"));
+//                        // 批量
+//                        fgChecklist.setBatchQty(rs.getLong("MENGE"));
+//                        // 物料文件（过账编号）
+//                        fgChecklist.setSap101(rs.getString("MBLNR"));
+//                        // 设置uid_no默认值
+//                        fgChecklist.setUidNo(0l);
+//                        // 设置默认status
+//                        fgChecklist.setStatus(0);
+//                        // 设置客户编号
+//                        fgChecklist.setClientCode(rs.getString("KUNNR"));
+//
+//                        list.add(fgChecklist);
+//                        rs.nextRow();
+//                    } else {
+//                        rs.nextRow();
+//                    }
                 } else if (rs.getString("MATNR").toString().substring(0, 3).equals("660")){
                     // PN为660开头的直接写入数据库
                     FgChecklist fgChecklist = new FgChecklist();
@@ -179,6 +209,8 @@ public class SAPUtil {
                     fgChecklist.setUidNo(0l);
                     // 设置默认status
                     fgChecklist.setStatus(0);
+                    // 设置客户编号
+                    fgChecklist.setClientCode(rs.getString("KUNNR"));
 
                     list.add(fgChecklist);
                     rs.nextRow();

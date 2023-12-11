@@ -10,6 +10,8 @@ public interface BindStockService extends IService<Inventory> {
 
     int checkUID(String uid);
 
+    int checkUID2(String uid);
+
     public String bindStock_1(String uid,String stock, String username);
 
     public String bindStock_2(String uid,String tz,String stock,String htpn,String khpn,String rectime, long qty, String clientBatch,String username) throws ParseException;
@@ -23,4 +25,5 @@ public interface BindStockService extends IService<Inventory> {
     String checkBHandQH(String toNo);
 
     int checkStatusTosQH(String toNo);
+
 }

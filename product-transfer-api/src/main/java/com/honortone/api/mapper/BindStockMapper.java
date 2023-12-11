@@ -19,6 +19,9 @@ public interface BindStockMapper extends BaseMapper<Inventory> {
     int checkUID(String uid);
 
     @DS("slave_2")
+    int checkUID2(String uid);
+
+    @DS("slave_2")
     List<Inventory> checkInfoByUid_1(String uid);
 
     @DS("slave_2")
@@ -46,6 +49,9 @@ public interface BindStockMapper extends BaseMapper<Inventory> {
     int checkTags(String clientBatch);
 
     @DS("slave_2")
+    int checkBox(String cartonNo);
+
+    @DS("slave_2")
     int insertTagsInventory(TagsInventory tagsInventory);
 
     @DS("slave_4")
@@ -65,6 +71,9 @@ public interface BindStockMapper extends BaseMapper<Inventory> {
     @DS("slave_3")
     int checkInstock(CheckList checkList);
 //    int checkInstock(CheckList checkList);
+
+    @DS("slave_3")
+    int checkInstock2(CheckList checkList);
 
     @DS("slave_2")
     CheckList checkOldUid(String uid);

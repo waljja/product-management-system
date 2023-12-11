@@ -84,7 +84,8 @@ public class KanbanServiceImpl implements KanbanService {
                             .or(i1 -> i1.eq("last_comfirm", "船务")))
                     .and(i -> i.eq("tos1.status", 0)
                             .or(i1 -> i1.eq("tos1.status", 1))
-                            .or(i2 -> i2.eq("tos1.status", 2)))
+                            .or(i2 -> i2.eq("tos1.status", 2))
+                            .or(i2 -> i2.eq("tos1.status", 3)))
                     .and(i -> i.notExists("select shipment_no\n" +
                             "               from fg_tos tos2\n" +
                             "                        left join fg_shipmentinfo ship2 on tos2.shipment_no = ship2.shipment_number\n" +
@@ -100,7 +101,8 @@ public class KanbanServiceImpl implements KanbanService {
                             .or(i1 -> i1.eq("last_comfirm", "船务")))
                     .and(i -> i.eq("tos1.status", 0)
                             .or(i1 -> i1.eq("tos1.status", 1))
-                            .or(i2 -> i2.eq("tos1.status", 2)))
+                            .or(i2 -> i2.eq("tos1.status", 2))
+                            .or(i2 -> i2.eq("tos1.status", 3)))
                     .and(i -> i.notExists("select shipment_no\n" +
                             "               from fg_tos tos2\n" +
                             "                        left join fg_shipmentinfo ship2 on tos2.shipment_no = ship2.shipment_number\n" +

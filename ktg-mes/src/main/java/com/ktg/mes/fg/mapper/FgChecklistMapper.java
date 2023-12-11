@@ -188,4 +188,8 @@ public interface FgChecklistMapper
      * @return FgChecklist
      */
     FgChecklist getPrintInfo(String uid);
+
+    int checkOut(String uid);
+
+    int checkTags(String uid);
 }

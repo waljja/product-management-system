@@ -6,18 +6,22 @@
     <resultMap type="com.honortone.api.entity.Inventory" id="BaseResultMap" >
         <id property="id" column="id"/>
         <result property="pn" column="partnumber"/>
+        <result property="pn650" column="pn650"/>
         <result property="po" column="po"/>
         <result property="batch" column="batch"/>
         <result property="uid" column="uid"/>
         <result property="uid_no" column="quantity"/>
+        <result property="tags_quantity" column="tagsQuantity"/>
         <result property="stock" column="stock"/>
         <result property="status" column="status"/>
         <result property="wo" column="wo"/>
         <result property="production_date" column="rec_time"/>
         <result property="plant" column="plant"/>
+        <result property="client_code" column="client_code"/>
         <result property="qa_sign" column="create_user"/>
         <result property="create_date" column="create_time"/>
         <result property="uid_id" column="uid_id"/>
+        <result property="pro_po" column="proPO"/>
     </resultMap>
 
     <sql id="selectFgInventoryVo">
@@ -32,14 +36,16 @@
                wo,
                rec_time,
                plant,
+               client_code,
                create_user,
                create_time,
-               uid_id
+               uid_id,
+               pro_po
         from fg_inventory
     </sql>
 
-    <select id="checkCreateTime" parameterType="java.lang.String" resultType="com.honortone.api.entity.Inventory">
-        select * from fg_inventory
+    <select id="checkCreateTime" parameterType="java.lang.String" resultMap="BaseResultMap">
+        <include refid="selectFgInventoryVo"></include>
         where uid = #{cpno} and status = 1
     </select>
     
@@ -52,10 +58,10 @@
 
     <!-- 超过半年/不发料的存到备用数据表 -->
     <insert id="insertInventoryOut" useGeneratedKeys="true" keyProperty="id">
-        insert into fg_inventory_out (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user,
-                                  create_time, uid_id, rollback_reason)
-        values (#{pn}, #{po}, #{batch}, #{uid}, #{uid_no}, #{stock}, #{status}, #{wo}, #{production_date}, #{plant}, #{qa_sign},
-                #{create_date}, #{uid_id}, #{rollbackReason})
+        insert into fg_inventory_out (partnumber, pn650, po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, client_code, create_user,
+                                  create_time, uid_id, rollback_reason, pro_po)
+        values (#{pn}, #{pn650}, #{po}, #{batch}, #{uid}, #{uid_no}, #{tagsQuantity}, #{stock}, #{status}, #{wo}, #{production_date}, #{plant}, #{client_code}, #{qa_sign},
+                #{create_date}, #{uid_id}, #{rollbackReason}, #{proPO})
     </insert>
 
     <!-- 删除库存表中不发料的数据 -->

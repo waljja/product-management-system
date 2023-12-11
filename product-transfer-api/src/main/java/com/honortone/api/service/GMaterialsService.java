@@ -1,10 +1,7 @@
 package com.honortone.api.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.honortone.api.entity.Inventory;
-import com.honortone.api.entity.ShipmentInfoByhand;
-import com.honortone.api.entity.TagsInventory;
-import com.honortone.api.entity.ToList;
+import com.honortone.api.entity.*;
 import org.apache.ibatis.annotations.Param;
 
 import javax.mail.MessagingException;
@@ -26,13 +23,15 @@ public interface GMaterialsService extends IService<Inventory> {
 
     List<ToList> downloadTono(String tono);
 
-    List<TagsInventory> selectClientTag(String clientPn);
+    List<TagsInventory> selectClientTag(String clientPn, String clientBatch);
+
+    List<TagsInventory> selectClientTag2(String clientPn, String clientBatch);
 
     ToList checkTolistUID(String uid);
 
     long getSumQuantity(String uid);
 
-    int updateTagsStauts(String clientPn, long quantity);
+    int updateTagsStauts(String clientPn, String clientBatch, long quantity);
 
     List<ToList> downloadOrder();
 
@@ -53,5 +52,9 @@ public interface GMaterialsService extends IService<Inventory> {
     List<Map<Integer, Integer>> getQuantity(String client);
 
     String updateToNo(String date, String toNo) throws MessagingException, IOException;
+
+    BoxInventory selectBox(String cartonNo);
+
+    int updateBoxStauts(String cartonNo);
 
 }

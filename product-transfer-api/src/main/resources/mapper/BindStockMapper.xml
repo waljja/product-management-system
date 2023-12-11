@@ -19,6 +19,7 @@
         <result property="create_date" column="create_time"/>
         <result property="uid_id" column="uid_id"/>
         <result property="rollbackReason" column="rollback_reason"/>
+        <result property="proPO" column="pro_po"/>
     </resultMap>
 
     <sql id="selectFgInventoryVo">
@@ -36,7 +37,8 @@
                create_user,
                create_time,
                uid_id,
-               rollback_reason
+               rollback_reason,
+               pro_po
         from fg_inventory
     </sql>
     <sql id="selectFgInventoryVo2">
@@ -54,7 +56,8 @@
                create_user,
                create_time,
                uid_id,
-               rollback_reason
+               rollback_reason,
+               pro_po
         from fg_inventory_out
     </sql>
 
@@ -62,6 +65,9 @@
     <!-- 判断是否已拣货（下架），避免重复上架 -->
     <select id="checkUID" parameterType="java.lang.String" resultType="java.lang.Integer">
         select count(*) from fg_tolist where uid = #{uid} and status = 1
+    </select>
+    <select id="checkUID2" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_inventory_out where uid = #{uid} and status = 0
     </select>
     <!-- 没有贴纸情况 and status = 1  and stock is not null and uid_id is null -->
     <select id="checkInfoByUid_1" parameterType="java.lang.String" resultMap="BaseResultMap">
@@ -76,10 +82,18 @@
     <!-- 没有贴纸情况 -->
 
     <insert id="toinsert" useGeneratedKeys="true" keyProperty="id">
-        insert into fg_inventory (partnumber, pn650, po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, create_user,
-                                  create_time, uid_id, rollback_reason)
-        values (#{pn}, #{pn650}, #{po}, #{batch}, #{uid}, #{uid_no}, #{tagsQuantity}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{qa_sign},
-                now(), #{uid_id}, #{rollbackReason})
+        insert into fg_inventory (partnumber, pn650, po, client_po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, client_code, create_user,
+                                  create_time, uid_id, rollback_reason, pro_po)
+        values (#{pn}, #{pn650}, #{po}, #{clientPO}, #{batch}, #{uid}, #{uid_no}, #{tagsQuantity}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{client_code}, #{qa_sign},
+                now(), #{uid_id}, #{rollbackReason}, #{proPO})
+    </insert>
+
+    <insert id="batchInsertInventory" parameterType="java.util.List">
+        insert into fg_inventory (partnumber, pn650, po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, rollback_reason, pro_po)
+        values
+        <foreach collection="list" item="item" separator=",">
+        (#{pn}, #{pn650}, #{po}, #{batch}, #{uid}, #{uid_no}, #{tagsQuantity}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{qa_sign}, now(), #{uid_id}, #{rollbackReason}, #{proPO})
+        </foreach>
     </insert>
 
     <update id="updateInventory">
@@ -119,6 +133,9 @@
     <!-- 是否贴纸已绑过 -->
     <select id="checkTags" parameterType="java.lang.String" resultType="java.lang.Integer">
         select count(*) from fg_tags_inventory where client_batch = #{clientBatch}
+    </select>
+    <select id="checkBox" parameterType="java.lang.String" resultType="java.lang.Integer">
+        select count(*) from fg_box_inventory where carton_no = #{cartonNo}
     </select>
 
     <!-- 保存贴纸信息（珠飞） -->
@@ -167,7 +184,7 @@
 
     <!-- 根据UID查询绑定的箱号数量 -->
     <select id="checkBoxQuantity" parameterType="java.lang.String" resultType="java.lang.Long">
-        select isnull(sum(carton_qty), 0) sumqty from fg_box_inventory where uid = #{uid}
+        select ifnull(sum(carton_qty), 0) sumqty from fg_box_inventory where uid = #{uid}
     </select>
 
     <!-- 修改UID库存数量（贴纸数量累加） -->
@@ -207,6 +224,15 @@
         where [PartNumber] = #{pn}
           and [Plant] = #{plant}
           and [batch] = #{batch}
+          and [TransactionType] = '315'
+
+    </select>
+
+    <select id="checkInstock2" parameterType="com.honortone.api.entity.CheckList" resultType="java.lang.Integer">
+        select count(*) from [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        where [PartNumber] = #{pn}
+          and [Plant] = #{plant}
+          and [RefDocNo] = #{sap101}
           and [TransactionType] = '315'
 
     </select>
@@ -254,7 +280,9 @@
 
     <!-- 根据To单获取走货信息 -->
     <select id="getShipmentInfoBytoNo" parameterType="java.lang.String" resultType="com.honortone.api.entity.FgShipmentInfo">
-        select t.shipment_no ShipmentNO, s.shipment_date ShipmentDate  from fg_tos t left join fg_shipmentinfo s on t.shipment_no = s.shipment_number where t.to_no = #{toNo} limit 1
+        select t.shipment_no ShipmentNO, s.shipment_date ShipmentDate
+        from fg_tos t left join fg_shipmentinfo s on t.shipment_no = s.shipment_number
+        where t.to_no = #{toNo} limit 1
     </select>
 
     <!-- 检查是欠货单是否已补货 -->

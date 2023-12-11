@@ -23,6 +23,8 @@ public class BoxInventory implements Serializable {
     @Excel(name = "箱号")
     private String cartonNo;
 
+
+
     /** 工单 */
     @Excel(name = "工单")
     private String wo;

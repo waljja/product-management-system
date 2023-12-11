@@ -1,6 +1,7 @@
 package com.ktg.mes.fg.mapper;
 
 import com.ktg.mes.fg.domain.FgInventory;
+import com.ktg.mes.fg.domain.FgTagsInventory;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -31,6 +32,8 @@ public interface FgInventoryMapper {
      * @return 成品库存集合
      */
      List<FgInventory> selectFgInventoryList(FgInventory fgInventory);
+
+    List<FgInventory> selectFgInventoryList2(FgInventory fgInventory);
 
     /**
      * 新增成品库存
@@ -83,4 +86,32 @@ public interface FgInventoryMapper {
      int updateStatusByUid(String uid);
 
      FgInventory getInventoryInfo(String uid);
+
+     /** ---------------------------- 贴纸 -------------------------------- */
+
+     /**
+      * 查询贴纸信息
+      * */
+     List<FgTagsInventory> getTagsInventoryInfo(String uid);
+
+
+    /******************************************** 650 绑定 660 *********************************************/
+    /** 根据ID获取信息 */
+    List<FgInventory> getInfoByID(Long[] ids);
+
+    /** 有批量设置650对应660栏位为空，批次为660批次  */
+    int updatePNAndBacth(List<FgInventory> list);
+
+    int updatePNByUID(String uid);
+
+    List<FgInventory> getCK00Info(String batch);
+
+    int checkPN(@Param("pn") String pn, @Param("toNo") String toNo, @Param("po") String po);
+
+    int updateQHQuantity(@Param("toNo") String toNo, @Param("pn") String pn, @Param("po") String po, @Param("Quantity") long Quantity);
+
+    long checkQHQuantity(@Param("toNo") String toNo, @Param("pn") String pn, @Param("po") String po, @Param("Quantity") long Quantity);
+
+    int updateQHStatus(@Param("toNo") String toNo, @Param("pn") String pn, @Param("po") String po, @Param("Quantity") long Quantity);
+
 }

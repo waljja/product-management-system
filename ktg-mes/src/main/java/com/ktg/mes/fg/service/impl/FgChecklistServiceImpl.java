@@ -20,6 +20,7 @@ import com.ktg.common.utils.file.FileUploadUtils;
 import com.ktg.common.utils.file.FileUtils;
 import com.ktg.mes.fg.domain.*;
 import com.ktg.mes.fg.domain.Dto.FgTosAndTosListDto;
+import com.ktg.mes.fg.domain.Dto.ReturnResult;
 import com.ktg.mes.fg.domain.Dto.ShipmentPart;
 import com.ktg.mes.fg.mapper.FgInventoryMapper;
 import com.ktg.mes.fg.mapper.FgTosMapper;
@@ -443,8 +444,262 @@ public class FgChecklistServiceImpl implements IFgChecklistService
      *
      * @return String
      */
+//    @Override
+//    public String generateTO_NO() throws Exception {
+//        String isok = "";
+//        try {
+//            System.out.println("starting..  download start....." + new Date());
+//
+//            Date date = new Date();
+//            Calendar calendar = Calendar.getInstance();
+//            calendar.setTime(date);
+//            // PMC和船务确认的信息都是当天日期的下一周/3天
+//            calendar.add(Calendar.DAY_OF_MONTH, 3);
+//            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
+//            String startDate = simpleDateFormat.format(date);
+//            String endDate = simpleDateFormat.format(calendar.getTime());
+//
+//            SAPUtil sapUtil = new SAPUtil();
+//            List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS("20231013", "20231014");
+//            if (list.size() == 0)
+//                throw new RuntimeException("not find info...");
+//
+//            // 从SAP导入走货资料（判空、查重、船务/货仓）
+//            for (int i = 0; i < list.size(); i++) {
+//                FgShipmentInfo fgShipmentInfo = list.get(i);
+//                if (fgShipmentInfo.getSapPn() != null && fgShipmentInfo.getLastComfirm() != null && (fgShipmentInfo.getLastComfirm().toString().equals("船务") || fgShipmentInfo.getLastComfirm().toString().equals("货仓")) &&
+//                        fgTosMapper.checkInfoFs(fgShipmentInfo) == 0) {
+//
+//                    int n = fgTosMapper.insertFgShipmentInfo(fgShipmentInfo);
+//
+//                } else if (fgTosMapper.checkInfoFs3(fgShipmentInfo) > 0) {
+//                    fgTosMapper.updateShipmentQuantity(fgShipmentInfo);
+//                }
+//            }
+//
+//            List<String[]> strings = new ArrayList<>();
+//            // 统计相同走货信息（PN、PO相同则数量累加【相当于去重】） sql语句直接判定船务/货仓
+//            List<ShipmentPart> list1 = fgTosMapper.selectShipmentPart("船务");
+//            for (int i = 0; i < list1.size(); i++) {
+//
+//                FgTos fgTos = new FgTos();
+//                FgToList fgToList = new FgToList();
+//                // 统计同一个走货单数量总数
+//                long shipment_qty = fgTosMapper.getQuantityByshipmentno(list1.get(i).getShipmentNO().toString());
+//                System.out.println("测试2" + list1.get(i).getPn().toString() + list1.get(i).getPo().toString() + "ss" + list1.get(i).getBatchsum());
+//                // 走货信息逐条 根据 PN PO 船务关联库存表查询
+//                List<FgTosAndTosListDto> fgTosAndTosListDtos = fgTosMapper.getTosAndTOListInfo(list1.get(i).getShipmentNO().toString(), list1.get(i).getPn().toString(), list1.get(i).getPo().toString(), "船务");
+//                // 查询是否已存在备货单/欠货单
+//                String BH = fgTosMapper.checkTosByshipmentno_BH(list1.get(i).getShipmentNO().toString()) == null ? "" : fgTosMapper.checkTosByshipmentno_BH(list1.get(i).getShipmentNO().toString());
+//                String QH = fgTosMapper.checkTosByshipmentno_QH(list1.get(i).getShipmentNO().toString()) == null ? "" : fgTosMapper.checkTosByshipmentno_QH(list1.get(i).getShipmentNO().toString());
+//                // 当走货单的某个PN  PO在库存表中无数据，产生欠货单（欠货数量为改PN的批量），并邮件提醒
+//                if (fgTosAndTosListDtos.size() == 0) {
+//                    System.out.println("为什么产生欠货单" + list1.get(i).getShipmentNO() + list1.get(i).getPn() + list1.get(i).getPo());
+//                    if (!QH.contains("QH")) {
+//                        QH = generateTo_No("欠货单");
+//                        // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
+//                        fgTos = setFgTos(QH, list1.get(i).getShipmentNO().toString(), 0l, list1.get(i).getCarno() == null ? "" : list1.get(i).getCarno().toString(), list1.get(i).getPlant().toString(), 3);
+//                        fgTos.setCreateTime(date);
+//                        fgTosMapper.insertFgTos(fgTos);
+//                    }
+//                    // 没有批次、库位、UID  状态（0备货单，1已拣货，2欠货单，3欠货单已备货）
+//                    fgToList = setFgToList(fgToList, QH, list1.get(i).getBatchsum(), 2);
+//                    fgToList.setPn(list1.get(i).getPn().toString());
+//                    fgToList.setPo(list1.get(i).getPo().toString());
+//                    fgToList.setSap_qty(list1.get(i).getBatchsum());
+//                    fgToList.setCreateTime(date);
+//                    fgTosMapper.insertFgTolist(fgToList);
+//                    // 在TO明细表查询欠货总数赋值到TO管理表
+//                    long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
+//                    fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
+//                    fgTosMapper.updateQuantity2(sumqty, QH);
+//                    // 用于邮件提醒欠货 欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量，
+//                    String[] s = new String[6];
+//                    s[0] = QH;
+//                    s[1] = list1.get(i).getShipmentNO().toString();
+//                    s[2] = list1.get(i).getShipmentDate() + "";
+//                    s[3] = list1.get(i).getPn().toString();
+//                    s[4] = shipment_qty + "";
+//                    s[5] = list1.get(i).getBatchsum() + "";
+//                    strings.add(s);
+//
+//                } else {
+//                    if (!BH.contains("BH")) {
+//                        BH = generateTo_No("备货单");
+//                        // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
+//                        fgTos = setFgTos(BH, list1.get(i).getShipmentNO().toString(), shipment_qty, list1.get(i).getCarno() == null ? "" : list1.get(i).getCarno().toString(), list1.get(i).getPlant().toString(), 0);
+//                        fgTos.setCreateTime(date);
+//                        // TO管理
+//                        fgTosMapper.insertFgTos(fgTos);
+//                    }
+//                    long sum_uidno = 0;
+//                    // 一条走货信息关联到多条库存数据，该数据根据条件逐条产生备货单/欠货单
+//                    for (int j = 0; j < fgTosAndTosListDtos.size(); j++) {
+//                        // 走货信息的批量 == 关联库存数据的总数量（即uid_no之和），直接插入TO明细表生成备货单，备货单号使用TO管理对应走货单的单号
+//                        if (fgTosAndTosListDtos.get(j).getSum_uidno() == list1.get(i).getBatchsum()) {
+//                            System.out.println("产生备货单1");
+//                            // TO明细
+//                            BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+//                            // 使用TO管理的备货单（即产生关联）
+//                            fgToList.setTo_No(BH);
+//                            fgToList.setCreateTime(date);
+//                            // 状态（0备货单，1已拣货，2欠货单，3欠货单已备货）
+//                            fgToList.setStatus(0);
+//                            fgTosMapper.insertFgTolist(fgToList);
+//                            fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                            long toNoSum = fgTosMapper.gettoNoSum(BH);
+//                            fgTosMapper.updateTosQuantity(toNoSum, BH);
+//                            fgTosMapper.updateTolistQuantity(toNoSum, BH);
+//
+//                        } else if (fgTosAndTosListDtos.get(j).getSum_uidno() > list1.get(i).getBatchsum()) {
+//                            System.out.println("产生备货单2");
+//                            sum_uidno += fgTosAndTosListDtos.get(j).getQuantity();
+//                            System.out.println("sa" + sum_uidno);
+//                            long qty = 0l;
+//                            if (sum_uidno > list1.get(i).getBatchsum()) {
+//                                // 累加到大于临界值情况 提醒拆分该成品单后 减去多出的部分 生成欠货单（后续判断库存表是否有拆分的数据 再生成新备货单）
+//                                // 生成欠货单前判断TO管理是否已存在该走货单的欠货单，存在则直接在TO明细表生成欠货单，不存在则现在TO管理生成欠货单，再存到TO明细表
+////                                if (!QH.contains("QH")) {
+////                                    QH = generateTo_No("欠货单");
+////                                    // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
+////                                    fgTos = setFgTos(QH, list1.get(i).getShipmentNO().toString(), shipment_qty, list1.get(i).getCarno() == null ? "" : list1.get(i).getCarno().toString(), list1.get(i).getPlant().toString(), 3);
+////                                    fgTosMapper.insertFgTos(fgTos);
+////                                }
+////                                // 欠货数量（即所需要备货的数量）
+////                                qty = sum_uidno - list1.get(i).getBatchsum();
+////                                BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+////                                fgToList.setBatch("");
+////                                fgToList.setStock("");
+////                                fgToList.setUid("");
+////                                // 统一赋值
+////                                fgToList = setFgToList(fgToList, QH, qty, 0);
+////                                fgTosMapper.insertFgTolist(fgToList);
+////                                long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
+////                                fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
+////                                String[] s = new String[2];
+////                                s[0] = fgTosAndTosListDtos.get(j).getUid().toString();
+////                                s[1] = qty + "";
+////                                strings.add(s);
+//                                // 累加到当前UID后数量比批量大，则按到批量的数量进行备货，多出的数量在PDA拣货时提醒拆箱，若没拆箱不给拣货，（不需要产生备货单）
+//                                // 该UID需备货的数量(在PDA显示的数量，实际可能还未拆分)
+//                                long qtyy = sum_uidno - list1.get(i).getBatchsum();
+//                                qty = fgTosAndTosListDtos.get(j).getQuantity() - qtyy;
+//                                System.out.println("jtjtjtjt" + qty);
+//                                BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+//                                fgToList = setFgToList(fgToList, BH, qty, 0);
+//                                fgToList.setCreateTime(date);
+//                                fgTosMapper.insertFgTolist(fgToList);
+//                                fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                                long toNoSum = fgTosMapper.gettoNoSum(BH);
+//                                System.out.println("jjjjtttt" + toNoSum);
+//                                fgTosMapper.updateTosQuantity(toNoSum, BH);
+//                                fgTosMapper.updateTolistQuantity(toNoSum, BH);
+//                                break;
+//
+//                            } else if (sum_uidno == list1.get(i).getBatchsum()) {
+//                                // 累加到刚好等于的情况 则备货后直接break退出循环，后面的关联数据就不用进行备货了
+//                                BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+//                                fgToList = setFgToList(fgToList, BH, 0l, 0);
+//                                fgToList.setCreateTime(date);
+//                                fgTosMapper.insertFgTolist(fgToList);
+//                                fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                                long toNoSum = fgTosMapper.gettoNoSum(BH);
+//                                fgTosMapper.updateTosQuantity(toNoSum, BH);
+//                                fgTosMapper.updateTolistQuantity(toNoSum, BH);
+//                                break;
+//                            } else {
+//                                // 累加还未达到临界值前 直接将关联的数据直接存到TO明细表里作为备货单
+//                                System.out.println("11111");
+//                                BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+//                                fgToList = setFgToList(fgToList, BH, 0l, 0);
+//                                fgToList.setCreateTime(date);
+//                                fgTosMapper.insertFgTolist(fgToList);
+//                                fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                                long toNoSum = fgTosMapper.gettoNoSum(BH);
+//                                fgTosMapper.updateTosQuantity(toNoSum, BH);
+//                                fgTosMapper.updateTolistQuantity(toNoSum, BH);
+//                            }
+//                            System.out.println("邮件提醒还未拆箱");
+//                        } else if (fgTosAndTosListDtos.get(j).getSum_uidno() < list1.get(i).getBatchsum()) {
+//                            System.out.println("产生备货单3");
+//                            sum_uidno += fgTosAndTosListDtos.get(j).getQuantity();
+//                            // 临界值为库存总数
+//                            if (sum_uidno == fgTosAndTosListDtos.get(j).getSum_uidno()) {
+//                                BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+//                                fgToList = setFgToList(fgToList, BH, 0l, 0);
+//                                fgToList.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
+//                                fgToList.setCreateTime(date);
+//                                fgTosMapper.insertFgTolist(fgToList);
+//                                fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                                long toNoSum = fgTosMapper.gettoNoSum(BH);
+//                                fgTosMapper.updateTosQuantity(toNoSum, BH);
+//                                fgTosMapper.updateTolistQuantity(toNoSum, BH);
+//                                // 总数小于 批次总数则产生备货单（即剩下的数量为欠货数量）
+//                                if (!QH.contains("QH")) {
+//                                    QH = generateTo_No("欠货单");
+//                                    fgTos = setFgTos(QH, list1.get(i).getShipmentNO().toString(), shipment_qty, list1.get(i).getCarno() == null ? "" : list1.get(i).getCarno().toString(), list1.get(i).getPlant().toString(), 3);
+//                                    fgTos.setCreateTime(date);
+//                                    fgTosMapper.insertFgTos(fgTos);
+//                                }
+//                                long qty = list1.get(i).getBatchsum() - fgTosAndTosListDtos.get(j).getSum_uidno();
+//                                BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+//                                fgToList.setBatch("");
+//                                fgToList.setStock("");
+//                                fgToList.setUid("");
+//                                fgToList.setQuantity(qty);
+//                                // 将欠料数存到TO明细表
+//                                fgToList = setFgToList(fgToList, QH, qty, 2);
+//                                fgToList.setCreateTime(date);
+//                                fgTosMapper.insertFgTolist(fgToList);
+//                                long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
+//                                fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
+//                                fgTosMapper.updateQuantity2(sumqty, QH);
+//                                // 用于邮件提醒欠货 欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量
+//                                String[] s = new String[6];
+//                                s[0] = QH;
+//                                s[1] = fgTosAndTosListDtos.get(j).getShipmentNO().toString();
+//                                s[2] = list1.get(i).getShipmentDate() + "";
+//                                s[3] = fgTosAndTosListDtos.get(j).getPn().toString();
+//                                s[4] = list1.get(i).getBatchsum() + "";
+//                                s[5] = sumqty + "";
+//                                strings.add(s);
+//                                break;
+//                            } else {
+//                                BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
+//                                fgToList = setFgToList(fgToList, BH, 0l, 0);
+//                                fgToList.setCreateTime(date);
+//                                fgTosMapper.insertFgTolist(fgToList);
+//                                fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
+//                                long toNoSum = fgTosMapper.gettoNoSum(BH);
+//                                fgTosMapper.updateTosQuantity(toNoSum, BH);
+//                                fgTosMapper.updateTolistQuantity(toNoSum, BH);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            // 更新这批走货信息状态（避免重复备货）、不在以上循环更新是因为上面需要获取走货总数，状态更新了会获取出错
+//            for (int i = 0; i < list1.size(); i++) {
+//                fgTosMapper.updatePMCstatus(list1.get(i).getPn().toString(), list1.get(i).getPo().toString(), "船务", list1.get(i).getShipmentNO().toString());
+//            }
+//            // 邮件提醒欠货/拆分成品单
+//            if (strings.size() > 0) {
+//                System.out.println("邮件提醒欠货***");
+//                sendMail_QH(strings);
+//            }
+//
+//
+//            isok = "OK";
+//            System.out.println("The end...." + new Date());
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        return isok;
+//    }
+
     @Override
-    public String generateTO_NO() throws Exception {
+    public String generateTO_NO(Date shipmentDate) throws Exception {
         String isok = "";
         try {
             System.out.println("starting..  download start....." + new Date());
@@ -453,15 +708,41 @@ public class FgChecklistServiceImpl implements IFgChecklistService
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(date);
             // PMC和船务确认的信息都是当天日期的下一周/3天
-            calendar.add(Calendar.DAY_OF_MONTH, 3);
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
             String startDate = simpleDateFormat.format(date);
             String endDate = simpleDateFormat.format(calendar.getTime());
-
+            // 手动选择日期产生TO
+            String ShipmentDate = simpleDateFormat.format(shipmentDate == null ? new Date() : shipmentDate);
             SAPUtil sapUtil = new SAPUtil();
-            List<FgShipmentInfo> list = sapUtil.Z_HTMES_ZSDSHIPLS(startDate, endDate);
+            List<FgShipmentInfo> list = new ArrayList<>();
+            System.out.println(ShipmentDate + endDate + startDate);
+            System.out.println(ShipmentDate.compareTo(endDate));
+            // 日期为20230101表示没有手动选择（即自动产生）
+            if (ShipmentDate.compareTo(endDate) > 0) {
+                System.out.println("选择日期大于自动日期（按选择日期产生）");
+                list = sapUtil.Z_HTMES_ZSDSHIPLS(ShipmentDate, ShipmentDate);
+            } else if (ShipmentDate.compareTo(startDate) < 0) {
+                System.out.println("选择日期小于自动日期（按自动日期产生）");
+                list = sapUtil.Z_HTMES_ZSDSHIPLS(startDate, endDate);
+            } else {
+                System.out.println("选择日期介于最大和最小日期之间（按自动日期产生）");
+                list = sapUtil.Z_HTMES_ZSDSHIPLS(startDate, endDate);
+            }
+
+            // list = sapUtil.Z_HTMES_ZSDSHIPLS("20231024", "20231024");
             if (list.size() == 0)
                 throw new RuntimeException("not find info...");
+
+            List<FgShipmentInfo> ck00_list = new ArrayList<>();
+            List<FgShipmentInfo> llist = new ArrayList<>();
+            for (int i = 0;i < list.size();i++){
+                if (list.get(i).getClientCode() != null && list.get(i).getClientCode().equals("CK00")) {
+                    ck00_list.add(list.get(i));
+                } else {
+                    llist.add(list.get(i));
+                }
+            }
 
             // 从SAP导入走货资料（判空、查重、船务/货仓）
             for (int i = 0; i < list.size(); i++) {
@@ -475,7 +756,10 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                     fgTosMapper.updateShipmentQuantity(fgShipmentInfo);
                 }
             }
+            // CK00 单独产生TO
+            // GenerateToNo_CK00(ck00_list);
 
+            // 存放欠货信息 -----------   （以下产生TO与CK00无关）
             List<String[]> strings = new ArrayList<>();
             // 统计相同走货信息（PN、PO相同则数量累加【相当于去重】） sql语句直接判定船务/货仓
             List<ShipmentPart> list1 = fgTosMapper.selectShipmentPart("船务");
@@ -498,6 +782,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                         QH = generateTo_No("欠货单");
                         // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
                         fgTos = setFgTos(QH, list1.get(i).getShipmentNO().toString(), 0l, list1.get(i).getCarno() == null ? "" : list1.get(i).getCarno().toString(), list1.get(i).getPlant().toString(), 3);
+                        fgTos.setCreateTime(date);
                         fgTosMapper.insertFgTos(fgTos);
                     }
                     // 没有批次、库位、UID  状态（0备货单，1已拣货，2欠货单，3欠货单已备货）
@@ -505,6 +790,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                     fgToList.setPn(list1.get(i).getPn().toString());
                     fgToList.setPo(list1.get(i).getPo().toString());
                     fgToList.setSap_qty(list1.get(i).getBatchsum());
+                    fgToList.setCreateTime(date);
                     fgTosMapper.insertFgTolist(fgToList);
                     // 在TO明细表查询欠货总数赋值到TO管理表
                     long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
@@ -525,6 +811,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                         BH = generateTo_No("备货单");
                         // 状态（0可备货，1备货中，2备货完成，3欠货中，4欠货单已备货）
                         fgTos = setFgTos(BH, list1.get(i).getShipmentNO().toString(), shipment_qty, list1.get(i).getCarno() == null ? "" : list1.get(i).getCarno().toString(), list1.get(i).getPlant().toString(), 0);
+                        fgTos.setCreateTime(date);
                         // TO管理
                         fgTosMapper.insertFgTos(fgTos);
                     }
@@ -538,6 +825,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                             BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
                             // 使用TO管理的备货单（即产生关联）
                             fgToList.setTo_No(BH);
+                            fgToList.setCreateTime(date);
                             // 状态（0备货单，1已拣货，2欠货单，3欠货单已备货）
                             fgToList.setStatus(0);
                             fgTosMapper.insertFgTolist(fgToList);
@@ -582,6 +870,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 System.out.println("jtjtjtjt" + qty);
                                 BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
                                 fgToList = setFgToList(fgToList, BH, qty, 0);
+                                fgToList.setCreateTime(date);
                                 fgTosMapper.insertFgTolist(fgToList);
                                 fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
                                 long toNoSum = fgTosMapper.gettoNoSum(BH);
@@ -594,6 +883,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 // 累加到刚好等于的情况 则备货后直接break退出循环，后面的关联数据就不用进行备货了
                                 BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
                                 fgToList = setFgToList(fgToList, BH, 0l, 0);
+                                fgToList.setCreateTime(date);
                                 fgTosMapper.insertFgTolist(fgToList);
                                 fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
                                 long toNoSum = fgTosMapper.gettoNoSum(BH);
@@ -605,6 +895,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 System.out.println("11111");
                                 BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
                                 fgToList = setFgToList(fgToList, BH, 0l, 0);
+                                fgToList.setCreateTime(date);
                                 fgTosMapper.insertFgTolist(fgToList);
                                 fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
                                 long toNoSum = fgTosMapper.gettoNoSum(BH);
@@ -620,6 +911,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
                                 fgToList = setFgToList(fgToList, BH, 0l, 0);
                                 fgToList.setQuantity(fgTosAndTosListDtos.get(j).getQuantity());
+                                fgToList.setCreateTime(date);
                                 fgTosMapper.insertFgTolist(fgToList);
                                 fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
                                 long toNoSum = fgTosMapper.gettoNoSum(BH);
@@ -629,6 +921,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 if (!QH.contains("QH")) {
                                     QH = generateTo_No("欠货单");
                                     fgTos = setFgTos(QH, list1.get(i).getShipmentNO().toString(), shipment_qty, list1.get(i).getCarno() == null ? "" : list1.get(i).getCarno().toString(), list1.get(i).getPlant().toString(), 3);
+                                    fgTos.setCreateTime(date);
                                     fgTosMapper.insertFgTos(fgTos);
                                 }
                                 long qty = list1.get(i).getBatchsum() - fgTosAndTosListDtos.get(j).getSum_uidno();
@@ -639,6 +932,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                                 fgToList.setQuantity(qty);
                                 // 将欠料数存到TO明细表
                                 fgToList = setFgToList(fgToList, QH, qty, 2);
+                                fgToList.setCreateTime(date);
                                 fgTosMapper.insertFgTolist(fgToList);
                                 long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
                                 fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
@@ -656,6 +950,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
                             } else {
                                 BeanUtil.copyProperties(fgTosAndTosListDtos.get(j), fgToList, true);
                                 fgToList = setFgToList(fgToList, BH, 0l, 0);
+                                fgToList.setCreateTime(date);
                                 fgTosMapper.insertFgTolist(fgToList);
                                 fgInventoryMapper.updateStatusByUid(fgTosAndTosListDtos.get(j).getUid().toString());
                                 long toNoSum = fgTosMapper.gettoNoSum(BH);
@@ -687,7 +982,197 @@ public class FgChecklistServiceImpl implements IFgChecklistService
     }
 
     /**
-     * 根据FG + BH或QH + 年、月、日、时、分、秒、毫秒（三位数） 生成备货单/备货单
+     * CK00 客户产生TO单
+     * */
+    public void GenerateToNo_CK00(List<FgShipmentInfo> list) {
+
+        Date date = new Date();
+        try {
+
+            List<String[]> strings = new ArrayList<>();
+            // 获取650对应的660 sql语句直接判定船务/货仓
+            List<ShipmentPart> list1 = fgTosMapper.selectShipmentPartCK00("船务");
+            for (int i = 0; i < list1.size(); i++) {
+                // 查询是否已存在备货单/欠货单
+                String BH = fgTosMapper.checkTosByshipmentno_BH(list1.get(i).getShipmentNO().toString()) == null ? "" : fgTosMapper.checkTosByshipmentno_BH(list1.get(i).getShipmentNO().toString());
+                String QH = fgTosMapper.checkTosByshipmentno_QH(list1.get(i).getShipmentNO().toString()) == null ? "" : fgTosMapper.checkTosByshipmentno_QH(list1.get(i).getShipmentNO().toString());
+                // 根据660PN、PO查询660对应是否都对应4个650
+                List<String> stringList = fgTosMapper.checkCount(list1.get(i));
+                if (stringList.size() != 4) {
+                    System.out.println("660产生欠货单" + list1.get(i).getPn());
+                    // （不等）则660产生欠货单
+                    FgTos fgTos = new FgTos();
+                    FgToList fgToList = new FgToList();
+                    if ("".equals(QH)) {
+                        QH = generateTo_No("欠货单");
+                        fgTos.setTo_No(QH);
+                        fgTos.setShipmentNO(list1.get(i).getShipmentNO().toString());
+                        fgTos.setSap_qty(list1.get(i).getBatchsum());
+                        fgTos.setCarNo(list1.get(i).getCarno());
+                        fgTos.setPlant(list1.get(i).getPlant());
+                        fgTos.setStatus(3);
+                        fgTos.setCreateTime(date);
+                        // 插入TO管理
+                        fgTosMapper.insertFgTos(fgTos);
+                    }
+                    fgToList.setTo_No(QH);
+                    fgToList.setPn(list1.get(i).getPn());
+                    fgToList.setPo(list1.get(i).getPo());
+                    fgToList.setQuantity(list1.get(i).getBatchsum());
+                    fgToList.setSap_qty(list1.get(i).getBatchsum());
+                    fgToList.setStatus(2);
+                    fgToList.setCreateTime(date);
+                    fgTosMapper.insertFgTolist(fgToList);
+                    long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
+                    fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
+                    fgTosMapper.updateQuantity2(sumqty, QH);
+                    // 用于邮件提醒欠货 欠货TO单，走货流水号，走货日期，PN，走货数量，欠货数量，
+                    String[] s = new String[6];
+                    s[0] = QH;
+                    s[1] = list1.get(i).getShipmentNO().toString();
+                    s[2] = list1.get(i).getShipmentDate() + "";
+                    s[3] = list1.get(i).getPn().toString();
+                    s[4] = list1.get(i).getBatchsum() + "";
+                    s[5] = list1.get(i).getBatchsum() + "";
+                    strings.add(s);
+
+                } else {
+                    FgTos fgTos = new FgTos();
+                    FgToList fgToList = new FgToList();
+
+                    // 查询每个650对应工单数量累加是否都等于走货数量 （650可能绑多个660，因此需加上660PN）
+                    System.out.println("650Pn" + stringList.get(0).toString() + stringList.get(1).toString() +
+                            stringList.get(2).toString() + stringList.get(3).toString());
+                    ReturnResult returnResult = fgTosMapper.checkSumByWO(stringList.get(0).toString(), stringList.get(1).toString(),
+                            stringList.get(2).toString(), stringList.get(3).toString(), list1.get(i).getPn().toString(), list1.get(i).getPo().toString(), list1.get(i).getBatchsum());
+                    if (returnResult.getFlag1().equals("false") || returnResult.getFlag2().equals("false") || returnResult.getFlag3().equals("false") || returnResult.getFlag4().equals("false")) {
+                        System.out.println("660产生欠货单-650层" + list1.get(i).getPn());
+                        // 产生欠货单
+                        if ("".equals(QH)) {
+                            QH = generateTo_No("欠货单");
+                            fgTos.setTo_No(QH);
+                            fgTos.setShipmentNO(list1.get(i).getShipmentNO().toString());
+                            fgTos.setSap_qty(list1.get(i).getBatchsum());
+                            fgTos.setCarNo(list1.get(i).getCarno());
+                            fgTos.setPlant(list1.get(i).getPlant());
+                            fgTos.setStatus(3);
+                            fgTos.setCreateTime(date);
+                            // 插入TO管理
+                            fgTosMapper.insertFgTos(fgTos);
+                        }
+                        fgToList.setTo_No(QH);
+                        fgToList.setPn(list1.get(i).getPn());
+                        fgToList.setPo(list1.get(i).getPo());
+                        fgToList.setQuantity(list1.get(i).getBatchsum());
+                        fgToList.setSap_qty(list1.get(i).getBatchsum());
+                        fgToList.setStatus(2);
+                        fgToList.setCreateTime(date);
+                        fgTosMapper.insertFgTolist(fgToList);
+                        // 在TO明细表查询欠货总数赋值到TO管理表
+                        long sumqty = fgTosMapper.getSumqty(list1.get(i).getShipmentNO().toString());
+                        fgTosMapper.updateQuantity(sumqty, list1.get(i).getShipmentNO().toString());
+                        fgTosMapper.updateQuantity2(sumqty, QH);
+                        String[] s = new String[6];
+                        s[0] = QH;
+                        s[1] = list1.get(i).getShipmentNO().toString();
+                        s[2] = list1.get(i).getShipmentDate() + "";
+                        s[3] = list1.get(i).getPn().toString();
+                        s[4] = list1.get(i).getBatchsum() + "";
+                        s[5] = list1.get(i).getBatchsum() + "";
+                        strings.add(s);
+
+                    } else {
+                        System.out.println("660产生备货单" + list1.get(i).getPn());
+                        // 产生备货单
+                        if ("".equals(BH)) {
+                            BH = generateTo_No("备货单");
+                            fgTos.setTo_No(BH);
+                            fgTos.setShipmentNO(list1.get(i).getShipmentNO().toString());
+                            fgTos.setSap_qty(list1.get(i).getBatchsum());
+                            fgTos.setCarNo(list1.get(i).getCarno());
+                            fgTos.setPlant(list1.get(i).getPlant());
+                            fgTos.setStatus(0);
+                            fgTos.setCreateTime(date);
+                            // 插入TO管理
+                            fgTosMapper.insertFgTos(fgTos);
+                        }
+
+                        // 扫650下架需预留每个650
+                        List<String> stringList1 = new ArrayList<>();
+                        stringList1.add(returnResult.getFlag1());
+                        stringList1.add(returnResult.getFlag2());
+                        stringList1.add(returnResult.getFlag3());
+                        stringList1.add(returnResult.getFlag4());
+                        for (int j = 0;j < stringList.size();j++) {
+                            List<ReturnResult> returnResult1 = fgTosMapper.getInfo650(stringList.get(j).toString(), list1.get(i).getPn(), list1.get(i).getPo(), list1.get(i).getBatchsum(), stringList1.get(j));
+                            System.out.println("获取650信息" + returnResult1.toString());
+
+                            for (int z = 0;z < returnResult1.size();z++){
+                                fgToList.setTo_No(BH);
+                                fgToList.setUid(returnResult1.get(z).getUid());
+                                fgToList.setPn(returnResult1.get(z).getPn());
+                                fgToList.setPo(list1.get(i).getPo());
+                                fgToList.setQuantity(returnResult1.get(z).getQuantity());
+                                fgToList.setSap_qty(list1.get(i).getBatchsum());
+                                fgToList.setStock(returnResult1.get(z).getStock());
+                                fgToList.setStatus(0);
+                                fgToList.setCreateTime(date);
+                                fgTosMapper.insertFgTolist(fgToList);
+                                // 库存状态为 已预留
+                                fgInventoryMapper.updateStatusByUid(returnResult1.get(z).getUid());
+                            }
+                        }
+                        // 更新TOs总数
+                        long toNoSum = fgTosMapper.gettoNoSum(BH);
+                        fgTosMapper.updateTosQuantity(toNoSum, BH);
+                        fgTosMapper.updateTolistQuantity(toNoSum, BH);
+
+                    }
+                }
+
+            }
+            // 更新这批走货信息状态（避免重复备货）、不在以上循环更新是因为上面需要获取走货总数，状态更新了会获取出错
+            for (int i = 0; i < list1.size(); i++) {
+                fgTosMapper.updatePMCstatus(list1.get(i).getPn().toString(), list1.get(i).getPo().toString(), "船务", list1.get(i).getShipmentNO().toString());
+            }
+            // 邮件提醒欠货/拆分成品单
+            if (strings.size() > 0) {
+                System.out.println("邮件提醒欠货***");
+                sendMail_QH(strings);
+            }
+
+            System.out.println("The end...." + new Date());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     *是否绑定有贴纸，有绑定则按贴纸预留
+     * */
+//    public String checkTags(String BH, FgToList fgToList, long quantity) {
+//
+//        // 查询是否存在贴纸（存在则预留贴纸代替UID）
+//        List<FgTagsInventory> fgTagsInventoryList = fgInventoryMapper.getTagsInventoryInfo(fgToList.getUid().toString());
+//        if (fgTagsInventoryList.size() > 0) {
+//            // stream流统计总数
+//            long sum_tags = fgTagsInventoryList.stream().mapToLong(FgTagsInventory::getQuantity).sum();
+//            if (quantity == sum_tags) {
+//                // 预留贴纸
+//                List<FgToList> fgToListList = new ArrayList<>();
+//
+//            } else {
+//                // 产生欠货单
+//            }
+//        }
+//
+//        return null;
+//    }
+
+    /**
+     * 根据 BH或QH + 年、月、日、时、分、秒、毫秒（三位数） 生成备货单/备货单
      *
      * @param tono 描述是备货单还是欠货单
      * @return String
@@ -699,11 +1184,11 @@ public class FgChecklistServiceImpl implements IFgChecklistService
             Date date = new Date();
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
             if (tono.equals("备货单")) {
-                // FG + BH + 年月日时分秒 毫秒
+                // BH + 年月日时分秒 毫秒
                 To_No = "BH" + simpleDateFormat.format(date);
                 System.out.println(To_No);
             } else if (tono.equals("欠货单")) {
-                // FG + QH + 年月日时分秒 毫秒
+                // QH + 年月日时分秒 毫秒
                 To_No = "QH" + simpleDateFormat.format(date);
                 System.out.println(To_No);
             }
@@ -894,7 +1379,7 @@ public class FgChecklistServiceImpl implements IFgChecklistService
             workbook2.write(outputStream);
             outputStream.close();
             workbook2.close();
-            String[] to = {"tingming.jiang@honortone.com"};
+            String[] to = {"mei.zhu@honortone.com", "ni.cai@honortone.com", "zhongping.luo@honortone.com", "kaitong.ye@honortone.com", "shaopeng.liang@honortone.com", "ping.hu@honortone.com"};
             String[] cc = {"tingming.jiang@honortone.com"};
             //5. 创建一个邮件对象
             MimeMessage message2 = javaMailSender.createMimeMessage();

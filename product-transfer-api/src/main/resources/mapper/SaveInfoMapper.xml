@@ -78,7 +78,7 @@
     <!-- 多张图片需插入操作 -->
     <insert id="insertSealnoInfo">
         insert into fg_sealnoinfo (shipment_no, pn, seal_no, vanseal_no, container_no, status, car_no, filepath, filename, create_user, create_time)
-                    values(#{shipmentNo}, #{pn}, #{sealNo}, #{vansealNo}, #{containerNo}, 1, #{carNo}, #{filepath}, #{filename}, 'jtm', now())
+                    values(#{shipmentNo}, #{pn}, #{sealNo}, #{vansealNo}, #{containerNo}, 1, #{carNo}, #{filepath}, #{filename}, #{createUser}, now())
     </insert>
 
 <!--   <insert id="saveInfo">-->

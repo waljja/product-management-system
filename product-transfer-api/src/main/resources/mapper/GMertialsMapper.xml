@@ -6,41 +6,55 @@
     <resultMap type="com.honortone.api.entity.Inventory" id="BaseResultMap" >
         <id property="id" column="id"/>
         <result property="pn" column="partnumber"/>
+        <result property="pn650" column="pn650"/>
         <result property="po" column="po"/>
+        <result property="clientPO" column="client_po"/>
         <result property="batch" column="batch"/>
         <result property="uid" column="uid"/>
         <result property="uid_no" column="quantity"/>
+        <result property="tagsQuantity" column="tags_quantity"/>
         <result property="stock" column="stock"/>
         <result property="status" column="status"/>
         <result property="wo" column="wo"/>
         <result property="production_date" column="rec_time"/>
         <result property="plant" column="plant"/>
+        <result property="client_code" column="client_code"/>
         <result property="qa_sign" column="create_user"/>
         <result property="create_date" column="create_time"/>
         <result property="uid_id" column="uid_id"/>
+        <result property="rollbackReason" column="rollback_reason"/>
+        <result property="proPO" column="pro_po"/>
     </resultMap>
 
     <sql id="selectFgInventoryVo">
         select id,
                partnumber,
+               pn650,
                po,
+               client_po,
                batch,
                uid,
                quantity,
+               tags_quantity,
                stock,
                status,
                wo,
                rec_time,
                plant,
+               client_code,
                create_user,
                create_time,
-               uid_id
+               uid_id,
+               rollback_reason,
+               pro_po
         from fg_inventory
     </sql>
     <sql id="selectFgInventoryVo2">
         select id,
                partnumber,
+               pn650,
                po,
+               client_po,
                batch,
                uid,
                quantity,
@@ -49,9 +63,12 @@
                wo,
                rec_time,
                plant,
+               client_code,
                create_user,
                create_time,
-               uid_id
+               uid_id,
+               rollback_reason,
+               pro_po
         from fg_inventory_out
     </sql>
     <!-- 通用查询映射结果 -->
@@ -87,22 +104,22 @@
         <result column="quantity" property="quantity" />
         <result column="status" property="status" />
         <result column="client_batch" property="clientBatch" />
-        <result column="production_date" property="production_date" />
+        <result column="production_date" property="productionDate" />
         <result column="pn" property="pn" />
         <result column="stock" property="stock" />
         <result column="po" property="po" />
-        <result column="createtime" property="createtime" />
+        <result column="createtime" property="createTime" />
     </resultMap>
 
     <!-- 有车情况 -->
     <!-- 下载车牌号 -->
     <select id="downloadCarno" parameterType="java.lang.String" resultType="java.lang.String">
-        select carno from fg_shipmentinfo where carno is not null and carno <![CDATA[ <> ]]> '' and shipment_date = #{date} order by shipment_date desc
+        select carno from fg_shipmentinfo where carno is not null and carno <![CDATA[ <> ]]> '' and shipment_date = #{date} and status = 1 order by shipment_date desc
     </select>
 
     <!-- 根据车牌号下载走货单号 -->
     <select id="downloadShipmentno" resultType="java.lang.String">
-        select shipment_number from fg_shipmentinfo where carno = #{carno} and shipment_date = #{date} and last_comfirm in ('货仓', '船务') order by shipment_date desc
+        select shipment_number from fg_shipmentinfo where carno = #{carno} and shipment_date = #{date} and last_comfirm in ('货仓', '船务') and status = 1 order by shipment_date desc
     </select>
 
     <!-- 根据走货编号下载TO单 -->
@@ -110,35 +127,96 @@
         select to_no from fg_tos where shipment_no = #{shipmentno} and car_no is not null and to_no like 'BH%'
     </select>
 
-    <!-- 根据TO单下载具体备货单信息 -->
+    <!-- 根据TO单下载具体备货单信息 select id, to_no toNo, ifnull(replace_uid,uid) as uid, pn, quantity, batch_qty batchQty, status, po, batch, stock from fg_tolist where to_no = #{tono} order by to_no asc -->
     <select id="downloadTono" parameterType="java.lang.String" resultType="com.honortone.api.entity.ToList">
-        select id, to_no toNo, ifnull(replace_uid,uid) as uid, pn, quantity, batch_qty batchQty, status, po, batch, stock from fg_tolist where to_no = #{tono} order by to_no asc
+        select a.id, to_no toNo, ifnull(replace_uid,a.uid) as uid, a.pn, a.quantity, a.batch_qty batchQty, a.status, a.po, a.batch, a.stock, b.client_batch clientBatch, b.quantity clientQty, b.status status2
+        from fg_tolist a left join fg_tags_inventory b on a.uid = b.uid where to_no = #{tono} order by to_no asc
     </select>
-    <!-- 是否存在贴纸 -->
+<!--  select a.id, to_no toNo, ifnull(replace_uid,a.uid) as uid, a.pn, a.quantity, a.batch_qty batchQty, a.status, a.po, a.batch, a.stock, b.client_batch clientBatch, b.quantity clientQty from fg_tolist a left join fg_tags_inventory b on a.uid = b.uid where to_no = #{tono} order by to_no asc  -->
+    <!-- 是否存在未拣货贴纸 -->
     <select id="selectClientTag" parameterType="java.lang.String" resultMap="BaseResultMap3">
         <include refid="selectFgTagInventoryVo"></include>
-        where client_pn = #{clientPn} and status = 0
+        where client_pn = #{clientPn} and status = 0 and client_batch = #{clientBatch}
     </select>
-    <!-- 找贴纸对应成品UID -->
+    <!-- 是否存在已未拣货贴纸 -->
+    <select id="selectClientTag2" parameterType="java.lang.String" resultMap="BaseResultMap3">
+        <include refid="selectFgTagInventoryVo"></include>
+        where client_pn = #{clientPn} and status = 1 and client_batch = #{clientBatch}
+    </select>
+    <!-- 找贴纸对应成品UID  and status = 0 -->
     <select id="checkTolistUID" parameterType="java.lang.String" resultType="com.honortone.api.entity.ToList">
         select to_no toNo, uid, quantity from fg_tolist
+        where uid = #{uid}
+    </select>
+    <!-- 关联TOlist和tagsInventory -->
+    <select id="getTolistAndTagsInfo" resultType="com.honortone.api.entity.TagsInventory">
+        select a.uid,
+               b.client_pn clientPn,
+               a.quantity,
+               a.status,
+               b.client_batch clientBatch,
+               b.production_date productionDate,
+               a.pn,
+               a.stock,
+               a.po,
+               b.createtime createTime
+        from fg_tolist a left join fg_tags_inventory b on a.uid = b.uid where a.to_no = #{toNo} and a.status = 0 and b.status = 0
+        and a.pn = #{pn} and b.quantity = #{Quantity}
+    </select>
+    <!-- 更新替换和被替换的UID对应的贴纸信息 -->
+    <update id="updateTagsInfo">
+        update fg_tags_inventory
+        set status = #{tagsInventory1.status}, client_batch = #{tagsInventory1.clientBatch}, replace_batch = #{tagsInventory2.clientBatch}, update_time = now()
+        where uid = #{tagsInventory2.uid} and client_batch = #{tagsInventory2.clientBatch}
+    </update>
+    <!-- 统计贴纸在库总数（与成品应出数量对比 -->
+    <select id="getSumQuantity" parameterType="java.lang.String" resultType="java.lang.Long">
+        select ifnull(sum(quantity), 0) from fg_tags_inventory
         where uid = #{uid} and status = 0
     </select>
-    <!-- 统计贴纸出库总数（与成品应出数量对比 -->
-    <select id="getSumQuantity" parameterType="java.lang.String" resultType="java.lang.Long">
+    <!-- 统计贴纸在库总数（与成品应出数量对比 -->
+    <select id="getSumQuantity2" parameterType="java.lang.String" resultType="java.lang.Long">
         select ifnull(sum(quantity), 0) from fg_tags_inventory
         where uid = #{uid} and status = 1
     </select>
     <!-- 贴纸出库后修改状态 -->
     <update id="updateTagsStauts">
         update fg_tags_inventory
-        set status = 1
-        where client_pn = #{clientPn} and status = 0 and quantity = #{quantity}
+        set status = 1, update_time = now()
+        where client_pn = #{clientPn} and status = 0 and quantity = #{quantity} and client_batch = #{clientBatch}
     </update>
     <!-- 根据UID查询是否有绑定贴纸 -->
     <select id="checkTags" parameterType="java.lang.String" resultType="java.lang.Integer">
         select count(id) from fg_tags_inventory where uid = #{uid}
     </select>
+    <!-- 判断该贴纸UID是否还存在未出库批次 -->
+    <select id="checkTagsByUID" parameterType="java.lang.String" resultMap="BaseResultMap3">
+        <include refid="selectFgTagInventoryVo"></include>
+        where uid = #{uid} and status = 0
+    </select>
+    <!-- 查询拆分后的UID -->
+    <select id="getSplitUID" parameterType="java.lang.String" resultType="java.lang.String">
+        select uid from fg_checklist where old_uid = #{uid}
+    </select>
+
+    <!-- 下架所有贴纸 -->
+    <update id="updateTagsStautsAll">
+        update fg_tags_inventory
+        set status = 1, update_time = now()
+        where uid = #{uid}
+    </update>
+
+    <!-- 更新剩余贴纸信息到新产生的库存UID -->
+    <update id="updatetagsInfo1" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            update fg_tags_inventory
+            <set>
+                uid = #{item.uid},
+                createtime = now()
+            </set>
+            where client_batch = #{item.clientBatch} and status = 0
+        </foreach>
+    </update>
 
     <!-- 有车情况 -->
 
@@ -146,7 +224,7 @@
     <!-- 无车情况 -->
     <!-- 下载走货单 （排除有车号的走货单） -->
     <select id="downloadShipmentNo2" resultType="java.lang.String">
-        select shipment_number from fg_shipmentinfo where (carno is null or carno = '') and shipment_date = #{date} and last_comfirm in ('货仓', '船务')
+        select shipment_number from fg_shipmentinfo where (carno is null or carno = '') and shipment_date = #{date} and last_comfirm in ('货仓', '船务') and status = 1
     </select>
     <!-- 根据走货编号下载TO单（无车） -->
     <select id="downloadTos2" parameterType="java.lang.String" resultType="java.lang.String">
@@ -173,7 +251,7 @@
 
     <!-- 在TO明细表检查该数据是否存在 -->
     <select id="checkTolistByUid" parameterType="java.lang.String" resultType="java.lang.String">
-        select to_no from fg_tolist where uid = #{uid} and replace_uid is null
+        select to_no from fg_tolist where uid = #{uid} and replace_uid is null and status = 0
     </select>
 
     <!-- 在TO明细表检查该数据是否可以替换拣料  and batch = #{batch}  -->
@@ -189,7 +267,7 @@
     <!-- 可以替换拣料 —— 将扫描的uid插入replace_uid，修改拣料状态为已拣料 -->
     <update id="insertAndUpdate">
         update fg_tolist
-        set status = 1, replace_uid = #{replace_uid}
+        set status = 1, replace_uid = #{uid}, uid = #{inventory.uid}, batch = #{inventory.batch}, stock = #{inventory.stock}, update_time = now()
         where uid = #{uid} and status = 0
     </update>
 
@@ -202,15 +280,22 @@
 
     <!-- 将下架成品数据存到下架表 -->
     <insert id="insertInventoryOut">
-        insert into fg_inventory_out (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id)
-        values (#{pn}, #{po}, #{batch}, #{uid}, #{uid_no}, #{stock}, 0, #{wo}, #{production_date}, #{plant}, #{qa_sign},
-                now(), #{uid_id})
+        insert into fg_inventory_out (partnumber, pn650, po, client_po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, client_code, create_user,
+                                      create_time, uid_id, rollback_reason, pro_po)
+        values (#{pn}, #{pn650}, #{po}, #{clientPO}, #{batch}, #{uid}, #{uid_no}, #{tagsQuantity}, #{stock}, 0, #{wo}, #{production_date}, #{plant}, #{client_code}, #{qa_sign},
+                now(), #{uid_id}, #{rollbackReason}, #{proPO})
     </insert>
 
     <!-- 备货数量小于库存数量，直接减掉并修改状态为在库 -->
     <update id="updateQuantityStauts">
         update fg_inventory
         set uid_no = #{uidNo}, status = #{status}
+        where uid = #{uid} and uid_no = #{uidNo} and status = 0
+    </update>
+    <!-- 备货数量小于库存数量，直接减掉并修改状态为在库 -->
+    <update id="updateQuantityStauts2">
+        update fg_inventory
+        set uid_no = #{uidNo}, status = #{status}, tags_quantity = #{uidNo}
         where uid = #{uid} and uid_no = #{uidNo} and status = 0
     </update>
 
@@ -222,7 +307,7 @@
     <!-- 更新To明细表的备货单 -->
     <update id="updateTono">
         update fg_tolist
-        set status = 1
+        set status = 1, update_time = now()
         where uid = #{cpno} and status = 0
     </update>
 
@@ -236,7 +321,7 @@
     <!-- 更新To管理表的备货单状态 -->
     <update id="updateTosBHStatus">
         update fg_tos
-        set status = #{Status}
+        set status = #{Status}, update_time = now()
         where to_no = (select to_no from fg_tolist where uid = #{uid}) and status in (0,1)
     </update>
     <select id="checkStauts2" parameterType="java.lang.String" resultType="java.lang.Integer">
@@ -250,9 +335,16 @@
     </update>
     <!-- 成品下架 -->
 
-    <!-- 查询备货单对应明细数量和已拣货数量 -->
+    <!-- 查询备货单对应明细数量和已拣货数量 select (select count(*) from fg_tolist where to_no = #{tono} and status = 1) sum1, (select count(*) from fg_tolist where to_no = #{tono}) sum2 -->
     <select id="getQty" parameterType="java.lang.String" resultType="map" >
-        select (select count(*) from fg_tolist where to_no = #{tono} and status = 1) sum1, (select count(*) from fg_tolist where to_no = #{tono}) sum2
+        select ((select count(*) from fg_tolist a left join fg_tags_inventory b on a.uid = b.uid where a.to_no = #{tono} and b.status = 1)
+                   +
+                (select count(*) from fg_tolist where to_no = #{tono} and uid not in (select uid from fg_tags_inventory) and status = 1)) sum1,
+
+               ((select count(*) from fg_tolist a left join fg_tags_inventory b on a.uid = b.uid where a.to_no = #{tono})
+                   +
+                (select count(*) from fg_tolist where to_no = #{tono} and uid not in (select a.uid from fg_tolist a left join fg_tags_inventory b on a.uid = b.uid where a.to_no = #{tono}))) sum2
+
     </select>
 <!--    select (select count(*) from fg_tolist where status = 0) sum1, (select count(*) from fg_tolist where status = 2) sum2 -->
 
@@ -285,7 +377,8 @@
 
     <!-- 查询已手动备货数量和当前用户总数量 -->
     <select id="getQuantity" parameterType="java.lang.String" resultType="map" >
-        select (select count(*) from fg_shipmentinfo_byhand where client = #{client} and status = 1) sum3, (select count(*) from fg_shipmentinfo_byhand where client = #{cilent}) sum4
+        select (select count(*) from fg_shipmentinfo_byhand where client = #{client} and status = 1) sum3,
+               (select count(*) from fg_shipmentinfo_byhand where client = #{cilent}) sum4
     </select>
     <!-- 手动收货资料 -->
 
@@ -296,11 +389,11 @@
     </select>
     <!-- 判断是否是存在走货单，但不存在该PN、PO的 -->
     <select id="checkPnAndPo" parameterType="com.honortone.api.entity.FgShipmentInfo" resultType="java.lang.Integer">
-        select count(*) from fg_shipmentinfo where shipment_number = #{ShipmentNO} and and pn = #{SapPn} and po = #{po}
+        select count(*) from fg_shipmentinfo where shipment_number = #{ShipmentNO} and pn = #{SapPn} and po = #{po}
     </select>
     <!-- 查询备货单或欠货单 and status not in (1,2) -->
     <select id="checkBHorQH" resultType="com.honortone.api.entity.FgTosAndTosListDto">
-        select to_no To_No, quantity Quantity, shipment_no ShipmentNO from fg_tos where shipment_number = #{ShipmentNO} and status = #{Status}
+        select to_no To_No, quantity Quantity, shipment_no ShipmentNO from fg_tos where shipment_no = #{fgShipmentInfo.ShipmentNO} and status = #{Status}
     </select>
     <!-- 关联库存表 -->
     <select id="getTosAndTOListInfo" parameterType="com.honortone.api.entity.FgShipmentInfo" resultType="com.honortone.api.entity.FgTosAndTosListDto">
@@ -350,17 +443,17 @@
     </select>
     <!-- 将下架成品数据重新存到库存表 -->
     <insert id="insertInventory">
-        insert into fg_inventory (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id)
-        values (#{pn}, #{po}, #{batch}, #{uid}, #{uid_no}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{qa_sign},
-                now(), #{uid_id})
+        insert into fg_inventory (partnumber, po, batch, uid, quantity, tags_quantity, stock, status, wo, rec_time, plant, client_code, create_user, create_time, uid_id, pro_po)
+        values (#{pn}, #{po}, #{batch}, #{uid}, #{uid_no}, #{tagsQuantity}, #{stock}, 1, #{wo}, #{production_date}, #{plant}, #{client_code}, #{qa_sign},
+                now(), #{uid_id}, #{proPO})
     </insert>
     <!-- 将下架成品数据批量重新存到库存表 -->
     <insert id="insertInventory2" parameterType="java.util.List">
-        insert into fg_inventory (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id)
+        insert into fg_inventory (partnumber, po, batch, uid, quantity, stock, status, wo, rec_time, plant, create_user, create_time, uid_id, pro_po)
         values
         <foreach collection="list" item="item" separator=",">
             (#{item.pn}, #{item.po}, #{item.batch}, #{item.uid}, #{item.uid_no}, #{item.stock}, 1, #{item.wo}, #{item.production_date}, #{item.plant}, #{item.qa_sign},
-                now(), #{item.uid_id})
+                now(), #{item.uid_id}, #{item.proPO})
         </foreach>
     </insert>
     <!-- 根据UID删除TOList对应数据 -->
@@ -416,18 +509,108 @@
     </delete>
     <!-- 批量插入 -->
     <insert id="insertShipmentinfos" parameterType="java.util.List">
-        INSERT INTO fg_shipmentinfo (shipment_number, pn, po, shipment_date, shipment_car, status, plant, quantity, pellet_qty, shipment_type, remark, boxcount, carno, careta, last_comfirm, client_code, client_pn, shipment_place,confirm_time, update_datetime)
+        INSERT INTO fg_shipmentinfo (shipment_number, pn, po, shipment_date, shipment_car, status, plant, quantity, pellet_qty, shipment_type, remark, boxcount, carno, careta, last_comfirm, client_code, client_pn, shipment_place,confirm_time, update_datetime, pro_po)
         VALUES
         <foreach collection="list" item="item" separator=",">
-            (#{item.ShipmentNO}, #{item.SapPn}, #{item.po}, #{item.ShipmentDate}, #{item.Car}, 1, #{item.plant}, #{item.Quantity}, #{item.pelletQty}, #{item.pelletQty}, #{item.Remark}, #{item.BoxQty}, #{item.CarNo}, #{item.arriveDate}, #{item.LastComfirm}, #{item.clientCode}, #{item.clientPN}, #{item.shipmentPlace}, #{item.updateDate}, #{item.updateTime})
+            (#{item.ShipmentNO}, #{item.SapPn}, #{item.po}, #{item.ShipmentDate}, #{item.Car}, 1, #{item.plant}, #{item.Quantity}, #{item.pelletQty}, #{item.pelletQty}, #{item.Remark}, #{item.BoxQty}, #{item.CarNo}, #{item.arriveDate}, #{item.LastComfirm}, #{item.clientCode}, #{item.clientPN}, #{item.shipmentPlace}, #{item.updateDate}, #{item.updateTime}, #{item.proPO})
         </foreach>
     </insert>
 
-    <!-- 查询箱号信息(下架) -->
-<!--    <select id="checkBoxInfo" parameterType="java.lang.String" resultType="com.honortone.api.entity.BoxInventory">-->
-<!--        select -->
-<!--    </select>-->
+    <!-- 箱号 -->
+    <resultMap type="com.honortone.api.entity.BoxInventory" id="FgBoxInventoryResult">
+        <result property="id"    column="id"    />
+        <result property="uid"    column="uid"    />
+        <result property="cartonNo"    column="carton_no"    />
+        <result property="wo"    column="wo"    />
+        <result property="pn"    column="pn"    />
+        <result property="cartonQty"    column="carton_qty"    />
+        <result property="status"    column="status"    />
+        <result property="batch"    column="batch"    />
+        <result property="productionDate"    column="production_date"    />
+        <result property="stock"    column="stock"    />
+        <result property="po"    column="po"    />
+        <result property="createTime"    column="createtime"    />
+    </resultMap>
 
+    <sql id="selectFgBoxInventoryVo">
+        select id, uid, carton_no, wo, pn, carton_qty, status, batch, production_date, stock, po, createtime from fg_box_inventory
+    </sql>
+
+    <select id="selectFgBoxInventoryList" parameterType="com.honortone.api.entity.BoxInventory" resultMap="FgBoxInventoryResult">
+        <include refid="selectFgBoxInventoryVo"/>
+        <where>
+            <if test="uid != null  and uid != ''"> and uid = #{uid}</if>
+            <if test="cartonNo != null  and cartonNo != ''"> and carton_no = #{cartonNo}</if>
+            <if test="wo != null  and wo != ''"> and wo = #{wo}</if>
+            <if test="pn != null  and pn != ''"> and pn = #{pn}</if>
+            <if test="cartonQty != null "> and carton_qty = #{cartonQty}</if>
+            <if test="status != null "> and status = #{status}</if>
+            <if test="batch != null  and batch != ''"> and batch = #{batch}</if>
+            <if test="productionDate != null "> and production_date = #{productionDate}</if>
+            <if test="stock != null  and stock != ''"> and stock = #{stock}</if>
+            <if test="po != null  and po != ''"> and po = #{po}</if>
+            <if test="createTime != null "> and createtime = #{createTime}</if>
+        </where>
+    </select>
+
+    <select id="selectBox" parameterType="String" resultMap="FgBoxInventoryResult">
+        <include refid="selectFgBoxInventoryVo"></include>
+        where carton_no = #{cartonNo} and status = 0
+    </select>
+
+    <!-- 关联TOlist和BoxInventory -->
+    <select id="getTolistAndBoxInfo" resultType="com.honortone.api.entity.BoxInventory">
+        select a.uid,
+               b.carton_no cartonNo,
+               a.quantity,
+               a.status,
+               a.batch,
+               b.production_date productionDate,
+               a.pn,
+               a.stock,
+               a.po,
+               b.createtime createTime
+        from fg_tolist a left join fg_box_inventory b on a.uid = b.uid where a.to_no = #{toNo} and a.status = 0 and b.status = 0
+                                                                          and a.pn = #{pn} and b.quantity = #{Quantity}
+    </select>
+
+    <!-- 统计箱号贴纸在库总数（与成品应出数量对比 -->
+    <select id="getSumcartonQty" parameterType="java.lang.String" resultType="java.lang.Long">
+        select ifnull(sum(carton_qty), 0) from fg_box_inventory
+        where uid = #{uid} and status = 1
+    </select>
+
+    <!-- 更新替换和被替换的UID对应的贴纸信息 -->
+    <update id="updateBoxInfo">
+        update fg_box_inventory
+        set status = #{boxInventory1.status}, carton_no = #{boxInventory1.cartonNo}, replace_carton_no = #{boxInventory2.cartonNo}
+        where uid = #{boxInventory2.uid} and carton_no = #{boxInventory2.cartonNo}
+    </update>
+
+    <!-- 判断该贴纸UID是否还存在未出库批次 -->
+    <select id="checkBoxByUID" parameterType="java.lang.String" resultMap="FgBoxInventoryResult">
+        <include refid="selectFgBoxInventoryVo"></include>
+        where uid = #{uid} and status = 0
+    </select>
+
+    <!-- 更新剩余贴纸信息到新产生的库存UID -->
+    <update id="updateboxInfo1" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            update fg_box_inventory
+            <set>
+                uid = #{item.uid},
+                createtime = now()
+            </set>
+            where carton_no = #{item.cartonNo} and status = 0
+        </foreach>
+    </update>
+
+    <!-- 贴纸出库后修改状态 -->
+    <update id="updateBoxStauts">
+        update fg_box_inventory
+        set status = 1, update_time = now()
+        where carton_no = #{cartnoNo} and status = 0
+    </update>
 
 
 
@@ -471,5 +654,19 @@
         </foreach>
     </insert>
 
+    <!-- CK00 -->
+    <!-- 是否是CK00客户 -->
+    <select id="checkCk00" parameterType="java.lang.String" resultType="java.lang.String">
+        select client_code from fg_shipmentinfo where
+        shipment_number = (select shipment_no from fg_tos a left join fg_tolist b on a.to_no = b.to_no where b.to_no = #{toNo} limit 1) and last_comfirm in ('船务','货仓') limit 1
+    </select>
+    <select id="downloadTonoCK00" parameterType="java.lang.String" resultType="com.honortone.api.entity.ToList">
+        select id, to_no toNo, ifnull(replace_uid,uid) as uid, pn, quantity, batch_qty batchQty, status, po, batch, stock
+        from fg_tolist where to_no = #{toNo} order by to_no asc
+    </select>
+    <!-- 查询备货单对应明细数量和已拣货数量 select (select count(*) from fg_tolist where to_no = #{tono} and status = 1) sum1, (select count(*) from fg_tolist where to_no = #{tono}) sum2 -->
+    <select id="getQtyCK00" parameterType="java.lang.String" resultType="map" >
+        select (select count(*) from fg_tolist where to_no = #{toNo} and status = 1) sum1, (select count(*) from fg_tolist where to_no = #{toNo}) sum2
+    </select>
 
 </mapper>

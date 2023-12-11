@@ -21,6 +21,7 @@
         <result property="qa_result" column="qa_result"/>
         <result property="customer_result" column="customer_result"/>
         <result property="pn660" column="pn660"/>
+        <result property="client_code" column="client_code"/>
     </resultMap>
 
     <!-- 统一查询结果 -->
@@ -42,7 +43,8 @@
                qa_sign,
                qa_result,
                customer_result,
-               pn660
+               pn660,
+               client_code
         from fg_checklist
     </sql>
 
@@ -83,7 +85,12 @@
         where PartNumber = #{pn} and Plant = #{plant} and batch = #{batch} and TransactionType = #{transactiontype} and RecordStatus = 999
     </select>
 
-    <!-- 状态为999则表示已收货，0自动过账，1过账失败，2过账成功 -->
+    <select id="selectQuantity2" resultType="float">
+        select ISNULL(SUM(quantity), 0) FROM [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        where PartNumber = #{pn} and Plant = #{plant} and RefDocNo = #{sap101} and TransactionType = #{transactiontype} and RecordStatus = 999
+    </select>
+
+    <!-- 状态为999则表示已收货，0自动过账，1过账失败，2过账成功 (批次-->
     <update id="updateRecordStatus">
         update [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
         set [RecordStatus] = 0
@@ -93,13 +100,33 @@
           and [TransactionType] = #{transactiontype}
           and [RecordStatus] = 999
     </update>
+    <!-- 状态为999则表示已收货，0自动过账，1过账失败，2过账成功 （过账编号-->
+    <update id="updateRecordStatus2">
+        update [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        set [RecordStatus] = 0
+        where [PartNumber] = #{pn}
+          and [Plant] = #{plant}
+          and [RefDocNo] = #{sap101}
+          and [TransactionType] = #{transactiontype}
+          and [RecordStatus] = 999
+    </update>
 
-    <!-- 查询是否已过账，避免影响统计总数 -->
+    <!-- 查询是否已过账，避免影响统计总数(批次) -->
     <select id="checkInfoAlreadyTransfer" parameterType="com.honortone.api.controller.dto.MaterialTransationsDto" resultType="java.lang.Integer">
         select count(*) from [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
         where [PartNumber] = #{pn}
           and [Plant] = #{plant}
           and [batch] = #{batch}
+          and [TransactionType] = #{transactiontype}
+          and [RecordStatus] = 2
+    </select>
+
+    <!-- 查询是否已过账，避免影响统计总数(101过账编号) -->
+    <select id="checkInfoAlreadyTransfer2" parameterType="com.honortone.api.controller.dto.MaterialTransationsDto" resultType="java.lang.Integer">
+        select count(*) from [HTMES_MES_Main].[dbo].[xTend_MaterialTransactions]
+        where [PartNumber] = #{pn}
+          and [Plant] = #{plant}
+          and [RefDocNo] = #{sap101}
           and [TransactionType] = #{transactiontype}
           and [RecordStatus] = 2
     </select>

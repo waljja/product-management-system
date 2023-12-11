@@ -34,6 +34,9 @@ public class Inventory implements Serializable {
     @ApiModelProperty("po")
     private String po;
 
+    @ApiModelProperty("clientPO")
+    private String clientPO;
+
     @ApiModelProperty("批次")
     private String batch;
 
@@ -61,6 +64,9 @@ public class Inventory implements Serializable {
     @ApiModelProperty("工厂")
     private String plant;
 
+    @ApiModelProperty("客户编号")
+    private String client_code;
+
     @ApiModelProperty("创建人")
     private String qa_sign;
 
@@ -72,6 +78,9 @@ public class Inventory implements Serializable {
 
     @ApiModelProperty("回仓原因")
     private String rollbackReason;
+
+    @ApiModelProperty("生产PO")
+    private String proPO;
 
     public String getPn650() {
         return pn650;
@@ -205,6 +214,30 @@ public class Inventory implements Serializable {
         this.tagsQuantity = tagsQuantity;
     }
 
+    public String getClientPO() {
+        return clientPO;
+    }
+
+    public void setClientPO(String clientPO) {
+        this.clientPO = clientPO;
+    }
+
+    public String getClient_code() {
+        return client_code;
+    }
+
+    public void setClient_code(String client_code) {
+        this.client_code = client_code;
+    }
+
+    public String getProPO() {
+        return proPO;
+    }
+
+    public void setProPO(String proPO) {
+        this.proPO = proPO;
+    }
+
     @Override
     public String toString() {
         return "Inventory{" +
@@ -212,6 +245,7 @@ public class Inventory implements Serializable {
                 ", pn='" + pn + '\'' +
                 ", pn650='" + pn650 + '\'' +
                 ", po='" + po + '\'' +
+                ", clientPO='" + clientPO + '\'' +
                 ", batch='" + batch + '\'' +
                 ", uid='" + uid + '\'' +
                 ", uid_no=" + uid_no +
@@ -221,10 +255,12 @@ public class Inventory implements Serializable {
                 ", wo='" + wo + '\'' +
                 ", production_date=" + production_date +
                 ", plant='" + plant + '\'' +
+                ", client_code='" + client_code + '\'' +
                 ", qa_sign='" + qa_sign + '\'' +
                 ", create_date=" + create_date +
                 ", uid_id='" + uid_id + '\'' +
                 ", rollbackReason='" + rollbackReason + '\'' +
+                ", proPO='" + proPO + '\'' +
                 '}';
     }
 }

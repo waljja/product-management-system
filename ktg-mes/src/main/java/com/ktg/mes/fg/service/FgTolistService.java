@@ -65,4 +65,6 @@ public interface FgTolistService {
      * @return 结果
      */
      int deleteFgTolistById(Long id);
+
+     String uploadCK00(String shipmentNO, String carNO, String batch, String pn, String po, long quantity);
 }

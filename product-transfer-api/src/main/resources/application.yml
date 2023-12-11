@@ -27,7 +27,7 @@ spring:
           password: ABC789_
         slave_2:
           type: com.alibaba.druid.pool.DruidDataSource
-          url: jdbc:mysql://172.31.2.131:3306/htmes_fgwhssystem?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          url: jdbc:mysql://172.31.2.131:3306/htmes_fgwhssystem?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
           username: root
           password: root
         slave_3:

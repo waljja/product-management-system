@@ -20,23 +20,31 @@ public class FgInventory extends BaseEntity {
     private Long id;
 
     /** 型号 */
-    @Excel(name = "型号")
+    @Excel(name = "660型号")
     private String partnumber;
 
+    /** 650型号 */
+    @Excel(name = "650型号")
+    private String pn650;
+
     /** po */
-    @Excel(name = "po")
+    @Excel(name = "上架po")
     private String po;
 
+    /** po */
+    @Excel(name = "客户po")
+    private String clientPO;
+
     /** 批次 */
-    @Excel(name = "批次")
+    @Excel(name = "库存批次")
     private String batch;
 
     /** UID */
-    @Excel(name = "UID")
+    @Excel(name = "库存UID")
     private String uid;
 
     /** 数量 */
-    @Excel(name = "数量")
+    @Excel(name = "库存数量")
     private Long quantity;
 
     @Excel(name = "贴纸数量")
@@ -54,10 +62,10 @@ public class FgInventory extends BaseEntity {
     @Excel(name = "工单")
     private String wo;
 
-    /** 收货时间 */
+    /** 101过账时间 */
     @JsonProperty("recTime")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "收货时间", width = 30, dateFormat = "yyyy-MM-dd")
+    @Excel(name = "生产时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date recTime;
 
     /** 创建时间 */
@@ -84,6 +92,9 @@ public class FgInventory extends BaseEntity {
 
     @Excel(name = "同PN PO总数量")
     private Long sumQuantity;
+
+    @Excel(name = "生产PO")
+    private String proPO;
 
     public Long getSumQuantity() {
         return sumQuantity;
@@ -233,12 +244,38 @@ public class FgInventory extends BaseEntity {
         this.tagsQuantity = tagsQuantity;
     }
 
+    public String getPn650() {
+        return pn650;
+    }
+
+    public void setPn650(String pn650) {
+        this.pn650 = pn650;
+    }
+
+    public String getClientPO() {
+        return clientPO;
+    }
+
+    public void setClientPO(String clientPO) {
+        this.clientPO = clientPO;
+    }
+
+    public String getProPO() {
+        return proPO;
+    }
+
+    public void setProPO(String proPO) {
+        this.proPO = proPO;
+    }
+
     @Override
     public String toString() {
         return "FgInventory{" +
                 "id=" + id +
                 ", partnumber='" + partnumber + '\'' +
+                ", pn650='" + pn650 + '\'' +
                 ", po='" + po + '\'' +
+                ", clientPO='" + clientPO + '\'' +
                 ", batch='" + batch + '\'' +
                 ", uid='" + uid + '\'' +
                 ", quantity=" + quantity +
@@ -253,6 +290,7 @@ public class FgInventory extends BaseEntity {
                 ", uidId=" + uidId +
                 ", rollbackReason='" + rollbackReason + '\'' +
                 ", sumQuantity=" + sumQuantity +
+                ", proPO='" + proPO + '\'' +
                 '}';
     }
 }

@@ -3,10 +3,12 @@ package com.honortone.api.mapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.honortone.api.entity.*;
+import io.swagger.models.auth.In;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import javax.swing.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,7 +48,10 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
      * 根据客户PN查询对应绑定的UID
      * */
     @DS("slave_2")
-    List<TagsInventory> selectClientTag(String clientPn);
+    List<TagsInventory> selectClientTag(@Param("clientPn") String clientPn, @Param("clientBatch") String clientBatch);
+
+    @DS("slave_2")
+    List<TagsInventory> selectClientTag2(@Param("clientPn") String clientPn, @Param("clientBatch") String clientBatch);
 
     /**
      * 根据绑定UID查询需要出库（备货数量）
@@ -55,10 +60,34 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
     ToList checkTolistUID(String uid);
 
     @DS("slave_2")
+    List<TagsInventory> getTolistAndTagsInfo(@Param("toNo") String toNo, @Param("pn") String pn, @Param("Quantity") long Quantity);
+
+    @DS("slave_2")
+    int updateTagsInfo(@Param("tagsInventory1") TagsInventory tagsInventory1, @Param("tagsInventory2") TagsInventory tagsInventory2);
+
+    @DS("slave_2")
     long getSumQuantity(String uid);
 
     @DS("slave_2")
-    int updateTagsStauts(@Param("clientPn") String clientPn, @Param("quantity") long quantity);
+    long getSumQuantity2(String uid);
+
+    @DS("slave_2")
+    int updateTagsStauts(@Param("clientPn") String clientPn, @Param("clientBatch") String clientBatch, @Param("quantity") long quantity);
+
+    @DS("slave_2")
+    List<TagsInventory> checkTagsByUID(String uid);
+
+    @DS("slave_2")
+    int updatetagsInfo1(List<TagsInventory> list);
+
+    @DS("slave_2")
+    String getSplitUID(String uid);
+
+    @DS("slave_2")
+    int batchInsertInventory(List<Inventory> list);
+
+    @DS("slave_2")
+    int updateTagsStautsAll(String uid);
 
     @DS("slave_2")
     int updateQuantityStauts(@Param("uid") String uid, @Param("uidNo") long uidNo, @Param("status") int status);
@@ -88,7 +117,7 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
     String checkDate(String uid);
 
     @DS("slave_2")
-    int insertAndUpdate(@Param("uid") String uid, @Param("replace_uid") String replace_uid);
+    int insertAndUpdate(@Param("uid") String uid, @Param("inventory") Inventory inventory);
 
     @DS("slave_2")
     int updateInventoryStatus(@Param("uid") String uid, @Param("status1") int status1, @Param("status2") int status2);
@@ -240,6 +269,25 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
     @DS("slave_2")
     int updateStatusTos(String toNo);
 
+    /** ****************************************   箱号下架   ************************************* **/
+    BoxInventory selectBox(String cartonNo);
+
+    List<BoxInventory> getTolistAndBoxInfo(@Param("toNo") String toNo, @Param("pn") String pn, @Param("Quantity") long Quantity);
+
+    long getSumcartonQty(String uid);
+
+    @DS("slave_2")
+    int updateBoxInfo(@Param("boxInventory1") BoxInventory boxInventory1, @Param("boxInventory2") BoxInventory boxInventory2);
+
+    @DS("slave_2")
+    List<BoxInventory> checkBoxByUID(String uid);
+
+    @DS("slave_2")
+    int updateboxInfo1(List<BoxInventory> list);
+
+    @DS("slave_2")
+    int updateBoxStauts(String cartonNo);
+
 
 
     /**
@@ -283,5 +331,15 @@ public interface GMterialsMapper extends BaseMapper<Inventory> {
      * */
     @DS("slave_2")
     int deleteShipmentNo(List<com.ktg.mes.fg.domain.FgShipmentInfo> list);
+
+    /*******************************************     CK00     **********************************************/
+    @DS("slave_2")
+    String checkCk00(String toNo);
+
+    @DS("slave_2")
+    List<ToList> downloadTonoCK00(String toNo);
+
+    @DS("slave_2")
+    List<Map<Integer, Integer>> getQtyCK00(String tono);
 
 }

@@ -1,8 +1,11 @@
 package com.ktg.mes.fg.service;
 
+import java.util.Date;
 import java.util.List;
 import com.ktg.mes.fg.domain.FgChecklist;
 import org.apache.ibatis.annotations.Param;
+
+import javax.xml.crypto.Data;
 
 /**
  * 成品送检单Service接口
@@ -120,5 +123,5 @@ public interface IFgChecklistService
     /************** 从控制层(controller)转到业务层的代码  *******************/
     String devanning_PMC() throws Exception;
 
-    String generateTO_NO() throws Exception;
+    String generateTO_NO(Date shipmentDate) throws Exception;
 }
