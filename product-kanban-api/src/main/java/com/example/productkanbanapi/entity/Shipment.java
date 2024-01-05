@@ -24,9 +24,21 @@ public class Shipment {
     private Date shipmentDate;
 
     /**
+     * 装车时间
+     */
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
+    private Date loadingTime;
+
+    /**
      * 走货车型
      */
     private String shipmentCar;
+
+    /**
+     * 车牌号码
+     */
+    private String licenseNumber;
 
     /**
      * 出货单号

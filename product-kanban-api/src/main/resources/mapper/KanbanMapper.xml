@@ -48,9 +48,11 @@
     </resultMap>
 
     <resultMap id="ShipmentMap" type="com.example.productkanbanapi.entity.Shipment">
-        <result property="shipmentNo" column="shipment_number" jdbcType="VARCHAR"/>
         <result property="shipmentDate" column="shipment_date" jdbcType="TIMESTAMP"/>
+        <result property="loadingTime" column="loading_time" jdbcType="TIMESTAMP"/>
         <result property="shipmentCar" column="shipment_car" jdbcType="VARCHAR"/>
+        <result property="licenseNumber" column="car_no" jdbcType="VARCHAR"/>
+        <result property="shipmentNo" column="shipment_number" jdbcType="VARCHAR"/>
         <result property="toNo" column="to_no" jdbcType="VARCHAR"/>
         <result property="state" column="state" jdbcType="VARCHAR"/>
         <result property="toQty" column="to_quantity" jdbcType="FLOAT"/>
@@ -124,7 +126,9 @@
 
     <select id="findShipment" resultMap="ShipmentMap">
         select distinct shipment_date,
+                        careta                                                                               as loading_time,
                         shipment_car,
+                        car_no,
                         shipment_number,
                         to_no,
                         client_code,
