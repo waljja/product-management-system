@@ -93,7 +93,8 @@ public class KanbanServiceImpl implements KanbanService {
                             "                 and tos2.shipment_no = tos1.shipment_no"))
                     .apply("shipment_date >= str_to_date('" + startDate + "', '%Y-%m-%d %H:%i:%s')")
                     .apply("shipment_date <= str_to_date('" + endDate + "', '%Y-%m-%d %H:%i:%s')")
-                    .orderByDesc("shipment_date", "loading_time");
+                    .orderByDesc("shipment_date")
+                    .orderByAsc("time(loading_time)");;
         } else {
             queryWrapper1
                     .eq("ship1.status", 1)
@@ -109,7 +110,8 @@ public class KanbanServiceImpl implements KanbanService {
                             "               where is_loading_truck = '已装车'\n" +
                             "                 and tos2.shipment_no = tos1.shipment_no"))
                     .apply("createdate >= '2023-10-25'")
-                    .orderByDesc("shipment_date", "loading_time");
+                    .orderByDesc("shipment_date")
+                    .orderByAsc("time(loading_time)");
         }
         shipmentPage = kanbanMapper.findShipment(page, queryWrapper1);
         // 获取每张出货单的所有零部件号
