@@ -8,8 +8,11 @@ import com.example.productkanbanapi.entity.TosShipInfo;
 import com.example.productkanbanapi.entity.XtendMaterialtransactions;
 import com.example.productkanbanapi.mapper.KanbanMapper;
 import com.example.productkanbanapi.service.KanbanService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * KanbanServiceImpl
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
  * @author 丁国钊
  * @date 2023-08-14-16:57
  */
+@Slf4j
 @Service
 public class KanbanServiceImpl implements KanbanService {
 
@@ -65,7 +69,6 @@ public class KanbanServiceImpl implements KanbanService {
         // current -> 当前页码，每页 20 条数据
         Page<Shipment> page = new Page<>(current, 20);
         QueryWrapper<TosShipInfo> queryWrapper1 = new QueryWrapper<>();
-        QueryWrapper<TosShipInfo> queryWrapper2 = new QueryWrapper<>();
         // 开始日期非空
         boolean sNotNull = startDate != null;
         // 结束日期非空
@@ -93,8 +96,7 @@ public class KanbanServiceImpl implements KanbanService {
                             "                 and tos2.shipment_no = tos1.shipment_no"))
                     .apply("shipment_date >= str_to_date('" + startDate + "', '%Y-%m-%d %H:%i:%s')")
                     .apply("shipment_date <= str_to_date('" + endDate + "', '%Y-%m-%d %H:%i:%s')")
-                    .orderByDesc("shipment_date")
-                    .orderByAsc("time(loading_time)");;
+                    .orderByAsc("shipment_date", "time(loading_time)");
         } else {
             queryWrapper1
                     .eq("ship1.status", 1)
@@ -110,14 +112,15 @@ public class KanbanServiceImpl implements KanbanService {
                             "               where is_loading_truck = '已装车'\n" +
                             "                 and tos2.shipment_no = tos1.shipment_no"))
                     .apply("createdate >= '2023-10-25'")
-                    .orderByDesc("shipment_date")
-                    .orderByAsc("time(loading_time)");
+                    .orderByAsc("shipment_date", "time(loading_time)");
         }
         shipmentPage = kanbanMapper.findShipment(page, queryWrapper1);
         // 获取每张出货单的所有零部件号
         for (Shipment shipment : shipmentPage.getRecords()) {
+            QueryWrapper<TosShipInfo> queryWrapper2 = new QueryWrapper<>();
             queryWrapper2.eq("shipment_number", shipment.getShipmentNo());
-            shipment.setPartNumberList(kanbanMapper.findPnByShipNo(queryWrapper2));
+            List<String> pnList = kanbanMapper.findPnByShipNo(queryWrapper2);
+            shipment.setPartNumberList(pnList);
         }
         return shipmentPage;
     }
