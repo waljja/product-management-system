@@ -24,7 +24,7 @@ public class Shipment {
     private Date shipmentDate;
 
     /**
-     * 装车时间
+     * 车辆预计抵达时间
      */
     @DateTimeFormat(pattern = "HH:mm")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm", timezone = "GMT+8")

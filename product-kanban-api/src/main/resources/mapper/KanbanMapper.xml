@@ -73,8 +73,12 @@
                Quantity,
                ToStock,
                TransactionTime,
-               Plant,   
-               '待上架'                                     as Status
+               Plant,
+               (case
+                    when TransactionReason = '100' and RecordStatus = '999' then '转运中（已上架）'
+                    when TransactionReason = '999' and RecordStatus = '999' then '转运中（未过账）'
+                    when TransactionReason = '99' and RecordStatus = '2' then '待上架'
+                   end)                                          as Status
         from xTend_MaterialTransactions
         ${ew.customSqlSegment}
     </select>

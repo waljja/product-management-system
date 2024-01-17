@@ -44,19 +44,40 @@ public class KanbanServiceImpl implements KanbanService {
             startDate += " 00:00:00.000";
             endDate += " 23:59:59.999";
             // 根据日期范围查询，SQL Server 分页必须有 order 排序
-            transQueryWrapper
+            /*transQueryWrapper
                     .likeRight("UID", "FG")
                     .eq("TransactionReason", "99")
                     .eq("TransactionType", "315")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
+                    .orderByDesc("TransactionTime");*/
+            transQueryWrapper
+                    .likeRight("UID", "FG")
+                    .eq("TransactionType", "315")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
+                    .and(i -> i.eq("RecordStatus", "999")
+                            .and(i1 -> i1.eq("TransactionReason", "99")
+                                    .or(i2 -> i2.eq("TransactionReason", "100"))
+                                    .or(i3 -> i3.eq("TransactionReason", "99")
+                                            .and(i4 -> i4.eq("RecordStatus", "2")))))
                     .orderByDesc("TransactionTime");
         } else {
-            transQueryWrapper
+            /*transQueryWrapper
                     .likeRight("UID", "FG")
                     .eq("TransactionReason", "99")
                     .eq("TransactionType", "315")
                     .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2023-11-01 00:00:00.000'")
+                    .orderByDesc("TransactionTime");*/
+            transQueryWrapper
+                    .likeRight("UID", "FG")
+                    .eq("TransactionType", "315")
+                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2024-01-01 00:00:00.000'")
+                    .and(i -> i.eq("RecordStatus", "999")
+                            .and(i1 -> i1.eq("TransactionReason", "99")
+                                    .or(i2 -> i2.eq("TransactionReason", "100"))
+                                    .or(i3 -> i3.eq("TransactionReason", "99")
+                                            .and(i4 -> i4.eq("RecordStatus", "2")))))
                     .orderByDesc("TransactionTime");
         }
         productNotInStoragePage = kanbanMapper.findNotInStock(inventoryPage, transQueryWrapper);
