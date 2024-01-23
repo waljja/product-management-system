@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.productkanbanapi.entity.NotInStorage;
 import com.example.productkanbanapi.entity.Shipment;
 import com.example.productkanbanapi.entity.TosShipInfo;
-import com.example.productkanbanapi.entity.XtendMaterialtransactions;
 import com.example.productkanbanapi.mapper.KanbanMapper;
 import com.example.productkanbanapi.service.KanbanService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,7 @@ public class KanbanServiceImpl implements KanbanService {
     @Autowired
     KanbanMapper kanbanMapper;
 
-    @Override
+    /*@Override
     public Page<NotInStorage> getStorageList(int current, String startDate, String endDate) {
         // 开始日期非空
         boolean sNotNull = startDate != null;
@@ -36,21 +35,14 @@ public class KanbanServiceImpl implements KanbanService {
         Page<NotInStorage> productNotInStoragePage;
         Page<NotInStorage> inventoryPage = new Page<>(current, 20);
         QueryWrapper<XtendMaterialtransactions> transQueryWrapper = new QueryWrapper<>();
-        /*
+        *//*
          * 日期都不为空 -> 按时间范围查询
          * 有一个为空 -> 不按时间条件查询
-         */
+         *//*
         if (sNotNull && eNoTNull) {
             startDate += " 00:00:00.000";
             endDate += " 23:59:59.999";
             // 根据日期范围查询，SQL Server 分页必须有 order 排序
-            /*transQueryWrapper
-                    .likeRight("UID", "FG")
-                    .eq("TransactionReason", "99")
-                    .eq("TransactionType", "315")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
-                    .orderByDesc("TransactionTime");*/
             transQueryWrapper
                     .likeRight("UID", "FG")
                     .eq("TransactionType", "315")
@@ -63,12 +55,6 @@ public class KanbanServiceImpl implements KanbanService {
                                             .and(i4 -> i4.eq("RecordStatus", "2")))))
                     .orderByDesc("TransactionTime");
         } else {
-            /*transQueryWrapper
-                    .likeRight("UID", "FG")
-                    .eq("TransactionReason", "99")
-                    .eq("TransactionType", "315")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2023-11-01 00:00:00.000'")
-                    .orderByDesc("TransactionTime");*/
             transQueryWrapper
                     .likeRight("UID", "FG")
                     .eq("TransactionType", "315")
@@ -81,6 +67,21 @@ public class KanbanServiceImpl implements KanbanService {
                     .orderByDesc("TransactionTime");
         }
         productNotInStoragePage = kanbanMapper.findNotInStock(inventoryPage, transQueryWrapper);
+        return productNotInStoragePage;
+    }*/
+
+    @Override
+    public Page<NotInStorage> getStorageList(int current, String startDate, String endDate, List<String> pns) {
+        boolean sNotNull = startDate != null;
+        boolean eNoTNull = endDate != null;
+        Page<NotInStorage> productNotInStoragePage;
+        Page<NotInStorage> inventoryPage = new Page<>(current, 20);
+        if (sNotNull && eNoTNull) {
+            startDate += " 00:00:00.000";
+            endDate += " 23:59:59.999";
+        }
+        log.info("pns" + pns);
+        productNotInStoragePage = kanbanMapper.findNotInStockU(inventoryPage, startDate, endDate, pns);
         return productNotInStoragePage;
     }
 

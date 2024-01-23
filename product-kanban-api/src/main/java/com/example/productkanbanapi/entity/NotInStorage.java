@@ -2,6 +2,7 @@ package com.example.productkanbanapi.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Builder;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -15,11 +16,6 @@ import java.util.Date;
  */
 @Data
 public class NotInStorage {
-
-    /**
-     * 序号
-     */
-    private Integer item;
 
     /**
      * 型号
@@ -61,7 +57,7 @@ public class NotInStorage {
      */
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    private Date recTime;
+    private Date recTime = null;
 
     /**
      * 厂区

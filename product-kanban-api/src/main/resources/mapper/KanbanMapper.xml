@@ -18,6 +18,7 @@
 
     <resultMap id="StorageMap" type="com.example.productkanbanapi.entity.StorageReport">
         <result property="partNumber" column="partnumber" jdbcType="VARCHAR"/>
+        <result property="wo" column="PO_NUMBER" jdbcType="VARCHAR"/>
         <result property="po" column="po" jdbcType="VARCHAR"/>
         <result property="batch" column="batch" jdbcType="VARCHAR"/>
         <result property="wo" column="wo" jdbcType="VARCHAR"/>
@@ -63,10 +64,9 @@
     </resultMap>
 
     <!-- ew.customSqlSegment -> 条件构造器拼接语句（一定要加，否则会出现变量设置问题） -->
-    <!-- 字段不能加 []，mybatis plus 不能识别 []，有 bug -->
+    <!-- 字段不能加 []，mybatis plus 不能识别 [] -->
     <select id="findNotInStock" resultMap="BaseResultMap">
-        select row_number() over (order by TransactionTime desc) as item,
-               PartNumber,
+        select PartNumber,
                PO_NUMBER,
                Batch,
                UID,
@@ -80,6 +80,104 @@
                     when TransactionReason = '99' and RecordStatus = '2' then '待上架'
                    end)                                          as Status
         from xTend_MaterialTransactions
+        ${ew.customSqlSegment}
+    </select>
+
+    <select id="findAllNotInStock" resultMap="BaseResultMap">
+        select * from (select PartNumber,
+               PO_NUMBER,
+               Batch,
+               UID,
+               Quantity,
+               ToStock,
+               TransactionTime,
+               Plant,
+               (case
+                    when TransactionReason = '100' and RecordStatus = '999' then N'转运中（已上架）'
+                    when TransactionReason = '999' and RecordStatus = '999' then N'转运中（未过账）'
+                    when TransactionReason = '99' and RecordStatus = '2' then N'待上架'
+                   end) as Status
+        from xTend_MaterialTransactions
+        where (RecordStatus = '999' and (TransactionReason = '99' or (TransactionReason = '100'))
+            or (TransactionReason = '99' and (RecordStatus = '2')))
+          and UID LIKE 'FG%'
+          and TransactionType = '315'
+          <if test="startDate != null and endDate != null">
+              and convert(varchar(20), TransactionTime, 21) &gt;= #{startDate}
+              and convert(varchar(20), TransactionTime, 21) &lt;= #{endDate}
+          </if>
+          <if test="startDate == null or endDate == null">
+              and convert(varchar(20), TransactionTime, 21) >= '2024-01-01 00:00:00.000'
+          </if>
+        union
+        select PartNumber,
+               PO_NUMBER,
+               Batch,
+               UID,
+               Quantity,
+               ''           as ToStock,
+               null         as TransactionTime,
+               Plant,
+               Status
+        from FG_313NotRec) t
+        order by PartNumber
+    </select>
+
+    <select id="findNotInStockU" resultMap="BaseResultMap">
+        select * from (select PartNumber,
+               PO_NUMBER,
+               Batch,
+               UID,
+               Quantity,
+               ToStock,
+               TransactionTime,
+               Plant,
+               (case
+                    when TransactionReason = '100' and RecordStatus = '999' then N'转运中（已上架）'
+                    when TransactionReason = '999' and RecordStatus = '999' then N'转运中（未过账）'
+                    when TransactionReason = '99' and RecordStatus = '2' then N'待上架'
+                   end) as Status
+        from xTend_MaterialTransactions
+        where (RecordStatus = '999' and (TransactionReason = '99' or (TransactionReason = '100'))
+            or (TransactionReason = '99' and (RecordStatus = '2')))
+          and UID LIKE 'FG%'
+          and TransactionType = '315'
+          <if test="startDate != null and endDate != null">
+              and convert(varchar(20), TransactionTime, 21) &gt;= #{startDate}
+              and convert(varchar(20), TransactionTime, 21) &lt;= #{endDate}
+          </if>
+          <if test="startDate == null or endDate == null">
+              and convert(varchar(20), TransactionTime, 21) >= '2024-01-01 00:00:00.000'
+          </if>
+        union
+        select PartNumber,
+               PO_NUMBER,
+               Batch,
+               UID,
+               Quantity,
+               ''           as ToStock,
+               null         as TransactionTime,
+               Plant,
+               Status
+        from FG_313NotRec) t
+        <if test="pns != null and pns.size > 0">
+            where PartNumber in
+            <foreach item="item" collection="pns" open="(" separator="," close=")" >
+                #{item}
+            </foreach>
+        </if>
+        order by PartNumber
+    </select>
+
+    <select id="findPdsInfoFrom3DaysAgo" resultMap="BaseResultMap">
+        select distinct pn                                                 as PartNumber,
+                        wo                                                 as PO_NUMBER,
+                        batch                                              as Batch,
+                        uid                                                as UID,
+                        uid_no                                             as Quantity,
+                        plant,
+                        '转运中（未收货）'                                    as Status
+        from fg_checklist
         ${ew.customSqlSegment}
     </select>
 
@@ -172,5 +270,16 @@
         from fg_shipmentinfo
         ${ew.customSqlSegment}
     </select>
+
+    <select id="findTransByUid" resultType="java.lang.String">
+        select 1
+        from xTend_MaterialTransactions
+        ${ew.customSqlSegment}
+    </select>
+
+    <delete id="delAll313NotRec">
+        delete
+        from FG_313NotRec
+    </delete>
 
 </mapper>
