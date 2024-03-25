@@ -106,7 +106,7 @@ public interface KanbanMapper {
      * @return 是/否
      */
     @DS("sqlserver")
-    String findTransByUid(@Param("ew") QueryWrapper<XtendMaterialtransactions> queryWrapper);
+    List<String> findTransByUid(@Param("ew") QueryWrapper<XtendMaterialtransactions> queryWrapper);
 
     /**
      * 删除所有转运未收货数据

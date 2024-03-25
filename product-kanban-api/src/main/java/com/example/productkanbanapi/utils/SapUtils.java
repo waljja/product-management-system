@@ -6,8 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -144,6 +145,115 @@ public class SapUtils {
             log.info(ex.toString());
         }
         return list;
+    }
+
+    /**
+     * 批量获取SAP过账信息
+     *
+     * @param sapArea         SAP厂区
+     * @param partNumberArr   物料号
+     * @param batchArr        批次
+     * @param transactionType 过账类型
+     * @return SAP过账信息
+     */
+    public List<String[]> getPostInfoBatch(String sapArea, String[] partNumberArr, String[] batchArr, String transactionType) {
+        List<String[]> list = new ArrayList<>();
+        try {
+            // 获取连接池
+            JCoDestination destination = JCoDestinationManager.getDestination(ABAP_AS_POOLED);
+            destination.ping();
+            // 获取功能函数
+            JCoFunction function = destination.getRepository().getFunction("Z_HTMES_YMMR04");
+            if (function == null) {
+                throw new RuntimeException("BAPI_COMPANYCODE_GETLIST not found in SAP.");
+            }
+            JCoParameterList input = function.getImportParameterList();
+            // 厂区
+            input.setValue("I_WERKS", sapArea);
+            // 必传参数 默认第一个物料
+            input.setValue("I_MATNR", partNumberArr[0]);
+            // 移动类型
+            input.setValue("I_BWART", transactionType);
+            // 开始时间
+            LocalDate localDateTime = LocalDate.now();
+            LocalDate nowDateMinus3 = localDateTime.minusDays(3);
+            input.setValue("I_BUDATS", DateTimeFormatter.ofPattern("yyyyMMdd").format(nowDateMinus3));
+            // 结束时间
+            LocalDate nowDate = LocalDate.now();
+            input.setValue("I_BUDATE", DateTimeFormatter.ofPattern("yyyyMMdd").format(nowDate));
+            // 传入多个P物料、批次
+            JCoParameterList input1 = function.getTableParameterList();
+            JCoTable PnTableInput = input1.getTable("IT_MATNR");
+            for (String partNumber : partNumberArr) {
+                PnTableInput.appendRow();
+                PnTableInput.setValue("LOW", partNumber);
+            }
+            JCoTable BatchTableInput = input1.getTable("IT_CHARG");
+            for (String batch : batchArr) {
+                BatchTableInput.appendRow();
+                BatchTableInput.setValue("LOW", batch);
+            }
+            try {
+                function.execute(destination);
+            } catch (AbapException e) {
+                log.error(e.toString());
+            }
+            JCoTable rs = function.getTableParameterList().getTable("ET_RESULT");
+            for (int i = 0; i < rs.getNumRows(); i++) {
+                String[] data = new String[12];
+                if (rs.getString("WERKS") != null && !"".equals(rs.getString("WERKS"))) {
+                    data[0] = rs.getString("WERKS");
+                }
+                if (rs.getString("MATNR") != null && !"".equals(rs.getString("MATNR"))) {
+                    data[1] = rs.getString("MATNR");
+                } else {
+                    data[1] = "";
+                }
+                if (rs.getString("LGORT") != null && !"".equals(rs.getString("LGORT"))) {
+                    data[2] = rs.getString("LGORT");
+                }
+                if (rs.getString("BWART") != null && !"".equals(rs.getString("BWART"))) {
+                    data[3] = rs.getString("BWART");
+                }
+                // 过账编号
+                if (rs.getString("MBLNR") != null && !"".equals(rs.getString("MBLNR"))) {
+                    data[4] = rs.getString("MBLNR");
+                }
+                if (rs.getString("BUDAT") != null && !"".equals(rs.getString("BUDAT"))) {
+                    data[5] = rs.getString("BUDAT");
+                }
+                if (rs.getString("CPUTM") != null && !"".equals(rs.getString("CPUTM"))) {
+                    data[6] = rs.getString("CPUTM");
+                } else {
+                    data[6] = "";
+                }
+                data[7] = Integer.toString(rs.getInt("MENGE"));
+                if (rs.getString("MEINS") != null && !"".equals(rs.getString("MEINS"))) {
+                    data[8] = rs.getString("MEINS");
+                }
+                if (rs.getString("CHARG") != null && !"".equals(rs.getString("CHARG"))) {
+                    data[9] = rs.getString("CHARG");
+                } else {
+                    data[9] = "";
+                }
+                if (rs.getString("AUFNR") != null && !"".equals(rs.getString("AUFNR"))) {
+                    data[10] = rs.getString("AUFNR");
+                }
+                if (rs.getString("KUNNR") != null && !"".equals(rs.getString("KUNNR"))) {
+                    data[11] = rs.getString("KUNNR");
+                }
+                list.add(data);
+                rs.nextRow();
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            log.error(ex.getCause().toString());
+        }
+        return list;
+    }
+
+    public static void main(String[] args) {
+
     }
 
 }

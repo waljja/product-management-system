@@ -43,6 +43,7 @@ public class ReportFillServiceImpl implements ReportFillService {
             queryWrapper
                     .apply("create_time >= str_to_date('" + startDate + "', '%Y-%m-%d %H:%i:%s')")
                     .apply("create_time <= str_to_date('" + endDate + "', '%Y-%m-%d %H:%i:%s')")
+                    .groupBy("state")
                     .orderByDesc("create_time");
         } else {
             queryWrapper.orderByDesc("create_time");

@@ -1,12 +1,11 @@
 package com.example.productkanbanapi.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Builder;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * ProductStorage
@@ -64,7 +63,21 @@ public class NotInStorage {
      */
     private String plant;
 
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        NotInStorage notInStorage = (NotInStorage) obj;
+        return Objects.equals(uid, notInStorage.uid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uid);
+    }
 
 }

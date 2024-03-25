@@ -199,7 +199,7 @@
                uid,
                quantity,
                stock,
-               (case when status = 0 then '已预留' when status = 1 then '未预留' end) as state,
+               (case when status = 0 then '已预留' when status = 1 then '在库（未预留）' end) as state,
                rec_time,
                plant,
                create_user,
@@ -272,7 +272,7 @@
     </select>
 
     <select id="findTransByUid" resultType="java.lang.String">
-        select 1
+        select UID
         from xTend_MaterialTransactions
         ${ew.customSqlSegment}
     </select>
