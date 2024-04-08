@@ -16,10 +16,10 @@
     </resultMap>
 
     <insert id="insert">
-        insert into FG_313NotRec (ID, PartNumber, PO_NUMBER, Batch, UID, Status, Quantity, Plant)
+        insert into FG_313NotRec (ID, PartNumber, PO_NUMBER, Batch, UID, Status, Quantity, Plant, CreateTime, CreateUser)
         values
         <foreach item="item" collection="notRec313List" separator=",">
-            (newid(), #{item.partNumber}, #{item.wo}, #{item.batch}, #{item.uid}, #{item.state}, #{item.quantity}, #{item.plant})
+            (newid(), #{item.partNumber}, #{item.wo}, #{item.batch}, #{item.uid}, #{item.state}, #{item.quantity}, #{item.plant}, getdate(), N'成品库存看板')
         </foreach>
     </insert>
 

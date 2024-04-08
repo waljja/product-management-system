@@ -247,7 +247,6 @@ public class SapUtils {
             }
         } catch (Exception ex) {
             log.error(ex.getMessage());
-            log.error(ex.getCause().toString());
         }
         return list;
     }

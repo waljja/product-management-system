@@ -26,8 +26,8 @@ public class QuartzConfig {
 
     @Bean
     public Trigger save313NotRecInfoTrigger() {
+//        CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule("0 35 14 * * ? ");
         // 30分钟获取一次313过账数据
-//        CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule("0 16 9 * * ? ");
         CronScheduleBuilder scheduleBuilder = CronScheduleBuilder.cronSchedule("0 0/30 * * * ? ");
         return TriggerBuilder
                 .newTrigger()

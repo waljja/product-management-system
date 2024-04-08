@@ -13,6 +13,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -37,6 +38,12 @@ public class save313NotRecInfoJob extends QuartzJobBean {
     @Autowired
     Fg313notrecMapper fg313notrecMapper;
 
+    /**
+     * 运行环境（CN/VN）
+     */
+    @Value("${spring.profiles.active}")
+    private String envCountry;
+
     @Override
     protected void executeInternal(JobExecutionContext context) {
         long start = System.currentTimeMillis();
@@ -53,39 +60,34 @@ public class save313NotRecInfoJob extends QuartzJobBean {
                                     new TreeSet<>(Comparator.comparing(o ->
                                             o.getPartNumber() + "," + o.getPlant() + "," + o.getBatch()))),
                             ArrayList::new));
-            // 过滤出不同工厂数据
-            List<NotInStorage> checkList1100 = distinctCheckList.stream()
-                    .filter(check -> "1100".equals(check.getPlant()))
-                    .collect(Collectors.toList());
-            // 物料、批次去重后传入SAP
-            String[] partNumberArr = checkList1100.stream().map(NotInStorage::getPartNumber).toArray(String[]::new);
-            String[] batchArr = checkList1100.stream().map(NotInStorage::getBatch).toArray(String[]::new);
-            SapUtils sapUtils = new SapUtils();
-            String transactionType = "313";
-            List<String[]> postInfoArrList = sapUtils.getPostInfoBatch("1100", partNumberArr, batchArr, transactionType);
-            List<NotInStorage> postInfoList = new ArrayList<>();
-            postInfoArrList.forEach(arr -> {
-                NotInStorage postInfo = new NotInStorage();
-                postInfo.setPartNumber(arr[1]);
-                postInfo.setBatch(arr[9]);
-                postInfoList.add(postInfo);
-            });
-            // 过滤出成品送检表中在转运中的数据
-            List<NotInStorage> transferList = checkList1100.stream()
-                    .filter(listA ->
-                            postInfoList.stream().anyMatch(listB ->
-                                    Objects.equals(listA.getPartNumber(), listB.getPartNumber()) &&
-                                            Objects.equals(listA.getBatch(), listB.getBatch())))
-                    .collect(Collectors.toList());
-            List<NotInStorage> uidList = new ArrayList<>();
-            QueryWrapper<XtendMaterialtransactions> transQueryWrapper = new QueryWrapper<>();
-            // 获取转运已收货UID
-            if (transferList.size() > 1000) {
-                // 1000条一组in查询
-                List<List<NotInStorage>> splitParams = ListUtils.partition(transferList, 999);
-                for (List<NotInStorage> splitParam : splitParams) {
-                    transQueryWrapper = new QueryWrapper<>();
-                    transQueryWrapper.in("UID", splitParam.stream().map(NotInStorage::getUid).toArray());
+            List<NotInStorage> transferList = new ArrayList<>();
+            if ("CN".equals(envCountry)) {
+                transferList = areaFilter(distinctCheckList, "1100");
+                transferList.addAll(areaFilter(distinctCheckList, "5000"));
+            } else if ("VN".equals(envCountry)) {
+                transferList = areaFilter(distinctCheckList, "9500");
+            }
+            if (!CollectionUtils.isEmpty(transferList)) {
+                List<NotInStorage> uidList = new ArrayList<>();
+                QueryWrapper<XtendMaterialtransactions> transQueryWrapper = new QueryWrapper<>();
+                // 获取转运已收货UID
+                if (transferList.size() > 1000) {
+                    // 1000条一组in查询
+                    List<List<NotInStorage>> splitParams = ListUtils.partition(transferList, 999);
+                    for (List<NotInStorage> splitParam : splitParams) {
+                        transQueryWrapper = new QueryWrapper<>();
+                        transQueryWrapper.in("UID", splitParam.stream().map(NotInStorage::getUid).toArray());
+                        List<String> uids = kanbanMapper.findTransByUid(transQueryWrapper);
+                        if (!CollectionUtils.isEmpty(uids)) {
+                            uids.forEach(uid -> {
+                                NotInStorage notInStorage = new NotInStorage();
+                                notInStorage.setUid(uid);
+                                uidList.add(notInStorage);
+                            });
+                        }
+                    }
+                } else {
+                    transQueryWrapper.in("UID", transferList.stream().map(NotInStorage::getUid).toArray());
                     List<String> uids = kanbanMapper.findTransByUid(transQueryWrapper);
                     if (!CollectionUtils.isEmpty(uids)) {
                         uids.forEach(uid -> {
@@ -95,23 +97,15 @@ public class save313NotRecInfoJob extends QuartzJobBean {
                         });
                     }
                 }
+                // 转运未收货数据（未做315）
+                // guava计算差集，获取转运未收货数据
+                Set<NotInStorage> set1 = Sets.newHashSet(transferList);
+                Set<NotInStorage> set2 = Sets.newHashSet(uidList);
+                Set<NotInStorage> difference = Sets.difference(set1, set2);
+                notRec313List = new ArrayList<>(difference);
             } else {
-                transQueryWrapper.in("UID", transferList.stream().map(NotInStorage::getUid).toArray());
-                List<String> uids = kanbanMapper.findTransByUid(transQueryWrapper);
-                if (!CollectionUtils.isEmpty(uids)) {
-                    uids.forEach(uid -> {
-                        NotInStorage notInStorage = new NotInStorage();
-                        notInStorage.setUid(uid);
-                        uidList.add(notInStorage);
-                    });
-                }
+                log.info("CN".equals(envCountry) ? "1100、5000无转运数据" : "9500无转运数据");
             }
-            // 转运未收货数据（未做315）
-            // guava计算差集，获取转运未收货数据
-            Set<NotInStorage> set1 = Sets.newHashSet(transferList);
-            Set<NotInStorage> set2 = Sets.newHashSet(uidList);
-            Set<NotInStorage> difference = Sets.difference(set1, set2);
-            notRec313List = new ArrayList<>(difference);
         }
         int is313NotRecDeleted = kanbanMapper.delAll313NotRec();
         log.info(is313NotRecDeleted != 0 ? "删除转运未收货数据" + is313NotRecDeleted + "条" : "删除失败或表无数据（转运未收货数据）");
@@ -122,6 +116,42 @@ public class save313NotRecInfoJob extends QuartzJobBean {
             long end = System.currentTimeMillis();
             log.info("耗时" + (end - start) + "ms");
         }
+    }
+
+    /**
+     * 按厂区划分过滤数据（SAP接口调用区分厂区）
+     *
+     * @param checkList 成品送检数据
+     * @param area      厂区
+     * @return 成品送检表中在转运中的数据
+     */
+    private static List<NotInStorage> areaFilter(List<NotInStorage> checkList, String area) {
+        // 过滤出不同厂区数据
+        List<NotInStorage> checkListFiltered = checkList.stream()
+                .filter(check -> area.equals(check.getPlant()))
+                .collect(Collectors.toList());
+        // 物料、批次去重后传入SAP
+        String[] partNumberArr = checkListFiltered.stream().map(NotInStorage::getPartNumber).toArray(String[]::new);
+        String[] batchArr = checkListFiltered.stream().map(NotInStorage::getBatch).toArray(String[]::new);
+        SapUtils sapUtils = new SapUtils();
+        String transactionType = "313";
+        // 不同厂区成品转运数据
+        List<String[]> postInfoArrList = sapUtils.getPostInfoBatch(area, partNumberArr, batchArr, transactionType);
+        List<NotInStorage> postInfoList = new ArrayList<>();
+        postInfoArrList.forEach(arr -> {
+            NotInStorage postInfo = new NotInStorage();
+            postInfo.setPartNumber(arr[1]);
+            postInfo.setBatch(arr[9]);
+            postInfoList.add(postInfo);
+        });
+        // 过滤出成品送检表中在转运中的数据
+        List<NotInStorage> transferList = checkListFiltered.stream()
+                .filter(listA ->
+                        postInfoList.stream().anyMatch(listB ->
+                                Objects.equals(listA.getPartNumber(), listB.getPartNumber()) &&
+                                        Objects.equals(listA.getBatch(), listB.getBatch())))
+                .collect(Collectors.toList());
+        return transferList;
     }
 
 }

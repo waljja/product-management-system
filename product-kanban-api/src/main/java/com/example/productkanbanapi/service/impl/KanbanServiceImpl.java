@@ -26,50 +26,6 @@ public class KanbanServiceImpl implements KanbanService {
     @Autowired
     KanbanMapper kanbanMapper;
 
-    /*@Override
-    public Page<NotInStorage> getStorageList(int current, String startDate, String endDate) {
-        // 开始日期非空
-        boolean sNotNull = startDate != null;
-        // 结束日期非空
-        boolean eNoTNull = endDate != null;
-        Page<NotInStorage> productNotInStoragePage;
-        Page<NotInStorage> inventoryPage = new Page<>(current, 20);
-        QueryWrapper<XtendMaterialtransactions> transQueryWrapper = new QueryWrapper<>();
-        *//*
-         * 日期都不为空 -> 按时间范围查询
-         * 有一个为空 -> 不按时间条件查询
-         *//*
-        if (sNotNull && eNoTNull) {
-            startDate += " 00:00:00.000";
-            endDate += " 23:59:59.999";
-            // 根据日期范围查询，SQL Server 分页必须有 order 排序
-            transQueryWrapper
-                    .likeRight("UID", "FG")
-                    .eq("TransactionType", "315")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '" + startDate + "'")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) <= '" + endDate + "'")
-                    .and(i -> i.eq("RecordStatus", "999")
-                            .and(i1 -> i1.eq("TransactionReason", "99")
-                                    .or(i2 -> i2.eq("TransactionReason", "100"))
-                                    .or(i3 -> i3.eq("TransactionReason", "99")
-                                            .and(i4 -> i4.eq("RecordStatus", "2")))))
-                    .orderByDesc("TransactionTime");
-        } else {
-            transQueryWrapper
-                    .likeRight("UID", "FG")
-                    .eq("TransactionType", "315")
-                    .apply("CONVERT(VARCHAR(20), TransactionTime, 21) >= '2024-01-01 00:00:00.000'")
-                    .and(i -> i.eq("RecordStatus", "999")
-                            .and(i1 -> i1.eq("TransactionReason", "99")
-                                    .or(i2 -> i2.eq("TransactionReason", "100"))
-                                    .or(i3 -> i3.eq("TransactionReason", "99")
-                                            .and(i4 -> i4.eq("RecordStatus", "2")))))
-                    .orderByDesc("TransactionTime");
-        }
-        productNotInStoragePage = kanbanMapper.findNotInStock(inventoryPage, transQueryWrapper);
-        return productNotInStoragePage;
-    }*/
-
     @Override
     public Page<NotInStorage> getStorageList(int current, String startDate, String endDate, List<String> pns) {
         boolean sNotNull = startDate != null;
