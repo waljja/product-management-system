@@ -41,13 +41,18 @@ public interface KanbanMapper {
     /**
      * 查找 未入库成品 数据
      *
-     * @param page         分页配置
+     * @param page      分页配置
      * @param startDate 开始日期
-     * @param endDate 结束日期
+     * @param endDate   结束日期
+     * @param pnList
+     * @param stateList
+     * @param woList
      * @return 未入库成品数据
      */
     @DS("sqlserver")
-    Page<NotInStorage> findNotInStockU(Page page, @Param("startDate") String startDate, @Param("endDate") String endDate, @Param("pns") List<String> pns);
+    Page<NotInStorage> findNotInStockU(Page page, @Param("startDate") String startDate, @Param("endDate") String endDate,
+                                       @Param("pnList") List<String> pnList, @Param("stateList") List<String> stateList,
+                                       @Param("woList") List<String> woList);
 
     /**
      * 查找3天前开始的成品送检单数据

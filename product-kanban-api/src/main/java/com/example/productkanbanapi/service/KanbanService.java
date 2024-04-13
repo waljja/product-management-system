@@ -20,10 +20,12 @@ public interface KanbanService {
      * @param current   当前页码
      * @param startDate 开始时间
      * @param endDate   结束时间
-     * @param pn        物料号
+     * @param pnList    物料号
+     * @param stateList 状态
+     * @param woList    工单
      * @return 成品待入库数据
      */
-    Page<NotInStorage> getStorageList(int current, String startDate, String endDate, List<String> pns);
+    Page<NotInStorage> getStorageList(int current, String startDate, String endDate, List<String> pnList, List<String> stateList, List<String> woList);
 
     /**
      * 获取成品待出货数据

@@ -61,10 +61,10 @@ public class save313NotRecInfoJob extends QuartzJobBean {
                                             o.getPartNumber() + "," + o.getPlant() + "," + o.getBatch()))),
                             ArrayList::new));
             List<NotInStorage> transferList = new ArrayList<>();
-            if ("CN".equals(envCountry)) {
+            if ("cn".equals(envCountry)) {
                 transferList = areaFilter(distinctCheckList, "1100");
                 transferList.addAll(areaFilter(distinctCheckList, "5000"));
-            } else if ("VN".equals(envCountry)) {
+            } else if ("vn".equals(envCountry)) {
                 transferList = areaFilter(distinctCheckList, "9500");
             }
             if (!CollectionUtils.isEmpty(transferList)) {
@@ -76,7 +76,7 @@ public class save313NotRecInfoJob extends QuartzJobBean {
                     List<List<NotInStorage>> splitParams = ListUtils.partition(transferList, 999);
                     for (List<NotInStorage> splitParam : splitParams) {
                         transQueryWrapper = new QueryWrapper<>();
-                        transQueryWrapper.in("UID", splitParam.stream().map(NotInStorage::getUid).toArray());
+                        transQueryWrapper.in("UID", splitParam.stream().map(NotInStorage::getUid).collect(Collectors.toList()));
                         List<String> uids = kanbanMapper.findTransByUid(transQueryWrapper);
                         if (!CollectionUtils.isEmpty(uids)) {
                             uids.forEach(uid -> {
@@ -87,7 +87,7 @@ public class save313NotRecInfoJob extends QuartzJobBean {
                         }
                     }
                 } else {
-                    transQueryWrapper.in("UID", transferList.stream().map(NotInStorage::getUid).toArray());
+                    transQueryWrapper.in("UID", transferList.stream().map(NotInStorage::getUid).collect(Collectors.toList()));
                     List<String> uids = kanbanMapper.findTransByUid(transQueryWrapper);
                     if (!CollectionUtils.isEmpty(uids)) {
                         uids.forEach(uid -> {
@@ -145,13 +145,12 @@ public class save313NotRecInfoJob extends QuartzJobBean {
             postInfoList.add(postInfo);
         });
         // 过滤出成品送检表中在转运中的数据
-        List<NotInStorage> transferList = checkListFiltered.stream()
+        return checkListFiltered.stream()
                 .filter(listA ->
                         postInfoList.stream().anyMatch(listB ->
                                 Objects.equals(listA.getPartNumber(), listB.getPartNumber()) &&
                                         Objects.equals(listA.getBatch(), listB.getBatch())))
                 .collect(Collectors.toList());
-        return transferList;
     }
 
 }

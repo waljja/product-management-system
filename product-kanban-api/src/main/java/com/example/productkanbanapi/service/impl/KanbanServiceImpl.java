@@ -27,7 +27,7 @@ public class KanbanServiceImpl implements KanbanService {
     KanbanMapper kanbanMapper;
 
     @Override
-    public Page<NotInStorage> getStorageList(int current, String startDate, String endDate, List<String> pns) {
+    public Page<NotInStorage> getStorageList(int current, String startDate, String endDate, List<String> pnList, List<String> stateList, List<String> woList) {
         boolean sNotNull = startDate != null;
         boolean eNoTNull = endDate != null;
         Page<NotInStorage> productNotInStoragePage;
@@ -36,8 +36,8 @@ public class KanbanServiceImpl implements KanbanService {
             startDate += " 00:00:00.000";
             endDate += " 23:59:59.999";
         }
-        log.info("pns" + pns);
-        productNotInStoragePage = kanbanMapper.findNotInStockU(inventoryPage, startDate, endDate, pns);
+        log.info("pns" + pnList);
+        productNotInStoragePage = kanbanMapper.findNotInStockU(inventoryPage, startDate, endDate, pnList, stateList, woList);
         return productNotInStoragePage;
     }
 

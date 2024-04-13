@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * KanbanController
@@ -57,12 +58,13 @@ public class KanbanController {
     public CommonResult<Page<Inventory>> getStockKanbanData(@RequestParam(value = "current") int current,
                                                             @RequestParam(value = "startDate", required = false) String startDate,
                                                             @RequestParam(value = "endDate", required = false) String endDate,
-                                                            @RequestParam(value = "pns", required = false) String[] pns) {
-        List<String> pnList = new ArrayList<>();
-        if (pns != null) {
-            Collections.addAll(pnList, pns);
-        }
-        Page<NotInStorage> storageList = kanbanService.getStorageList(current, startDate, endDate, pnList);
+                                                            @RequestParam(value = "pns", required = false) String[] pnArr,
+                                                            @RequestParam(value = "states", required = false) String[] stateArr,
+                                                            @RequestParam(value = "wos", required = false) String[] woArr) {
+        Page<NotInStorage> storageList = kanbanService.getStorageList(current, startDate, endDate,
+                pnArr != null ? Arrays.stream(pnArr).collect(Collectors.toList()) : new ArrayList<>(),
+                stateArr != null ? Arrays.stream(stateArr).collect(Collectors.toList()) : new ArrayList<>(),
+                woArr != null ? Arrays.stream(woArr).collect(Collectors.toList()) : new ArrayList<>());
         return new CommonResult(200, "查询成功", storageList);
     }
 

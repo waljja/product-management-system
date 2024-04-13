@@ -134,7 +134,7 @@
                Plant,
                (case
                     when TransactionReason = '100' and RecordStatus = '999' then N'转运中（已上架）'
-                    when TransactionReason = '999' and RecordStatus = '999' then N'转运中（未过账）'
+                    when TransactionReason = '99' and RecordStatus = '999' then N'转运中（未过账）'
                     when TransactionReason = '99' and RecordStatus = '2' then N'待上架'
                    end) as Status
         from xTend_MaterialTransactions
@@ -160,9 +160,33 @@
                Plant,
                Status
         from FG_313NotRec) t
-        <if test="pns != null and pns.size > 0">
+        <if test="pnList != null and pnList.size > 0">
             where PartNumber in
-            <foreach item="item" collection="pns" open="(" separator="," close=")" >
+            <foreach item="item" collection="pnList" open="(" separator="," close=")" >
+                #{item}
+            </foreach>
+        </if>
+        <if test="stateList != null and stateList.size > 0 and pnList != null and pnList.size > 0">
+            and Status in
+            <foreach item="item" collection="stateList" open="(" separator="," close=")" >
+                #{item}
+            </foreach>
+        </if>
+        <if test="stateList != null and stateList.size > 0 and (pnList == null or pnList.size == 0)">
+            where Status in
+            <foreach item="item" collection="stateList" open="(" separator="," close=")" >
+                #{item}
+            </foreach>
+        </if>
+        <if test="woList != null and woList.size > 0 and ((stateList != null and stateList.size > 0) or (pnList != null and pnList.size > 0))">
+            and PO_NUMBER in
+            <foreach item="item" collection="woList" open="(" separator="," close=")" >
+                #{item}
+            </foreach>
+        </if>
+        <if test="woList != null and woList.size > 0 and (stateList == null or stateList.size == 0) and (pnList == null or pnList.size == 0)">
+            where PO_NUMBER in
+            <foreach item="item" collection="woList" open="(" separator="," close=")" >
                 #{item}
             </foreach>
         </if>
