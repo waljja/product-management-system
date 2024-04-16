@@ -25,16 +25,39 @@ public interface KanbanService {
      * @param woList    工单
      * @return 成品待入库数据
      */
-    Page<NotInStorage> getStorageList(int current, String startDate, String endDate, List<String> pnList, List<String> stateList, List<String> woList);
+    Page<NotInStorage> getStorageList(int current, String startDate, String endDate,
+                                      List<String> pnList, List<String> stateList, List<String> woList);
+
+    /**
+     * 获取成品库存数据
+     *
+     * @param startDate 开始时间
+     * @param endDate   结束时间
+     * @return 成品库存数据
+     */
+    List<NotInStorage> getAllStorageList(String startDate, String endDate);
 
     /**
      * 获取成品待出货数据
      *
-     * @param current   当前页码
+     * @param current            当前页码
+     * @param startDate          开始时间
+     * @param endDate            结束时间
+     * @param shipmentNumberList
+     * @param stateList
+     * @param clientCodeList
+     * @return 成品待出货数据
+     */
+    Page<Shipment> getShipmentList(int current, String startDate, String endDate,
+                                   List<String> shipmentNumberList, List<String> stateList, List<String> clientCodeList);
+
+    /**
+     * 获取成品待出货数据
+     *
      * @param startDate 开始时间
      * @param endDate   结束时间
      * @return 成品待出货数据
      */
-    Page<Shipment> getShipmentList(int current, String startDate, String endDate);
+    List<Shipment> getAllShipmentList(String startDate, String endDate);
 
 }

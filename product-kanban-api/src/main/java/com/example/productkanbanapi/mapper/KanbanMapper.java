@@ -31,12 +31,14 @@ public interface KanbanMapper {
     Page<NotInStorage> findNotInStock(Page page, @Param("ew") QueryWrapper queryWrapper);
 
     /**
-     * 获取成品待入库数据
+     * 获取所有成品待入库数据
      *
-     * @return 成品待入库数据
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 所有成品待入库数据
      */
     @DS("sqlserver")
-    List<NotInStorage> findAllNotInStock();
+    List<NotInStorage> findAllNotInStock(@Param("startDate") String startDate, @Param("endDate") String endDate);
 
     /**
      * 查找 未入库成品 数据
@@ -95,6 +97,13 @@ public interface KanbanMapper {
      * @return 成品出货数据
      */
     Page<Shipment> findShipment(Page page, @Param("ew") QueryWrapper queryWrapper);
+
+    /**
+     * 查找所有成品出货数据
+     *
+     * @return 所有成品出货数据
+     */
+    List<Shipment> findAllShipment(@Param("ew") QueryWrapper queryWrapper);
 
     /**
      * 根据 出货单号 查询 零部件号

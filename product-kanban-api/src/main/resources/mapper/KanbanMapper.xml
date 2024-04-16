@@ -289,6 +289,45 @@
         ${ew.customSqlSegment}
     </select>
 
+    <select id="findAllShipment" resultMap="ShipmentMap">
+        select distinct shipment_date,
+                        careta                                                                               as loading_time,
+                        shipment_car,
+                        car_no,
+                        shipment_number,
+                        to_no,
+                        client_code,
+                        (case
+                             when tos1.status = 0 then '待拣货'
+                             when tos1.status = 1 then '备货中'
+                             when tos1.status = 2 and tos1.stock is not null and tos1.is_loading_truck = '待装车' then '待装车'
+                             when tos1.status = 2 and tos1.stock is null then '待绑定出货区'
+                             when tos1.status = 3 then '欠货'
+                            end)                                                                             as state,
+                        (case when ship1.client_code = 'CK00' then tos1.quantity / 4 else tos1.quantity end) as to_quantity,
+                        (select sum(ship3.quantity)
+                         from fg_shipmentinfo ship3
+                         where ship3.shipment_number = ship1.shipment_number
+                           and ship1.status = 1
+                           and (last_comfirm = '货仓' or last_comfirm = '船务')
+                         group by ship3.shipment_number)                                                     as shipment_quantity,
+                        (select round((select sum(ship3.boxcount)
+                                       from fg_shipmentinfo ship3
+                                       where ship3.shipment_number = ship1.shipment_number
+                                         and ship1.status = 1
+                                         and (last_comfirm = '货仓' or last_comfirm = '船务')
+                                       group by ship3.shipment_number), 2))                                  as box_quantity,
+                        (select sum(ship3.pellet_qty)
+                         from fg_shipmentinfo ship3
+                         where ship3.shipment_number = ship1.shipment_number
+                           and ship1.status = 1
+                           and (last_comfirm = '货仓' or last_comfirm = '船务')
+                         group by ship3.shipment_number)                                                     as pallet_quantity
+        from fg_tos tos1
+                 left join fg_shipmentinfo ship1 on tos1.shipment_no = ship1.shipment_number
+        ${ew.customSqlSegment}
+    </select>
+
     <select id="findPnByShipNo" resultType="java.lang.String">
         select distinct pn
         from fg_shipmentinfo

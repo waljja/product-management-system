@@ -4,7 +4,10 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.productkanbanapi.entity.*;
+import com.example.productkanbanapi.entity.NotInStorage;
+import com.example.productkanbanapi.entity.RecReport;
+import com.example.productkanbanapi.entity.Shipment;
+import com.example.productkanbanapi.entity.StorageReport;
 import com.example.productkanbanapi.mapper.KanbanMapper;
 import com.example.productkanbanapi.result.CommonResult;
 import com.example.productkanbanapi.service.KanbanService;
@@ -22,7 +25,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -41,8 +46,6 @@ public class KanbanController {
     KanbanService kanbanService;
     @Autowired
     ReportFillService reportFillService;
-    @Autowired
-    KanbanMapper kanbanMapper;
 
     /**
      * 获取成品入库看板数据（分页）
@@ -55,12 +58,12 @@ public class KanbanController {
     @ResponseBody
     @ApiOperation("获取成品入库看板数据（分页）")
     @GetMapping("/product-storage/get-data")
-    public CommonResult<Page<Inventory>> getStockKanbanData(@RequestParam(value = "current") int current,
-                                                            @RequestParam(value = "startDate", required = false) String startDate,
-                                                            @RequestParam(value = "endDate", required = false) String endDate,
-                                                            @RequestParam(value = "pns", required = false) String[] pnArr,
-                                                            @RequestParam(value = "states", required = false) String[] stateArr,
-                                                            @RequestParam(value = "wos", required = false) String[] woArr) {
+    public CommonResult<Page<NotInStorage>> getStockKanbanData(@RequestParam(value = "current") int current,
+                                                               @RequestParam(value = "startDate", required = false) String startDate,
+                                                               @RequestParam(value = "endDate", required = false) String endDate,
+                                                               @RequestParam(value = "pns", required = false) String[] pnArr,
+                                                               @RequestParam(value = "states", required = false) String[] stateArr,
+                                                               @RequestParam(value = "wos", required = false) String[] woArr) {
         Page<NotInStorage> storageList = kanbanService.getStorageList(current, startDate, endDate,
                 pnArr != null ? Arrays.stream(pnArr).collect(Collectors.toList()) : new ArrayList<>(),
                 stateArr != null ? Arrays.stream(stateArr).collect(Collectors.toList()) : new ArrayList<>(),
@@ -71,16 +74,14 @@ public class KanbanController {
     /**
      * 获取成品入库看板数据
      *
-     * @param current   当前页码
-     * @param startDate 开始日期
-     * @param endDate   结束日期
      * @return 成品入库数据
      */
     @ResponseBody
     @ApiOperation("获取成品入库看板数据")
     @GetMapping("/product-storage/get-all")
-    public CommonResult<List<Inventory>> getAllStockData() {
-        List<NotInStorage> storageList = kanbanMapper.findAllNotInStock();
+    public CommonResult<List<NotInStorage>> getAllStockData(@RequestParam(value = "startDate", required = false) String startDate,
+                                                            @RequestParam(value = "endDate", required = false) String endDate) {
+        List<NotInStorage> storageList = kanbanService.getAllStorageList(startDate, endDate);
         return new CommonResult(200, "查询成功", storageList);
     }
 
@@ -95,10 +96,30 @@ public class KanbanController {
     @ResponseBody
     @ApiOperation("获取出货计划看板数据")
     @GetMapping("/product-shipment/get-data")
-    public CommonResult<Page<Inventory>> getShipmentKanbanData(@RequestParam(value = "current") int current,
-                                                               @RequestParam(value = "startDate", required = false) String startDate,
-                                                               @RequestParam(value = "endDate", required = false) String endDate) {
-        Page<Shipment> shipmentList = kanbanService.getShipmentList(current, startDate, endDate);
+    public CommonResult<Page<Shipment>> getShipmentKanbanData(@RequestParam(value = "current") int current,
+                                                              @RequestParam(value = "startDate", required = false) String startDate,
+                                                              @RequestParam(value = "endDate", required = false) String endDate,
+                                                              @RequestParam(value = "shipmentNumbers", required = false) String[] shipmentNumberArr,
+                                                              @RequestParam(value = "states", required = false) String[] stateArr,
+                                                              @RequestParam(value = "clientCodes", required = false) String[] clientCodeArr) {
+        Page<Shipment> shipmentList = kanbanService.getShipmentList(current, startDate, endDate,
+                shipmentNumberArr != null ? Arrays.stream(shipmentNumberArr).collect(Collectors.toList()) : new ArrayList<>(),
+                stateArr != null ? Arrays.stream(stateArr).collect(Collectors.toList()) : new ArrayList<>(),
+                clientCodeArr != null ? Arrays.stream(clientCodeArr).collect(Collectors.toList()) : new ArrayList<>());
+        return new CommonResult(200, "查询成功", shipmentList);
+    }
+
+    /**
+     * 获取成品出货看板数据（所有）
+     *
+     * @return 成品入库数据
+     */
+    @ResponseBody
+    @ApiOperation("获取成品出货看板数据（所有）")
+    @GetMapping("/product-shipment/get-all")
+    public CommonResult<List<Shipment>> getAllShipData(@RequestParam(value = "startDate", required = false) String startDate,
+                                                       @RequestParam(value = "endDate", required = false) String endDate) {
+        List<Shipment> shipmentList = kanbanService.getAllShipmentList(startDate, endDate);
         return new CommonResult(200, "查询成功", shipmentList);
     }
 
